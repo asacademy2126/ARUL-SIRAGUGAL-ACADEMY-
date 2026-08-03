@@ -1,0 +1,453 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students - Arul Siragugal Academy</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/student.css">
+</head>
+<body>
+
+<div class="dashboard">
+
+    <!-- Header -->
+    <div class="top-bar">
+        <div>
+            <h2>Students</h2>
+            <small>Total Students</small>
+        </div>
+
+        <button class="login-btn" style="width:auto;padding:10px 16px;"
+            onclick="openAddStudent()">
+            + Add Student
+        </button>
+    </div>
+
+    <!-- Search -->
+    <div style="margin:15px 0;">
+        <input
+            type="text"
+            id="searchStudent"
+            placeholder="Search by Name / Mobile / Class"
+            onkeyup="searchStudent()">
+    </div>
+
+    <!-- Student List -->
+    <div id="studentList">
+
+        <!-- Student Card -->
+
+        <div class="card">
+
+            <div style="display:flex;align-items:center;gap:15px;">
+
+                <img
+                    src="images/student.png"
+                    width="70"
+                    height="70"
+                    style="border-radius:50%;">
+
+                <div>
+
+                    <h3>Arun Kumar</h3>
+
+                    <p>Class : 5</p>
+
+                    <p>Fee : ₹700</p>
+
+                </div>
+
+            </div>
+
+            <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
+
+                <button
+                    class="login-btn"
+                    onclick="viewStudent()">
+
+                    View
+
+                </button>
+
+                <button
+                    class="login-btn"
+                    style="background:#16a34a;"
+                    onclick="editStudent()">
+
+                    Edit
+
+                </button>
+
+                <button
+                    class="login-btn"
+                    style="background:#ef4444;"
+                    onclick="deleteStudent()">
+
+                    Delete
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Bottom Navigation -->
+
+<div class="bottom-nav">
+
+    <a href="dashboard.html">
+        🏠<br>Home
+    </a>
+
+    <a href="students.html" class="active">
+        👨‍🎓<br>Students
+    </a>
+
+    <a href="attendance.html">
+        ✅<br>Attendance
+    </a>
+
+    <a href="fees.html">
+        💰<br>Fees
+    </a>
+
+    <a href="settings.html">
+        ⚙️<br>Settings
+    </a>
+
+</div>
+
+<script src="js/student.js"></script>
+
+</body>
+</html>
+``````javascript
+/* ==========================================
+   student.js
+   Arul Siragugal Academy
+========================================== */
+
+let students = [];
+
+// -----------------------------
+// Load Students
+// -----------------------------
+function loadStudents() {
+
+    // Demo Data
+    students = [
+        {
+            id: 1,
+            name: "Arun Kumar",
+            class: "5",
+            phone: "9876543210",
+            fee: 700
+        }
+    ];
+
+    renderStudents();
+}
+
+// -----------------------------
+// Render Student List
+// -----------------------------
+function renderStudents() {
+
+    const list = document.getElementById("studentList");
+
+    list.innerHTML = "";
+
+    students.forEach(student => {
+
+        list.innerHTML += `
+            <div class="card">
+
+                <h3>${student.name}</h3>
+
+                <p>Class : ${student.class}</p>
+
+                <p>Phone : ${student.phone}</p>
+
+                <p>Fee : ₹${student.fee}</p>
+
+                <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
+
+                    <button class="login-btn"
+                        onclick="viewStudent(${student.id})">
+                        View
+                    </button>
+
+                    <button class="login-btn"
+                        style="background:#16a34a;"
+                        onclick="editStudent(${student.id})">
+                        Edit
+                    </button>
+
+                    <button class="login-btn"
+                        style="background:#ef4444;"
+                        onclick="deleteStudent(${student.id})">
+                        Delete
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+    });
+
+}
+
+// -----------------------------
+// Search Student
+// -----------------------------
+function searchStudent() {
+
+    const keyword = document
+        .getElementById("searchStudent")
+        .value
+        .toLowerCase();
+
+    const cards = document.querySelectorAll("#studentList .card");
+
+    cards.forEach(card => {
+
+        if (card.innerText.toLowerCase().includes(keyword)) {
+
+            card.style.display = "block";
+
+        } else {
+
+            card.style.display = "none";
+
+        }
+
+    });
+
+}
+
+// -----------------------------
+// Add Student
+// -----------------------------
+function openAddStudent() {
+
+    alert("Add Student Form will be available in next update.");
+
+}
+
+// -----------------------------
+// View Student
+// -----------------------------
+function viewStudent(id) {
+
+    alert("View Student ID : " + id);
+
+}
+
+// -----------------------------
+// Edit Student
+// -----------------------------
+function editStudent(id) {
+
+    alert("Edit Student ID : " + id);
+
+}
+
+// -----------------------------
+// Delete Student
+// -----------------------------
+function deleteStudent(id) {
+
+    const ok = confirm("Delete this student?");
+
+    if (!ok) return;
+
+    students = students.filter(student => student.id !== id);
+
+    renderStudents();
+
+}
+
+// -----------------------------
+// WhatsApp
+// -----------------------------
+function sendWhatsApp(number) {
+
+    window.open(
+        "https://wa.me/91" + number,
+        "_blank"
+    );
+
+}
+
+// -----------------------------
+// Call Parent
+// -----------------------------
+function callParent(number) {
+
+    window.location.href = "tel:" + number;
+
+}
+
+// -----------------------------
+// Init
+// -----------------------------
+window.onload = function () {
+
+    loadStudents();
+
+};
+``````html
+<!-- Add Student Modal -->
+
+<div id="studentModal" class="modal" style="display:none;">
+
+  <div class="modal-content">
+
+    <h2>Add Student</h2>
+
+    <label>Student Name</label>
+    <input type="text" id="studentName">
+
+    <label>Class</label>
+    <select id="studentClass">
+      <option>1</option>
+      <option>2</option>
+      <option>3</option>
+      <option>4</option>
+      <option>5</option>
+      <option>6</option>
+      <option>7</option>
+      <option>8</option>
+    </select>
+
+    <label>Parent Name</label>
+    <input type="text" id="parentName">
+
+    <label>Mobile Number</label>
+    <input type="tel" id="parentPhone">
+
+    <label>WhatsApp Number</label>
+    <input type="tel" id="whatsappNumber">
+
+    <label>Monthly Fee</label>
+    <input type="number" id="monthlyFee">
+
+    <label>Admission Date</label>
+    <input type="date" id="joinDate">
+
+    <label>Student Photo</label>
+    <input type="file" id="studentPhoto" accept="image/*">
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+
+      <button class="login-btn" onclick="saveStudent()">
+        Save
+      </button>
+
+      <button class="login-btn"
+              style="background:#ef4444;"
+              onclick="closeStudentModal()">
+        Cancel
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+```
+
+```javascript
+// ===============================
+// Student Modal
+// ===============================
+
+function openAddStudent() {
+
+    document.getElementById("studentModal").style.display = "block";
+
+}
+
+function closeStudentModal() {
+
+    document.getElementById("studentModal").style.display = "none";
+
+}
+
+// ===============================
+// Save Student
+// ===============================
+
+function saveStudent() {
+
+    const student = {
+
+        id: Date.now(),
+
+        name: document.getElementById("studentName").value,
+
+        class: document.getElementById("studentClass").value,
+
+        parent: document.getElementById("parentName").value,
+
+        phone: document.getElementById("parentPhone").value,
+
+        whatsapp: document.getElementById("whatsappNumber").value,
+
+        fee: document.getElementById("monthlyFee").value,
+
+        joinDate: document.getElementById("joinDate").value
+
+    };
+
+    if (student.name === "") {
+
+        alert("Please enter Student Name");
+
+        return;
+
+    }
+
+    students.push(student);
+
+    renderStudents();
+
+    closeStudentModal();
+
+    clearForm();
+
+}
+
+// ===============================
+// Clear Form
+// ===============================
+
+function clearForm() {
+
+    document.getElementById("studentName").value = "";
+
+    document.getElementById("studentClass").value = "1";
+
+    document.getElementById("parentName").value = "";
+
+    document.getElementById("parentPhone").value = "";
+
+    document.getElementById("whatsappNumber").value = "";
+
+    document.getElementById("monthlyFee").value = "";
+
+    document.getElementById("joinDate").value = "";
+
+    document.getElementById("studentPhoto").value = "";
+
+}
+```
+
