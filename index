@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arul Siragugal Academy - Tuition Management System</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <meta name="theme-color" content="#2563EB">
+
+    <style>
+        /* ==========================================
+           Arul Siragugal Academy - Global Styles
+        ========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f5f7fb;
+            color: #222;
+        }
+
+        /* ---------------- Login Page ---------------- */
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo-area {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .15);
+            background-color: #2563eb;
+        }
+
+        .logo-area h1 {
+            margin-top: 15px;
+            color: #2563eb;
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .logo-area p {
+            color: #777;
+            margin-top: 5px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            background: #fff;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+        }
+
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #222;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #d7d7d7;
+            border-radius: 12px;
+            font-size: 15px;
+            outline: none;
+            transition: .3s;
+        }
+
+        .input-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 8px rgba(37, 99, 235, .2);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .3s;
+        }
+
+        .login-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .extra-links {
+            margin-top: 18px;
+            text-align: center;
+        }
+
+        .extra-links a {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .features {
+            width: 100%;
+            max-width: 380px;
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .feature {
+            background: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 5px 12px rgba(0, 0, 0, .05);
+        }
+
+        .feature .icon {
+            font-size: 26px;
+            margin-bottom: 8px;
+        }
+
+        .feature span {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* ---------------- Dashboard ---------------- */
+        .dashboard {
+            padding: 15px;
+            padding-bottom: 90px; /* Space for bottom navigation */
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .top-bar h2 {
+            font-size: 22px;
+        }
+
+        .profile {
+            width: 45px;
+            height: 45px;
+            background: #2563eb;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .05);
+        }
+
+        .card h3 {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .card p {
+            margin-top: 10px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .blue {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .blue h3 { color: #e0e7ff; }
+
+        .green {
+            background: #16a34a;
+            color: #fff;
+        }
+
+        .green h3 { color: #dcfce7; }
+
+        .orange {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .orange h3 { color: #fef3c7; }
+
+        .red {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .red h3 { color: #fee2e2; }
+
+        /* Quick Menu */
+        .quick-menu {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .menu-item {
+            background: #fff;
+            border-radius: 18px;
+            padding: 20px 10px;
+            text-align: center;
+            box-shadow: 0 5px 12px rgba(0, 0, 0, .05);
+            cursor: pointer;
+            transition: .3s;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .menu-item span {
+            display: block;
+            margin-top: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #fff;
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            box-shadow: 0 -5px 15px rgba(0, 0, 0, .08);
+            z-index: 100;
+        }
+
+        .bottom-nav a {
+            text-decoration: none;
+            color: #666;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .bottom-nav a.active {
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        /* Responsive Mobile Adjustments */
+        @media(max-width:480px) {
+            .logo-area h1 {
+                font-size: 22px;
+            }
+
+            .login-card {
+                padding: 20px;
+            }
+
+            .card p {
+                font-size: 24px;
+            }
+
+            .quick-menu {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= Login View ================= -->
+    <div id="loginView" class="login-page">
+        <div class="logo-area">
+            <img src="images/logo.png" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/90?text=ASA'">
+            <h1>Arul Siragugal Academy</h1>
+            <p>Tuition Management System</p>
+        </div>
+
+        <div class="login-card">
+            <h2>Teacher Login</h2>
+
+            <div class="input-group">
+                <label for="teacherId">Teacher ID</label>
+                <input type="text" id="teacherId" placeholder="Enter Teacher ID (e.g. admin)">
+            </div>
+
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter Password (e.g. 1234)">
+            </div>
+
+            <button class="login-btn" onclick="login()">LOGIN</button>
+
+            <div class="extra-links">
+                <a href="#" onclick="alert('Please contact admin to reset password.')">Forgot Password?</a>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="icon">👨‍🎓</div>
+                <span>Students</span>
+            </div>
+            <div class="feature">
+                <div class="icon">✅</div>
+                <span>Attendance</span>
+            </div>
+            <div class="feature">
+                <div class="icon">💰</div>
+                <span>Fees</span>
+            </div>
+            <div class="feature">
+                <div class="icon">📊</div>
+                <span>Reports</span>
+            </div>
+            <div class="feature">
+                <div class="icon">📚</div>
+                <span>Homework</span>
+            </div>
+            <div class="feature">
+                <div class="icon">📝</div>
+                <span>Marks</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Dashboard View ================= -->
+    <div id="dashboardView" class="dashboard" style="display: none;">
+        <!-- Header -->
+        <div class="top-bar">
+            <div>
+                <h2>Welcome 👋</h2>
+                <h3 id="teacherName">Teacher</h3>
+                <small id="todayDate"></small>
+            </div>
+            <div class="profile">AS</div>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="cards">
+            <div class="card blue">
+                <h3>Total Students</h3>
+                <p id="totalStudents">0</p>
+            </div>
+            <div class="card green">
+                <h3>Present Today</h3>
+                <p id="presentStudents">0</p>
+            </div>
+            <div class="card red">
+                <h3>Absent Today</h3>
+                <p id="absentStudents">0</p>
+            </div>
+            <div class="card orange">
+                <h3>Pending Fees</h3>
+                <p id="pendingFees">0</p>
+            </div>
+        </div>
+
+        <!-- Monthly Income -->
+        <div class="card" style="margin-top:20px;">
+            <h3>Monthly Income</h3>
+            <p id="monthlyIncome">₹0</p>
+        </div>
+
+        <!-- Quick Menu -->
+        <h2 style="margin-top:25px; margin-bottom:15px;">Quick Menu</h2>
+
+        <div class="quick-menu">
+            <div class="menu-item" onclick="comingSoon('Students')">
+                <div style="font-size:34px;">👨‍🎓</div>
+                <span>Students</span>
+            </div>
+            <div class="menu-item" onclick="comingSoon('Attendance')">
+                <div style="font-size:34px;">✅</div>
+                <span>Attendance</span>
+            </div>
+            <div class="menu-item" onclick="comingSoon('Fees')">
+                <div style="font-size:34px;">💰</div>
+                <span>Fees</span>
+            </div>
+            <div class="menu-item" onclick="comingSoon('Homework')">
+                <div style="font-size:34px;">📚</div>
+                <span>Homework</span>
+            </div>
+            <div class="menu-item" onclick="comingSoon('Marks')">
+                <div style="font-size:34px;">📝</div>
+                <span>Marks</span>
+            </div>
+            <div class="menu-item" onclick="comingSoon('Reports')">
+                <div style="font-size:34px;">📊</div>
+                <span>Reports</span>
+            </div>
+        </div>
+
+        <!-- Logout Button -->
+        <div style="margin-top:30px;">
+            <button class="login-btn" style="background: #ef4444;" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <a href="#" class="active" onclick="return false;">
+                🏠<br>Home
+            </a>
+            <a href="#" onclick="comingSoon('Students')">
+                👨‍🎓<br>Students
+            </a>
+            <a href="#" onclick="comingSoon('Attendance')">
+                ✅<br>Attendance
+            </a>
+            <a href="#" onclick="comingSoon('Fees')">
+                💰<br>Fees
+            </a>
+            <a href="#" onclick="comingSoon('Settings')">
+                ⚙️<br>Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- ================= JavaScript Application Logic ================= -->
+    <script>
+        // Google Apps Script Web App URL
+        const API_URL = "";
+
+        // ------------------------------
+        // Application Navigation Helper
+        // ------------------------------
+        function switchView(viewName) {
+            const loginView = document.getElementById("loginView");
+            const dashboardView = document.getElementById("dashboardView");
+
+            if (viewName === "dashboard") {
+                loginView.style.display = "none";
+                dashboardView.style.display = "block";
+                
+                // Initialize Dashboard Data
+                loadTeacherName();
+                loadDashboard();
+                showToday();
+            } else {
+                dashboardView.style.display = "none";
+                loginView.style.display = "flex";
+            }
+        }
+
+        // ------------------------------
+        // Demo Login
+        // ------------------------------
+        function login() {
+            const teacherId = document.getElementById("teacherId").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (teacherId === "") {
+                alert("Please enter Teacher ID");
+                return;
+            }
+
+            if (password === "") {
+                alert("Please enter Password");
+                return;
+            }
+
+            // Demo Credentials Check
+            if (teacherId === "admin" && password === "1234") {
+                localStorage.setItem("loggedIn", "true");
+                localStorage.setItem("teacherName", "Arul Sir");
+                
+                // Switch view without full reload
+                switchView("dashboard");
+            } else {
+                alert("Invalid Teacher ID or Password");
+            }
+        }
+
+        // ------------------------------
+        // Auth State Check
+        // ------------------------------
+        function checkLoginStatus() {
+            const status = localStorage.getItem("loggedIn");
+            if (status === "true") {
+                switchView("dashboard");
+            } else {
+                switchView("login");
+            }
+        }
+
+        // ------------------------------
+        // Logout
+        // ------------------------------
+        function logout() {
+            const ok = confirm("Are you sure you want to logout?");
+            if (!ok) return;
+
+            localStorage.clear();
+            document.getElementById("teacherId").value = "";
+            document.getElementById("password").value = "";
+            
+            switchView("login");
+        }
+
+        // ------------------------------
+        // Load Teacher Name
+        // ------------------------------
+        function loadTeacherName() {
+            const teacher = localStorage.getItem("teacherName");
+            const el = document.getElementById("teacherName");
+
+            if (el && teacher) {
+                el.innerHTML = teacher;
+            }
+        }
+
+        // ------------------------------
+        // Dashboard Demo Data
+        // ------------------------------
+        function loadDashboard() {
+            const totalStudents = document.getElementById("totalStudents");
+            const presentStudents = document.getElementById("presentStudents");
+            const absentStudents = document.getElementById("absentStudents");
+            const pendingFees = document.getElementById("pendingFees");
+            const monthlyIncome = document.getElementById("monthlyIncome");
+
+            if (totalStudents) totalStudents.innerHTML = "126";
+            if (presentStudents) presentStudents.innerHTML = "104";
+            if (absentStudents) absentStudents.innerHTML = "22";
+            if (pendingFees) pendingFees.innerHTML = "18";
+            if (monthlyIncome) monthlyIncome.innerHTML = "₹82,500";
+        }
+
+        // ------------------------------
+        // Format & Display Date
+        // ------------------------------
+        function showToday() {
+            const today = new Date();
+            const options = {
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+            };
+
+            const formatted = today.toLocaleDateString("en-IN", options);
+            const el = document.getElementById("todayDate");
+
+            if (el) {
+                el.innerHTML = formatted;
+            }
+        }
+
+        // ------------------------------
+        // Placeholder Alert
+        // ------------------------------
+        function comingSoon(moduleName) {
+            alert(moduleName + " module will be available in the next part.");
+        }
+
+        // ------------------------------
+        // Page Load Initializer
+        // ------------------------------
+        window.onload = function () {
+            checkLoginStatus();
+        };
+
+        // ------------------------------
+        // Google Apps Script API Handlers
+        // ------------------------------
+        async function fetchData(action) {
+            if (!API_URL) {
+                console.log("API URL not configured.");
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + "?action=" + action);
+                return await response.json();
+            } catch (error) {
+                console.error("API Error:", error);
+            }
+        }
+
+        async function postData(payload) {
+            if (!API_URL) {
+                console.log("API URL not configured.");
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error("POST Error:", error);
+            }
+        }
+    </script>
+</body>
+</html>
