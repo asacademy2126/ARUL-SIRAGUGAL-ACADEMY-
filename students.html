@@ -450,4 +450,1345 @@ function clearForm() {
 
 }
 ```
+<div id="studentModal" class="modal" style="display:none;">
+
+    <div class="modal-content">
+
+        <h2>Add Student</h2>
+
+        <label>Student Name</label>
+        <input type="text" id="studentName" placeholder="Student Name">
+
+        <label>Father Name</label>
+        <input type="text" id="fatherName" placeholder="Father Name">
+
+        <label>Date of Birth</label>
+        <input type="date" id="dob">
+
+        <label>Mobile Number</label>
+        <input type="tel" id="mobileNumber" placeholder="9876543210">
+
+        <label>Class</label>
+        <select id="studentClass">
+            <option value="">Select Class</option>
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+            <option>5</option>
+            <option>6</option>
+            <option>7</option>
+            <option>8</option>
+        </select>
+
+        <div style="display:flex;gap:10px;margin-top:20px;">
+
+            <button class="login-btn" onclick="saveStudent()">
+                Save
+            </button>
+
+            <button class="login-btn"
+                    style="background:#ef4444;"
+                    onclick="closeStudentModal()">
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+```javascript
+// ===============================
+// Save Student
+// ===============================
+
+function saveStudent() {
+
+    const student = {
+
+        id: Date.now(),
+
+        studentName: document.getElementById("studentName").value.trim(),
+
+        fatherName: document.getElementById("fatherName").value.trim(),
+
+        dob: document.getElementById("dob").value,
+
+        mobileNumber: document.getElementById("mobileNumber").value.trim(),
+
+        studentClass: document.getElementById("studentClass").value
+
+    };
+
+    // Validation
+    if (
+        student.studentName === "" ||
+        student.fatherName === "" ||
+        student.mobileNumber === "" ||
+        student.studentClass === ""
+    ) {
+        alert("Please fill all required fields.");
+        return;
+    }
+
+    students.push(student);
+
+    renderStudents();
+
+    clearForm();
+
+    closeStudentModal();
+
+}
+
+// ===============================
+// Clear Form
+// ===============================
+
+function clearForm() {
+
+    document.getElementById("studentName").value = "";
+
+    document.getElementById("fatherName").value = "";
+
+    document.getElementById("dob").value = "";
+
+    document.getElementById("mobileNumber").value = "";
+
+    document.getElementById("studentClass").value = "";
+
+}
+```
+```javascript
+// ===============================
+// Render Students
+// ===============================
+
+function renderStudents() {
+
+    const list = document.getElementById("studentList");
+
+    list.innerHTML = "";
+
+    if (students.length === 0) {
+
+        list.innerHTML = `
+            <div class="card">
+                <center>
+                    <h3>No Students Found</h3>
+                </center>
+            </div>
+        `;
+        return;
+    }
+
+    students.forEach(student => {
+
+        list.innerHTML += `
+
+        <div class="card">
+
+            <h2>${student.studentName}</h2>
+
+            <p><strong>Father :</strong> ${student.fatherName}</p>
+
+            <p><strong>DOB :</strong> ${student.dob}</p>
+
+            <p><strong>Mobile :</strong> ${student.mobileNumber}</p>
+
+            <p><strong>Class :</strong> ${student.studentClass}</p>
+
+            <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
+
+                <button class="login-btn"
+                    onclick="viewStudent(${student.id})">
+                    👁 View
+                </button>
+
+                <button class="login-btn"
+                    style="background:#16a34a;"
+                    onclick="editStudent(${student.id})">
+                    ✏ Edit
+                </button>
+
+                <button class="login-btn"
+                    style="background:#ef4444;"
+                    onclick="deleteStudent(${student.id})">
+                    🗑 Delete
+                </button>
+
+            </div>
+
+        </div>
+
+        `;
+
+    });
+
+}
+``````javascript
+// ======================================
+// Code.gs
+// Arul Siragugal Academy
+// ======================================
+
+const SHEET_NAME = "Students";
+
+// ----------------------------
+// GET Students
+// ----------------------------
+function doGet(e) {
+
+  const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(SHEET_NAME);
+
+  const data = sheet.getDataRange().getValues();
+
+  let students = [];
+
+  for (let i = 1; i < data.length; i++) {
+
+    students.push({
+
+      id: data[i][0],
+
+      studentName: data[i][1],
+
+      fatherName: data[i][2],
+
+      dob: data[i][3],
+
+      mobileNumber: data[i][4],
+
+      studentClass: data[i][5]
+
+    });
+
+  }
+
+  return ContentService
+      .createTextOutput(JSON.stringify(students))
+      .setMimeType(ContentService.MimeType.JSON);
+
+}
+
+// ----------------------------
+// SAVE Student
+// ----------------------------
+function doPost(e) {
+
+  const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(SHEET_NAME);
+
+  const student = JSON.parse(e.postData.contents);
+
+  sheet.appendRow([
+
+      new Date().getTime(),
+
+      student.studentName,
+
+      student.fatherName,
+
+      student.dob,
+
+      student.mobileNumber,
+
+      student.studentClass
+
+  ]);
+
+  return ContentService
+      .createTextOutput(JSON.stringify({
+
+          status: "success"
+
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+}
+```
+```javascript
+// ======================================
+// Google Apps Script URL
+// ======================================
+
+const API_URL =
+"https://script.google.com/macros/s/PASTE_YOUR_WEB_APP_URL/exec";
+
+
+// ======================================
+// Load Students
+// ======================================
+
+async function loadStudents() {
+
+    try {
+
+        const response = await fetch(API_URL);
+
+        students = await response.json();
+
+        renderStudents();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Unable to load students.");
+
+    }
+
+}
+
+
+// ======================================
+// Save Student
+// ======================================
+
+async function saveStudent() {
+
+    const student = {
+
+        studentName: document.getElementById("studentName").value,
+
+        fatherName: document.getElementById("fatherName").value,
+
+        dob: document.getElementById("dob").value,
+
+        mobileNumber: document.getElementById("mobileNumber").value,
+
+        studentClass: document.getElementById("studentClass").value
+
+    };
+
+    try {
+
+        await fetch(API_URL, {
+
+            method: "POST",
+
+            body: JSON.stringify(student)
+
+        });
+
+        alert("Student Saved Successfully");
+
+        closeStudentModal();
+
+        clearForm();
+
+        loadStudents();
+
+    } catch (error) {
+
+        alert("Unable to Save Student");
+
+    }
+
+}
+
+
+// ======================================
+// Window Load
+// ======================================
+
+window.onload = function () {
+
+    loadStudents();
+
+};
+```
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Attendance</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+<link rel="stylesheet" href="css/attendance.css">
+
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<div class="top-bar">
+
+<h2>Attendance</h2>
+
+<input
+type="date"
+id="attendanceDate">
+
+</div>
+
+<div style="margin:15px 0;">
+
+<select id="classSelect" onchange="loadAttendance()">
+
+<option value="">Select Class</option>
+
+<option value="1">Class 1</option>
+
+<option value="2">Class 2</option>
+
+<option value="3">Class 3</option>
+
+<option value="4">Class 4</option>
+
+<option value="5">Class 5</option>
+
+<option value="6">Class 6</option>
+
+<option value="7">Class 7</option>
+
+<option value="8">Class 8</option>
+
+</select>
+
+</div>
+
+<div id="attendanceList">
+
+</div>
+
+<br>
+
+<button
+class="login-btn"
+onclick="saveAttendance()">
+
+Save Attendance
+
+</button>
+
+</div>
+
+<script src="js/attendance.js"></script>
+
+</body>
+
+</html>
+```
+
+```javascript
+// =====================================
+// attendance.js
+// Arul Siragugal Academy
+// =====================================
+
+let attendanceStudents = [];
+
+const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
+
+// ============================
+// Load Students by Class
+// ============================
+
+async function loadAttendance() {
+
+    const selectedClass =
+        document.getElementById("classSelect").value;
+
+    if (selectedClass == "") {
+
+        document.getElementById("attendanceList").innerHTML = "";
+
+        return;
+
+    }
+
+    try {
+
+        const response = await fetch(
+            API_URL + "?action=getStudents&class=" + selectedClass
+        );
+
+        attendanceStudents = await response.json();
+
+        renderAttendance();
+
+    }
+
+    catch(error){
+
+        alert("Unable to load students.");
+
+    }
+
+}
+
+// ============================
+// Render Attendance List
+// ============================
+
+function renderAttendance(){
+
+    const list =
+    document.getElementById("attendanceList");
+
+    list.innerHTML = "";
+
+    attendanceStudents.forEach(student=>{
+
+        list.innerHTML += `
+
+        <div class="card">
+
+            <h3>${student.studentName}</h3>
+
+            <p>${student.fatherName}</p>
+
+            <label>
+
+            <input
+            type="checkbox"
+            id="att_${student.id}"
+            checked>
+
+            Present
+
+            </label>
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+// ============================
+// Save Attendance
+// ============================
+
+async function saveAttendance(){
+
+    const date =
+    document.getElementById("attendanceDate").value;
+
+    let attendance=[];
+
+    attendanceStudents.forEach(student=>{
+
+        attendance.push({
+
+            id:student.id,
+
+            name:student.studentName,
+
+            class:student.studentClass,
+
+            status:document
+            .getElementById("att_"+student.id)
+            .checked
+            ?"Present"
+            :"Absent",
+
+            date:date
+
+        });
+
+    });
+
+    try{
+
+        await fetch(API_URL,{
+
+            method:"POST",
+
+            body:JSON.stringify({
+
+                action:"saveAttendance",
+
+                data:attendance
+
+            })
+
+        });
+
+        alert("Attendance Saved Successfully");
+
+    }
+
+    catch(error){
+
+        alert("Unable to Save Attendance");
+
+    }
+
+}
+
+// ============================
+// Today's Date
+// ============================
+
+window.onload=function(){
+
+    document.getElementById("attendanceDate").value=
+    new Date().toISOString().split("T")[0];
+
+}
+```
+```javascript
+// ==========================================
+// Attendance API
+// ==========================================
+
+const STUDENT_SHEET = "Students";
+const ATTENDANCE_SHEET = "Attendance";
+
+function doGet(e) {
+
+  const action = e.parameter.action;
+
+  // ----------------------------
+  // Get Students By Class
+  // ----------------------------
+
+  if (action == "getStudents") {
+
+    const cls = e.parameter.class;
+
+    const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(STUDENT_SHEET);
+
+    const values = sheet.getDataRange().getValues();
+
+    let students = [];
+
+    for (let i = 1; i < values.length; i++) {
+
+      if (values[i][5] == cls) {
+
+        students.push({
+
+          id: values[i][0],
+
+          studentName: values[i][1],
+
+          fatherName: values[i][2],
+
+          dob: values[i][3],
+
+          mobileNumber: values[i][4],
+
+          studentClass: values[i][5]
+
+        });
+
+      }
+
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify(students))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  }
+
+}
+
+
+// ==========================================
+// Save Attendance
+// ==========================================
+
+function doPost(e) {
+
+  const request = JSON.parse(e.postData.contents);
+
+  if (request.action == "saveAttendance") {
+
+    const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(ATTENDANCE_SHEET);
+
+    request.data.forEach(function(student){
+
+      sheet.appendRow([
+
+        student.date,
+
+        student.id,
+
+        student.name,
+
+        student.class,
+
+        student.status
+
+      ]);
+
+    });
+
+    return ContentService
+      .createTextOutput("Success");
+
+  }
+
+}
+```
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Fee Management</title>
+
+<link rel="stylesheet"
+href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<div class="top-bar">
+
+<h2>Fee Management</h2>
+
+</div>
+
+<input
+type="text"
+id="searchFee"
+placeholder="Search Student"
+onkeyup="searchFee()">
+
+<br><br>
+
+<div id="feeList">
+
+</div>
+
+</div>
+
+<script src="js/fee.js"></script>
+
+</body>
+
+</html>
+``````javascript
+// =====================================
+// fee.js
+// Arul Siragugal Academy
+// =====================================
+
+const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL";
+
+let feeStudents = [];
+let selectedStudent = null;
+
+// ===============================
+// Load Fee Details
+// ===============================
+
+async function loadFees() {
+
+    try {
+
+        const response = await fetch(API_URL + "?action=getFees");
+
+        feeStudents = await response.json();
+
+        renderFees();
+
+    } catch (e) {
+
+        alert("Unable to load fee details.");
+
+    }
+
+}
+
+// ===============================
+// Render Fee Cards
+// ===============================
+
+function renderFees() {
+
+    const list = document.getElementById("feeList");
+
+    list.innerHTML = "";
+
+    feeStudents.forEach(student => {
+
+        list.innerHTML += `
+
+        <div class="card">
+
+            <h3>${student.studentName}</h3>
+
+            <p><b>Class :</b> ${student.studentClass}</p>
+
+            <p>Monthly Fee : ₹${student.monthlyFee}</p>
+
+            <p>Extra Charge : ₹${student.extraCharge}</p>
+
+            <p>Paid : ₹${student.paidAmount}</p>
+
+            <p style="color:red;">
+                Pending : ₹${student.pendingAmount}
+            </p>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:15px;">
+
+                <button
+                    class="login-btn"
+                    onclick="payFee(${student.id})">
+
+                    💰 Pay
+
+                </button>
+
+                <button
+                    class="login-btn"
+                    style="background:#25D366;"
+                    onclick="sendReminder('${student.mobile}')">
+
+                    💬 WhatsApp
+
+                </button>
+
+                <button
+                    class="login-btn"
+                    style="background:#16a34a;"
+                    onclick="callParent('${student.mobile}')">
+
+                    📞 Call
+
+                </button>
+
+            </div>
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+// ===============================
+// Pay Fee
+// ===============================
+
+function payFee(id) {
+
+    selectedStudent =
+        feeStudents.find(x => x.id == id);
+
+    const amount =
+        prompt("Enter Paid Amount");
+
+    if (!amount) return;
+
+    saveFee(amount);
+
+}
+
+// ===============================
+// Save Fee
+// ===============================
+
+async function saveFee(amount) {
+
+    try {
+
+        await fetch(API_URL, {
+
+            method: "POST",
+
+            body: JSON.stringify({
+
+                action: "payFee",
+
+                studentId: selectedStudent.id,
+
+                paidAmount: amount
+
+            })
+
+        });
+
+        alert("Payment Saved");
+
+        loadFees();
+
+    }
+
+    catch (e) {
+
+        alert("Payment Failed");
+
+    }
+
+}
+
+// ===============================
+// WhatsApp Reminder
+// ===============================
+
+function sendReminder(number) {
+
+    const msg =
+        encodeURIComponent(
+            "Dear Parent, Kindly pay the pending tuition fee. Thank you."
+        );
+
+    window.open(
+        "https://wa.me/91" +
+        number +
+        "?text=" +
+        msg,
+        "_blank"
+    );
+
+}
+
+// ===============================
+// Call Parent
+// ===============================
+
+function callParent(number) {
+
+    window.location.href = "tel:" + number;
+
+}
+
+// ===============================
+// Search
+// ===============================
+
+function searchFee() {
+
+    const key =
+        document.getElementById("searchFee")
+        .value
+        .toLowerCase();
+
+    document.querySelectorAll("#feeList .card")
+        .forEach(card => {
+
+            if (
+                card.innerText
+                    .toLowerCase()
+                    .includes(key)
+            ) {
+
+                card.style.display = "";
+
+            } else {
+
+                card.style.display = "none";
+
+            }
+
+        });
+
+}
+
+// ===============================
+// Init
+// ===============================
+
+window.onload = function () {
+
+    loadFees();
+
+};
+``````javascript
+// ==========================================
+// Fee Management API
+// ==========================================
+
+const FEE_SHEET = "Fees";
+
+// ===============================
+// GET Fees
+// URL:
+// ?action=getFees
+// ===============================
+function getFees() {
+
+  const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(FEE_SHEET);
+
+  const values = sheet.getDataRange().getValues();
+
+  let data = [];
+
+  for (let i = 1; i < values.length; i++) {
+
+    data.push({
+
+      id: values[i][0],
+
+      studentName: values[i][1],
+
+      studentClass: values[i][2],
+
+      mobile: values[i][3],
+
+      monthlyFee: Number(values[i][4]),
+
+      extraCharge: Number(values[i][5]),
+
+      paidAmount: Number(values[i][6]),
+
+      pendingAmount: Number(values[i][7])
+
+    });
+
+  }
+
+  return data;
+
+}
+
+// ===============================
+// Pay Fee
+// ===============================
+function payFee(studentId, amount) {
+
+  const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(FEE_SHEET);
+
+  const values = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+
+    if (values[i][0] == studentId) {
+
+      const monthly = Number(values[i][4]);
+
+      const extra = Number(values[i][5]);
+
+      const oldPaid = Number(values[i][6]);
+
+      const newPaid = oldPaid + Number(amount);
+
+      const pending = (monthly + extra) - newPaid;
+
+      sheet.getRange(i + 1, 7).setValue(newPaid);
+
+      sheet.getRange(i + 1, 8).setValue(pending);
+
+      break;
+
+    }
+
+  }
+
+}
+
+// ===============================
+// Total Income
+// ===============================
+function getMonthlyIncome() {
+
+  const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(FEE_SHEET);
+
+  const values = sheet.getDataRange().getValues();
+
+  let total = 0;
+
+  for (let i = 1; i < values.length; i++) {
+
+    total += Number(values[i][6]);
+
+  }
+
+  return total;
+
+}
+
+// ===============================
+// Total Pending
+// ===============================
+function getPendingAmount() {
+
+  const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(FEE_SHEET);
+
+  const values = sheet.getDataRange().getValues();
+
+  let total = 0;
+
+  for (let i = 1; i < values.length; i++) {
+
+    total += Number(values[i][7]);
+
+  }
+
+  return total;
+
+}
+```
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1.0">
+
+<title>Reports</title>
+
+<link rel="stylesheet"
+href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<div class="top-bar">
+
+<h2>Reports & Analytics</h2>
+
+</div>
+
+<div class="cards">
+
+<div class="card blue">
+
+<h3>Total Students</h3>
+
+<p id="totalStudents">0</p>
+
+</div>
+
+<div class="card green">
+
+<h3>Today's Attendance</h3>
+
+<p id="todayAttendance">0</p>
+
+</div>
+
+<div class="card orange">
+
+<h3>Monthly Collection</h3>
+
+<p id="monthlyCollection">₹0</p>
+
+</div>
+
+<div class="card red">
+
+<h3>Pending Fees</h3>
+
+<p id="pendingFees">₹0</p>
+
+</div>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<h3>Class Wise Students</h3>
+
+<table width="100%">
+
+<tr>
+
+<th>Class</th>
+
+<th>Students</th>
+
+</tr>
+
+<tbody id="classWiseTable">
+
+</tbody>
+
+</table>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<h3>Quick Reports</h3>
+
+<button class="login-btn"
+onclick="downloadStudentReport()">
+
+📄 Student Report
+
+</button>
+
+<br><br>
+
+<button class="login-btn"
+onclick="downloadFeeReport()">
+
+💰 Fee Report
+
+</button>
+
+<br><br>
+
+<button class="login-btn"
+onclick="downloadAttendanceReport()">
+
+✅ Attendance Report
+
+</button>
+
+</div>
+
+</div>
+
+<script src="js/report.js"></script>
+
+</body>
+
+</html>
+```
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<div class="top-bar">
+
+<h2>⚙️ Settings</h2>
+
+</div>
+
+<div class="card">
+
+<h3>Academy Information</h3>
+
+<label>Academy Name</label>
+<input type="text"
+id="academyName"
+value="Arul Siragugal Academy">
+
+<label>Teacher Name</label>
+<input type="text"
+id="teacherName">
+
+<label>Mobile Number</label>
+<input type="tel"
+id="teacherMobile">
+
+<button
+class="login-btn"
+onclick="saveSettings()">
+
+Save
+
+</button>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<h3>Default Monthly Fee</h3>
+
+<input
+type="number"
+id="defaultFee">
+
+<button
+class="login-btn"
+onclick="saveFeeSettings()">
+
+Save Fee
+
+</button>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<h3>Backup</h3>
+
+<button
+class="login-btn"
+onclick="backupData()">
+
+Backup Google Sheet
+
+</button>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<h3>Logout</h3>
+
+<button
+class="login-btn"
+style="background:red;"
+onclick="logout()">
+
+Logout
+
+</button>
+
+</div>
+
+</div>
+
+<script src="js/settings.js"></script>
+
+</body>
+</html>
+```
+
+
 
