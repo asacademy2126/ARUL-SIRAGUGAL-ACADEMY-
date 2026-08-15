@@ -1,652 +1,1661 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arul Siragugal Academy - Tuition Management System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arul Siragugal Academy - Tuition Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#2563EB">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+body { background:#f5f7fb; color:#222; }
 
-    <link rel="manifest" href="manifest.json">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+/* ---------------- Login Page ---------------- */
+.login-page { min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px; }
+.logo-area { text-align:center; margin-bottom:25px; }
+.logo { width:90px; height:90px; object-fit:cover; border-radius:50%; box-shadow:0 5px 15px rgba(0,0,0,.15); background-color:#2563eb; }
+.logo-area h1 { margin-top:15px; color:#2563eb; font-size:26px; font-weight:700; }
+.logo-area p { color:#777; margin-top:5px; }
+.login-card { width:100%; max-width:380px; background:#fff; border-radius:20px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,.08); }
+.login-card h2 { text-align:center; margin-bottom:25px; }
+.input-group { margin-bottom:18px; }
+.input-group label { display:block; margin-bottom:8px; font-size:14px; font-weight:600; }
+.input-group input, .input-group select, .input-group textarea {
+  width:100%; padding:14px; border:1px solid #d7d7d7; border-radius:12px; font-size:15px; outline:none; transition:.3s; background:#fff;
+}
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color:#2563eb; box-shadow:0 0 8px rgba(37,99,235,.2); }
+.btn { width:100%; padding:14px; border:none; border-radius:12px; background:#2563eb; color:#fff; font-size:16px; font-weight:600; cursor:pointer; transition:.3s; }
+.btn:hover { background:#1d4ed8; }
+.btn.gray { background:#e5e7eb; color:#333; }
+.btn.red { background:#ef4444; }
+.btn.green { background:#16a34a; }
+.btn.small { width:auto; padding:10px 16px; font-size:14px; }
+.btn-row { display:flex; gap:10px; margin-top:10px; }
+.btn-row .btn { flex:1; }
+.extra-links { margin-top:18px; text-align:center; }
+.extra-links a { color:#2563eb; text-decoration:none; font-size:14px; }
+.features { width:100%; max-width:380px; margin-top:25px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.feature { background:#fff; border-radius:15px; padding:15px; text-align:center; box-shadow:0 5px 12px rgba(0,0,0,.05); }
+.feature .icon { font-size:26px; margin-bottom:8px; }
+.feature span { font-size:13px; font-weight:600; }
 
-    <meta name="theme-color" content="#2563EB">
+/* ---------------- App Shell ---------------- */
+.dashboard { padding:15px; padding-bottom:90px; max-width:600px; margin:0 auto; }
+.top-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.top-bar h2 { font-size:22px; }
+.profile { width:45px; height:45px; background:#2563eb; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; }
 
-    <style>
-        /* ==========================================
-           Arul Siragugal Academy - Global Styles
-        ========================================== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
+.view-header { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+.view-header .back { font-size:22px; cursor:pointer; background:#fff; width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,.06); flex-shrink:0; }
+.view-header h2 { font-size:20px; flex:1; }
 
-        body {
-            background: #f5f7fb;
-            color: #222;
-        }
+.cards { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+.card { background:#fff; border-radius:18px; padding:18px; box-shadow:0 5px 15px rgba(0,0,0,.05); }
+.card h3 { font-size:14px; color:#666; }
+.card p { margin-top:10px; font-size:28px; font-weight:bold; }
+.blue { background:#2563eb; color:#fff; } .blue h3 { color:#e0e7ff; }
+.green { background:#16a34a; color:#fff; } .green h3 { color:#dcfce7; }
+.orange { background:#f59e0b; color:#fff; } .orange h3 { color:#fef3c7; }
+.red { background:#ef4444; color:#fff; } .red h3 { color:#fee2e2; }
 
-        /* ---------------- Login Page ---------------- */
-        .login-page {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+.quick-menu { margin-top:25px; display:grid; grid-template-columns:repeat(3,1fr); gap:15px; }
+.menu-item { background:#fff; border-radius:18px; padding:20px 10px; text-align:center; box-shadow:0 5px 12px rgba(0,0,0,.05); cursor:pointer; transition:.3s; }
+.menu-item:hover { transform:translateY(-3px); }
+.menu-item span { display:block; margin-top:8px; font-size:14px; font-weight:600; }
 
-        .logo-area {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+.bottom-nav { position:fixed; bottom:0; left:0; width:100%; background:#fff; display:flex; justify-content:space-around; padding:12px 0; box-shadow:0 -5px 15px rgba(0,0,0,.08); z-index:100; }
+.bottom-nav a { text-decoration:none; color:#666; font-size:13px; text-align:center; cursor:pointer; }
+.bottom-nav a.active { color:#2563eb; font-weight:bold; }
 
-        .logo {
-            width: 90px;
-            height: 90px;
-            object-fit: cover;
-            border-radius: 50%;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, .15);
-            background-color: #2563eb;
-        }
+/* ---------------- Module lists / forms ---------------- */
+.toolbar { display:flex; gap:10px; margin-bottom:16px; }
+.toolbar input, .toolbar select { flex:1; padding:12px; border:1px solid #d7d7d7; border-radius:12px; font-size:14px; background:#fff; }
+.fab { width:44px; height:44px; min-width:44px; border-radius:12px; background:#2563eb; color:#fff; border:none; font-size:22px; cursor:pointer; flex-shrink:0; }
 
-        .logo-area h1 {
-            margin-top: 15px;
-            color: #2563eb;
-            font-size: 26px;
-            font-weight: 700;
-        }
+.list-item { background:#fff; border-radius:16px; padding:14px 16px; margin-bottom:10px; box-shadow:0 4px 10px rgba(0,0,0,.05); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.list-item .info { min-width:0; }
+.list-item .info h4 { font-size:15px; margin-bottom:3px; }
+.list-item .info p { font-size:13px; color:#777; }
+.list-item .actions { display:flex; gap:8px; flex-shrink:0; }
+.icon-btn { background:#f1f3f9; border:none; width:34px; height:34px; border-radius:9px; cursor:pointer; font-size:15px; }
+.icon-btn.del { background:#fee2e2; }
+.badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+.badge.present, .badge.paid { background:#dcfce7; color:#16a34a; }
+.badge.absent, .badge.pending { background:#fee2e2; color:#ef4444; }
 
-        .logo-area p {
-            color: #777;
-            margin-top: 5px;
-        }
+.form-panel { background:#fff; border-radius:18px; padding:20px; margin-bottom:18px; box-shadow:0 5px 15px rgba(0,0,0,.06); display:none; }
+.form-panel.open { display:block; }
+.form-panel h3 { margin-bottom:16px; }
 
-        .login-card {
-            width: 100%;
-            max-width: 380px;
-            background: #fff;
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
-        }
+.empty-state { text-align:center; padding:40px 10px; color:#999; }
+.empty-state div { font-size:40px; margin-bottom:10px; }
 
-        .login-card h2 {
-            text-align: center;
-            margin-bottom: 25px;
-            color: #222;
-        }
+.att-row { display:flex; align-items:center; justify-content:space-between; background:#fff; padding:12px 16px; border-radius:14px; margin-bottom:8px; box-shadow:0 3px 8px rgba(0,0,0,.05); }
+.att-toggle { display:flex; gap:6px; }
+.att-toggle button { padding:8px 14px; border-radius:10px; border:1px solid #d7d7d7; background:#fff; font-size:13px; font-weight:600; cursor:pointer; }
+.att-toggle button.p-active { background:#16a34a; color:#fff; border-color:#16a34a; }
+.att-toggle button.a-active { background:#ef4444; color:#fff; border-color:#ef4444; }
 
-        .input-group {
-            margin-bottom: 18px;
-        }
+.sync-banner { background:#fef3c7; color:#92400e; padding:10px 14px; border-radius:12px; font-size:13px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.sync-banner a { color:#2563eb; font-weight:600; text-decoration:none; }
+.sync-ok { background:#dcfce7; color:#166534; }
+.toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 20px; border-radius:30px; font-size:13px; z-index:999; opacity:0; transition:.3s; pointer-events:none; }
+.toast.show { opacity:1; }
 
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 600;
-        }
+.section-title { font-size:16px; font-weight:600; margin:20px 0 10px; }
 
-        .input-group input {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid #d7d7d7;
-            border-radius: 12px;
-            font-size: 15px;
-            outline: none;
-            transition: .3s;
-        }
+.collapsible { background:#fff; border-radius:14px; padding:4px 16px; margin-bottom:16px; box-shadow:0 3px 8px rgba(0,0,0,.05); }
+.collapsible summary { padding:12px 0; font-weight:600; font-size:14px; cursor:pointer; color:#2563eb; list-style:none; }
+.collapsible summary::-webkit-details-marker { display:none; }
+.collapsible summary::before { content:'▸ '; }
+.collapsible[open] summary::before { content:'▾ '; }
+.collapsible[open] { padding-bottom:16px; }
+.subject-fee-row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+.subject-fee-row input { flex:1; padding:12px; border:1px solid #d7d7d7; border-radius:10px; font-size:14px; }
+.subject-fee-row button { flex-shrink:0; background:#fee2e2; border:none; width:38px; height:38px; border-radius:9px; cursor:pointer; }
 
-        .input-group input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 8px rgba(37, 99, 235, .2);
-        }
+.cal-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.cal-nav button { background:#fff; border:1px solid #d7d7d7; border-radius:10px; padding:8px 14px; cursor:pointer; font-size:14px; }
+.cal-nav strong { font-size:15px; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:10px; }
+.cal-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:12px; background:#f1f3f9; color:#999; }
+.cal-day.cal-present { background:#dcfce7; color:#16a34a; font-weight:600; }
+.cal-day.cal-absent { background:#fee2e2; color:#ef4444; font-weight:600; }
 
-        .login-btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            background: #2563eb;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: .3s;
-        }
+.profile-header { text-align:center; margin-bottom:18px; }
+.profile-header .avatar { width:70px; height:70px; border-radius:50%; background:#2563eb; color:#fff; font-size:26px; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; }
+.profile-header h2 { font-size:20px; }
+.profile-header p { color:#777; font-size:13px; margin-top:4px; }
 
-        .login-btn:hover {
-            background: #1d4ed8;
-        }
-
-        .extra-links {
-            margin-top: 18px;
-            text-align: center;
-        }
-
-        .extra-links a {
-            color: #2563eb;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .features {
-            width: 100%;
-            max-width: 380px;
-            margin-top: 25px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        .feature {
-            background: #fff;
-            border-radius: 15px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 5px 12px rgba(0, 0, 0, .05);
-        }
-
-        .feature .icon {
-            font-size: 26px;
-            margin-bottom: 8px;
-        }
-
-        .feature span {
-            font-size: 13px;
-            font-weight: 600;
-        }
-
-        /* ---------------- Dashboard ---------------- */
-        .dashboard {
-            padding: 15px;
-            padding-bottom: 90px; /* Space for bottom navigation */
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .top-bar h2 {
-            font-size: 22px;
-        }
-
-        .profile {
-            width: 45px;
-            height: 45px;
-            background: #2563eb;
-            color: #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 18px;
-            padding: 18px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, .05);
-        }
-
-        .card h3 {
-            font-size: 14px;
-            color: #666;
-        }
-
-        .card p {
-            margin-top: 10px;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .blue {
-            background: #2563eb;
-            color: #fff;
-        }
-
-        .blue h3 { color: #e0e7ff; }
-
-        .green {
-            background: #16a34a;
-            color: #fff;
-        }
-
-        .green h3 { color: #dcfce7; }
-
-        .orange {
-            background: #f59e0b;
-            color: #fff;
-        }
-
-        .orange h3 { color: #fef3c7; }
-
-        .red {
-            background: #ef4444;
-            color: #fff;
-        }
-
-        .red h3 { color: #fee2e2; }
-
-        /* Quick Menu */
-        .quick-menu {
-            margin-top: 25px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
-
-        .menu-item {
-            background: #fff;
-            border-radius: 18px;
-            padding: 20px 10px;
-            text-align: center;
-            box-shadow: 0 5px 12px rgba(0, 0, 0, .05);
-            cursor: pointer;
-            transition: .3s;
-        }
-
-        .menu-item:hover {
-            transform: translateY(-3px);
-        }
-
-        .menu-item span {
-            display: block;
-            margin-top: 8px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #fff;
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 0;
-            box-shadow: 0 -5px 15px rgba(0, 0, 0, .08);
-            z-index: 100;
-        }
-
-        .bottom-nav a {
-            text-decoration: none;
-            color: #666;
-            font-size: 13px;
-            text-align: center;
-        }
-
-        .bottom-nav a.active {
-            color: #2563eb;
-            font-weight: bold;
-        }
-
-        /* Responsive Mobile Adjustments */
-        @media(max-width:480px) {
-            .logo-area h1 {
-                font-size: 22px;
-            }
-
-            .login-card {
-                padding: 20px;
-            }
-
-            .card p {
-                font-size: 24px;
-            }
-
-            .quick-menu {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
+@media(max-width:480px) {
+  .logo-area h1 { font-size:22px; }
+  .login-card { padding:20px; }
+  .card p { font-size:24px; }
+  .quick-menu { grid-template-columns:repeat(2,1fr); }
+}
+</style>
 </head>
 <body>
 
-    <!-- ================= Login View ================= -->
-    <div id="loginView" class="login-page">
-        <div class="logo-area">
-            <img src="images/logo.png" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/90?text=ASA'">
-            <h1>Arul Siragugal Academy</h1>
-            <p>Tuition Management System</p>
-        </div>
+<!-- ================= Login View ================= -->
+<div id="loginView" class="login-page">
+  <div class="logo-area">
+    <img src="images/logo.png" alt="Logo" class="logo" onerror="this.src='https://via.placeholder.com/90?text=ASA'">
+    <h1>Arul Siragugal Academy</h1>
+    <p>Tuition Management System</p>
+  </div>
+  <div class="login-card">
+    <h2>Teacher Login</h2>
+    <div class="input-group">
+      <label for="teacherId">Teacher ID</label>
+      <input type="text" id="teacherId" placeholder="Enter Teacher ID (e.g. admin)">
+    </div>
+    <div class="input-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter Password (e.g. 1234)">
+    </div>
+    <button class="btn" onclick="login()">LOGIN</button>
+    <div class="extra-links">
+      <a href="#" onclick="alert('Please contact admin to reset password.'); return false;">Forgot Password?</a>
+    </div>
+  </div>
+  <div class="features">
+    <div class="feature"><div class="icon">👨‍🎓</div><span>Students</span></div>
+    <div class="feature"><div class="icon">✅</div><span>Attendance</span></div>
+    <div class="feature"><div class="icon">💰</div><span>Fees</span></div>
+    <div class="feature"><div class="icon">📊</div><span>Reports</span></div>
+    <div class="feature"><div class="icon">📚</div><span>Homework</span></div>
+    <div class="feature"><div class="icon">📝</div><span>Marks</span></div>
+  </div>
+</div>
 
-        <div class="login-card">
-            <h2>Teacher Login</h2>
+<!-- ================= Dashboard View ================= -->
+<div id="dashboardView" class="dashboard" style="display:none;">
+  <div id="syncBannerHost"></div>
+  <div class="top-bar">
+    <div>
+      <h2>Welcome 👋</h2>
+      <h3 id="teacherName">Teacher</h3>
+      <small id="todayDate"></small>
+    </div>
+    <div class="profile">AS</div>
+  </div>
 
-            <div class="input-group">
-                <label for="teacherId">Teacher ID</label>
-                <input type="text" id="teacherId" placeholder="Enter Teacher ID (e.g. admin)">
-            </div>
+  <div class="cards">
+    <div class="card blue"><h3>Total Students</h3><p id="totalStudents">0</p></div>
+    <div class="card green"><h3>Present Today</h3><p id="presentStudents">0</p></div>
+    <div class="card red"><h3>Absent Today</h3><p id="absentStudents">0</p></div>
+    <div class="card orange"><h3>Pending Fees</h3><p id="pendingFees">0</p></div>
+  </div>
 
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Enter Password (e.g. 1234)">
-            </div>
+  <div class="card" style="margin-top:20px;">
+    <h3>Monthly Income</h3>
+    <p id="monthlyIncome">₹0</p>
+  </div>
 
-            <button class="login-btn" onclick="login()">LOGIN</button>
+  <h2 style="margin-top:25px; margin-bottom:15px;">Quick Menu</h2>
+  <div class="quick-menu">
+    <div class="menu-item" onclick="openView('students')"><div style="font-size:34px;">👨‍🎓</div><span>Students</span></div>
+    <div class="menu-item" onclick="openView('attendance')"><div style="font-size:34px;">✅</div><span>Attendance</span></div>
+    <div class="menu-item" onclick="openView('fees')"><div style="font-size:34px;">💰</div><span>Fees</span></div>
+    <div class="menu-item" onclick="openView('homework')"><div style="font-size:34px;">📚</div><span>Homework</span></div>
+    <div class="menu-item" onclick="openView('marks')"><div style="font-size:34px;">📝</div><span>Marks</span></div>
+    <div class="menu-item" onclick="openView('reports')"><div style="font-size:34px;">📊</div><span>Reports</span></div>
+  </div>
 
-            <div class="extra-links">
-                <a href="#" onclick="alert('Please contact admin to reset password.')">Forgot Password?</a>
-            </div>
-        </div>
+  <div style="margin-top:30px;">
+    <button class="btn red" onclick="logout()">Logout</button>
+  </div>
 
-        <div class="features">
-            <div class="feature">
-                <div class="icon">👨‍🎓</div>
-                <span>Students</span>
-            </div>
-            <div class="feature">
-                <div class="icon">✅</div>
-                <span>Attendance</span>
-            </div>
-            <div class="feature">
-                <div class="icon">💰</div>
-                <span>Fees</span>
-            </div>
-            <div class="feature">
-                <div class="icon">📊</div>
-                <span>Reports</span>
-            </div>
-            <div class="feature">
-                <div class="icon">📚</div>
-                <span>Homework</span>
-            </div>
-            <div class="feature">
-                <div class="icon">📝</div>
-                <span>Marks</span>
-            </div>
-        </div>
+  <div class="bottom-nav">
+    <a onclick="openView('dashboard')" id="navHome" class="active">🏠<br>Home</a>
+    <a onclick="openView('students')">👨‍🎓<br>Students</a>
+    <a onclick="openView('attendance')">✅<br>Attendance</a>
+    <a onclick="openView('fees')">💰<br>Fees</a>
+    <a onclick="openView('settings')">⚙️<br>Settings</a>
+  </div>
+</div>
+
+<!-- ================= Students View ================= -->
+<div id="studentsView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('dashboard')">←</div>
+    <h2>Students</h2>
+    <button class="fab" onclick="toggleForm('studentForm')">+</button>
+  </div>
+
+  <div class="form-panel" id="studentForm">
+    <h3 id="studentFormTitle">Add Student</h3>
+    <input type="hidden" id="studentId">
+    <div class="input-group"><label>Full Name</label><input id="sName" placeholder="Student name"></div>
+    <div class="input-group"><label>Class</label><input id="sClass" placeholder="e.g. 10th"></div>
+    <div class="input-group"><label>Student Phone</label><input id="sPhone" placeholder="Optional"></div>
+    <div class="input-group"><label>Parent Phone (with country code, e.g. 91XXXXXXXXXX)</label><input id="sParentPhone" placeholder="e.g. 919876543210"></div>
+
+    <div class="input-group">
+      <label><input type="checkbox" id="sFeeWise" onchange="toggleFeeMode()" style="width:auto; margin-right:8px;"> Charge fee per subject instead of one flat amount</label>
     </div>
 
-    <!-- ================= Dashboard View ================= -->
-    <div id="dashboardView" class="dashboard" style="display: none;">
-        <!-- Header -->
-        <div class="top-bar">
-            <div>
-                <h2>Welcome 👋</h2>
-                <h3 id="teacherName">Teacher</h3>
-                <small id="todayDate"></small>
-            </div>
-            <div class="profile">AS</div>
-        </div>
-
-        <!-- Dashboard Cards -->
-        <div class="cards">
-            <div class="card blue">
-                <h3>Total Students</h3>
-                <p id="totalStudents">0</p>
-            </div>
-            <div class="card green">
-                <h3>Present Today</h3>
-                <p id="presentStudents">0</p>
-            </div>
-            <div class="card red">
-                <h3>Absent Today</h3>
-                <p id="absentStudents">0</p>
-            </div>
-            <div class="card orange">
-                <h3>Pending Fees</h3>
-                <p id="pendingFees">0</p>
-            </div>
-        </div>
-
-        <!-- Monthly Income -->
-        <div class="card" style="margin-top:20px;">
-            <h3>Monthly Income</h3>
-            <p id="monthlyIncome">₹0</p>
-        </div>
-
-        <!-- Quick Menu -->
-        <h2 style="margin-top:25px; margin-bottom:15px;">Quick Menu</h2>
-
-        <div class="quick-menu">
-            <div class="menu-item" onclick="comingSoon('Students')">
-                <div style="font-size:34px;">👨‍🎓</div>
-                <span>Students</span>
-            </div>
-            <div class="menu-item" onclick="comingSoon('Attendance')">
-                <div style="font-size:34px;">✅</div>
-                <span>Attendance</span>
-            </div>
-            <div class="menu-item" onclick="comingSoon('Fees')">
-                <div style="font-size:34px;">💰</div>
-                <span>Fees</span>
-            </div>
-            <div class="menu-item" onclick="comingSoon('Homework')">
-                <div style="font-size:34px;">📚</div>
-                <span>Homework</span>
-            </div>
-            <div class="menu-item" onclick="comingSoon('Marks')">
-                <div style="font-size:34px;">📝</div>
-                <span>Marks</span>
-            </div>
-            <div class="menu-item" onclick="comingSoon('Reports')">
-                <div style="font-size:34px;">📊</div>
-                <span>Reports</span>
-            </div>
-        </div>
-
-        <!-- Logout Button -->
-        <div style="margin-top:30px;">
-            <button class="login-btn" style="background: #ef4444;" onclick="logout()">Logout</button>
-        </div>
-
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav">
-            <a href="#" class="active" onclick="return false;">
-                🏠<br>Home
-            </a>
-            <a href="#" onclick="comingSoon('Students')">
-                👨‍🎓<br>Students
-            </a>
-            <a href="#" onclick="comingSoon('Attendance')">
-                ✅<br>Attendance
-            </a>
-            <a href="#" onclick="comingSoon('Fees')">
-                💰<br>Fees
-            </a>
-            <a href="#" onclick="comingSoon('Settings')">
-                ⚙️<br>Settings
-            </a>
-        </div>
+    <div class="input-group" id="sFlatFeeGroup">
+      <label>Monthly Fee (₹)</label>
+      <input id="sFee" type="number" placeholder="e.g. 1500">
     </div>
 
-    <!-- ================= JavaScript Application Logic ================= -->
-    <script>
-        // Google Apps Script Web App URL
-        const API_URL = "";
+    <div id="sSubjectFeesGroup" style="display:none; margin-bottom:18px;">
+      <label style="display:block; margin-bottom:8px; font-size:14px; font-weight:600;">Subject-wise Monthly Fees</label>
+      <div id="subjectFeeRows"></div>
+      <button type="button" class="btn gray small" onclick="addSubjectFeeRow('','')">+ Add Subject</button>
+    </div>
 
-        // ------------------------------
-        // Application Navigation Helper
-        // ------------------------------
-        function switchView(viewName) {
-            const loginView = document.getElementById("loginView");
-            const dashboardView = document.getElementById("dashboardView");
+    <div class="input-group"><label>Admission Date</label><input id="sAdmDate" type="date"></div>
+    <div class="btn-row">
+      <button class="btn gray" onclick="toggleForm('studentForm')">Cancel</button>
+      <button class="btn" onclick="saveStudent()">Save</button>
+    </div>
+  </div>
 
-            if (viewName === "dashboard") {
-                loginView.style.display = "none";
-                dashboardView.style.display = "block";
-                
-                // Initialize Dashboard Data
-                loadTeacherName();
-                loadDashboard();
-                showToday();
-            } else {
-                dashboardView.style.display = "none";
-                loginView.style.display = "flex";
-            }
-        }
+  <div class="toolbar">
+    <input id="studentSearch" placeholder="Search students..." oninput="renderStudents()">
+    <select id="studentClassFilter" onchange="renderStudents()"><option value="">All Classes</option></select>
+  </div>
 
-        // ------------------------------
-        // Demo Login
-        // ------------------------------
-        function login() {
-            const teacherId = document.getElementById("teacherId").value.trim();
-            const password = document.getElementById("password").value.trim();
+  <div id="studentsList"></div>
+</div>
 
-            if (teacherId === "") {
-                alert("Please enter Teacher ID");
-                return;
-            }
+<!-- ================= Student Profile / Ledger View ================= -->
+<div id="profileView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('students')">←</div>
+    <h2>Student Ledger</h2>
+  </div>
 
-            if (password === "") {
-                alert("Please enter Password");
-                return;
-            }
+  <div class="profile-header">
+    <div class="avatar" id="profileAvatar">?</div>
+    <h2 id="profileName">-</h2>
+    <p id="profileMeta">-</p>
+  </div>
 
-            // Demo Credentials Check
-            if (teacherId === "admin" && password === "1234") {
-                localStorage.setItem("loggedIn", "true");
-                localStorage.setItem("teacherName", "Arul Sir");
-                
-                // Switch view without full reload
-                switchView("dashboard");
-            } else {
-                alert("Invalid Teacher ID or Password");
-            }
-        }
+  <div class="btn-row" style="margin-bottom:10px;">
+    <button class="btn gray" onclick="waMessageParent()">💬 WhatsApp</button>
+    <button class="btn gray" onclick="exportReportCard()">📄 Report Card</button>
+  </div>
 
-        // ------------------------------
-        // Auth State Check
-        // ------------------------------
-        function checkLoginStatus() {
-            const status = localStorage.getItem("loggedIn");
-            if (status === "true") {
-                switchView("dashboard");
-            } else {
-                switchView("login");
-            }
-        }
+  <div class="card orange" style="margin-bottom:20px;">
+    <h3>Fee Balance</h3>
+    <p id="profileBalance">₹0</p>
+    <small id="profileFeeSub" style="opacity:.85;"></small>
+  </div>
 
-        // ------------------------------
-        // Logout
-        // ------------------------------
-        function logout() {
-            const ok = confirm("Are you sure you want to logout?");
-            if (!ok) return;
+  <div class="section-title">Attendance</div>
+  <div class="cal-nav">
+    <button onclick="profileCalPrev()">‹ Prev</button>
+    <strong id="profileCalLabel">-</strong>
+    <button onclick="profileCalNext()">Next ›</button>
+  </div>
+  <div class="cal-grid" id="profileCalGrid"></div>
+  <p id="profileCalSummary" style="font-size:13px; color:#666; margin-bottom:10px;">-</p>
 
-            localStorage.clear();
-            document.getElementById("teacherId").value = "";
-            document.getElementById("password").value = "";
-            
-            switchView("login");
-        }
+  <div class="section-title">Payment History</div>
+  <div id="profileFeesList"></div>
 
-        // ------------------------------
-        // Load Teacher Name
-        // ------------------------------
-        function loadTeacherName() {
-            const teacher = localStorage.getItem("teacherName");
-            const el = document.getElementById("teacherName");
+  <div class="section-title">Performance</div>
+  <div id="profileChartHost" class="card" style="margin-bottom:14px;">
+    <canvas id="profileChart" height="180"></canvas>
+  </div>
+  <div id="profileChartEmpty" class="empty-state" style="display:none; padding:20px;">Add marks to see a performance chart.</div>
 
-            if (el && teacher) {
-                el.innerHTML = teacher;
-            }
-        }
+  <div class="section-title">Marks</div>
+  <div id="profileMarksList"></div>
 
-        // ------------------------------
-        // Dashboard Demo Data
-        // ------------------------------
-        function loadDashboard() {
-            const totalStudents = document.getElementById("totalStudents");
-            const presentStudents = document.getElementById("presentStudents");
-            const absentStudents = document.getElementById("absentStudents");
-            const pendingFees = document.getElementById("pendingFees");
-            const monthlyIncome = document.getElementById("monthlyIncome");
+  <div class="section-title">Recent Homework (Class)</div>
+  <div id="profileHomeworkList"></div>
 
-            if (totalStudents) totalStudents.innerHTML = "126";
-            if (presentStudents) presentStudents.innerHTML = "104";
-            if (absentStudents) absentStudents.innerHTML = "22";
-            if (pendingFees) pendingFees.innerHTML = "18";
-            if (monthlyIncome) monthlyIncome.innerHTML = "₹82,500";
-        }
+  <button class="btn red" style="margin-top:24px;" onclick="deleteStudentFromProfile()">Delete Student</button>
+</div>
 
-        // ------------------------------
-        // Format & Display Date
-        // ------------------------------
-        function showToday() {
-            const today = new Date();
-            const options = {
-                day: "numeric",
-                month: "long",
-                year: "numeric"
-            };
+<!-- ================= Attendance View ================= -->
+<div id="attendanceView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('dashboard')">←</div>
+    <h2>Attendance</h2>
+  </div>
 
-            const formatted = today.toLocaleDateString("en-IN", options);
-            const el = document.getElementById("todayDate");
+  <div class="toolbar">
+    <input id="attDate" type="date" onchange="renderAttendance()">
+    <select id="attClassFilter" onchange="renderAttendance()"><option value="">All Classes</option></select>
+  </div>
 
-            if (el) {
-                el.innerHTML = formatted;
-            }
-        }
+  <button class="btn green" style="margin-bottom:14px;" onclick="markAllPresent()">✅ Mark All Present</button>
 
-        // ------------------------------
-        // Placeholder Alert
-        // ------------------------------
-        function comingSoon(moduleName) {
-            alert(moduleName + " module will be available in the next part.");
-        }
+  <div id="attendanceList"></div>
 
-        // ------------------------------
-        // Page Load Initializer
-        // ------------------------------
-        window.onload = function () {
-            checkLoginStatus();
-        };
+  <button class="btn" style="margin-top:14px;" onclick="saveAttendance()">Save Attendance</button>
 
-        // ------------------------------
-        // Google Apps Script API Handlers
-        // ------------------------------
-        async function fetchData(action) {
-            if (!API_URL) {
-                console.log("API URL not configured.");
-                return;
-            }
+  <div id="absentNotifyHost"></div>
+</div>
 
-            try {
-                const response = await fetch(API_URL + "?action=" + action);
-                return await response.json();
-            } catch (error) {
-                console.error("API Error:", error);
-            }
-        }
+<!-- ================= Fees View ================= -->
+<div id="feesView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('dashboard')">←</div>
+    <h2>Fees</h2>
+    <button class="fab" onclick="toggleForm('feeForm')">+</button>
+  </div>
 
-        async function postData(payload) {
-            if (!API_URL) {
-                console.log("API URL not configured.");
-                return;
-            }
+  <div class="form-panel" id="feeForm">
+    <h3>Record Payment</h3>
+    <div class="input-group">
+      <label>Student</label>
+      <select id="feeStudent"></select>
+    </div>
+    <div class="input-group"><label>Amount (₹)</label><input id="feeAmount" type="number" placeholder="e.g. 1500"></div>
+    <div class="input-group"><label>Payment Date</label><input id="feeDate" type="date"></div>
+    <div class="input-group">
+      <label>Mode</label>
+      <select id="feeMode">
+        <option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option>
+      </select>
+    </div>
+    <div class="input-group"><label>Note</label><input id="feeNote" placeholder="Optional"></div>
+    <div class="btn-row">
+      <button class="btn gray" onclick="toggleForm('feeForm')">Cancel</button>
+      <button class="btn" onclick="saveFee()">Save</button>
+    </div>
+  </div>
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(payload)
-                });
-                return await response.json();
-            } catch (error) {
-                console.error("POST Error:", error);
-            }
-        }
-    </script>
+  <div class="cards" style="margin-bottom:16px;">
+    <div class="card green"><h3>Collected This Month</h3><p id="feeCollected">₹0</p></div>
+    <div class="card red"><h3>Pending</h3><p id="feePendingAmount">₹0</p><small id="feePendingSub" style="opacity:.85;"></small></div>
+  </div>
+
+  <div class="section-title">Balance Due (carried forward)</div>
+  <div id="feeBalanceList" style="margin-bottom:10px;"></div>
+
+  <details class="collapsible">
+    <summary>Filter & Export</summary>
+    <div class="toolbar" style="margin-top:12px;">
+      <select id="feeClassFilterSel" onchange="renderFees()"><option value="">All Classes</option></select>
+      <select id="feeMonthFilter" onchange="renderFees()"><option value="">All Months</option></select>
+    </div>
+    <button class="btn gray" onclick="exportFeesExcel()">⬇️ Export Excel</button>
+  </details>
+
+  <div class="section-title">Payment History</div>
+  <div id="feesList"></div>
+</div>
+
+<!-- ================= Homework View ================= -->
+<div id="homeworkView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('dashboard')">←</div>
+    <h2>Homework</h2>
+    <button class="fab" onclick="toggleForm('hwForm')">+</button>
+  </div>
+
+  <div class="form-panel" id="hwForm">
+    <h3>Assign Homework</h3>
+    <div class="input-group"><label>Class</label><input id="hwClass" placeholder="e.g. 10th"></div>
+    <div class="input-group"><label>Subject</label><input id="hwSubject" placeholder="e.g. Maths"></div>
+    <div class="input-group"><label>Description</label><textarea id="hwDesc" rows="3" placeholder="Homework details"></textarea></div>
+    <div class="input-group"><label>Assigned Date</label><input id="hwDate" type="date"></div>
+    <div class="input-group"><label>Due Date</label><input id="hwDueDate" type="date"></div>
+    <div class="btn-row">
+      <button class="btn gray" onclick="toggleForm('hwForm')">Cancel</button>
+      <button class="btn" onclick="saveHomework()">Save</button>
+    </div>
+  </div>
+
+  <div id="homeworkList"></div>
+</div>
+
+<!-- ================= Marks View ================= -->
+<div id="marksView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('dashboard')">←</div>
+    <h2>Marks</h2>
+    <button class="fab" onclick="toggleForm('marksForm')">+</button>
+  </div>
+
+  <div class="form-panel" id="marksForm">
+    <h3>Add Marks</h3>
+    <div class="input-group">
+      <label>Student</label>
+      <select id="markStudent"></select>
+    </div>
+    <div class="input-group"><label>Exam Name</label><input id="markExam" placeholder="e.g. Unit Test 1"></div>
+    <div class="input-group"><label>Subject</label><input id="markSubject" placeholder="e.g. Science"></div>
+    <div class="input-group"><label>Marks Obtained</label><input id="markObtained" type="number"></div>
+    <div class="input-group"><label>Max Marks</label><input id="markMax" type="number" placeholder="e.g. 100"></div>
+    <div class="input-group"><label>Date</label><input id="markDate" type="date"></div>
+    <div class="btn-row">
+      <button class="btn gray" onclick="toggleForm('marksForm')">Cancel</button>
+      <button class="btn" onclick="saveMark()">Save</button>
+    </div>
+  </div>
+
+  <div id="marksList"></div>
+</div>
+
+<!-- ================= Reports View ================= -->
+<div id="reportsView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('dashboard')">←</div>
+    <h2>Reports</h2>
+  </div>
+
+  <div class="cards" style="margin-bottom:16px;">
+    <div class="card blue"><h3>Total Students</h3><p id="rTotalStudents">0</p></div>
+    <div class="card green"><h3>Collected This Month</h3><p id="rCollected">₹0</p></div>
+    <div class="card orange"><h3>Pending Students</h3><p id="rPending">0</p></div>
+    <div class="card red"><h3>Today's Attendance %</h3><p id="rAttPct">0%</p></div>
+  </div>
+
+  <button class="btn gray" style="margin-bottom:20px;" onclick="exportAllExcel()">⬇️ Export All Data (Excel)</button>
+
+  <h3 style="margin-bottom:10px;">Per-Student Summary</h3>
+  <div id="reportsList"></div>
+</div>
+
+<!-- ================= Settings View ================= -->
+<div id="settingsView" class="dashboard" style="display:none;">
+  <div class="view-header">
+    <div class="back" onclick="openView('dashboard')">←</div>
+    <h2>Settings</h2>
+  </div>
+
+  <div class="form-panel open">
+    <h3>Google Sheet Sync</h3>
+    <p style="font-size:13px; color:#777; margin-bottom:14px;">
+      Paste the Web App URL from your deployed Google Apps Script here to save all data to Google Sheets.
+      Without this, data is saved only on this device.
+    </p>
+    <div class="input-group">
+      <label>Apps Script Web App URL</label>
+      <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <button class="btn" onclick="saveApiUrl()">Save & Connect</button>
+    <div id="settingsStatus" style="margin-top:14px; font-size:13px;"></div>
+  </div>
+
+  <div class="form-panel open">
+    <h3>Manual Sync</h3>
+    <p style="font-size:13px; color:#777; margin-bottom:14px;">Pull the latest data from Google Sheets (useful after editing the sheet directly).</p>
+    <button class="btn gray" onclick="fullSync(true)">Sync Now</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ================= JavaScript Application Logic ================= -->
+<script>
+// ==========================================================
+// Config & storage helpers
+// ==========================================================
+const SHEETS = {
+  students: 'Students',
+  attendance: 'Attendance',
+  fees: 'Fees',
+  homework: 'Homework',
+  marks: 'Marks'
+};
+
+function getApiUrl() { return localStorage.getItem('apiUrl') || ''; }
+function getLocal(key) { return JSON.parse(localStorage.getItem(key) || '[]'); }
+function setLocal(key, arr) { localStorage.setItem(key, JSON.stringify(arr)); }
+function uid() { return 'id_' + Date.now() + '_' + Math.floor(Math.random() * 10000); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function thisMonthKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+
+// Turns "2026-08" into "Aug 2026" for display. The raw "YYYY-MM" key is still used internally for filtering/sorting.
+function formatMonthLabel(monthKey) {
+  if (!monthKey) return '';
+  const [y, m] = monthKey.split('-').map(Number);
+  if (!y || !m) return monthKey;
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[m - 1] + ' ' + y;
+}
+
+function shiftMonth(monthKey, delta) {
+  let [y, m] = monthKey.split('-').map(Number);
+  m += delta;
+  if (m < 1) { m = 12; y--; }
+  if (m > 12) { m = 1; y++; }
+  return y + '-' + String(m).padStart(2, '0');
+}
+
+function monthsBetweenInclusive(startDateStr, endDateStr) {
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  if (isNaN(start.getTime())) return 1;
+  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+  return Math.max(months, 1);
+}
+
+// Carry-forward balance: total expected since admission minus total ever paid.
+function getStudentBalance(student) {
+  const fees = getLocal('fees').filter(f => f.studentId === student.id);
+  const totalPaid = fees.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  const admission = student.admissionDate || todayISO();
+  const months = monthsBetweenInclusive(admission, todayISO());
+  const monthlyFee = Number(student.fee || 0);
+  const totalExpected = months * monthlyFee;
+  const diff = totalExpected - totalPaid;
+  return {
+    totalExpected,
+    totalPaid,
+    balance: Math.max(diff, 0),
+    credit: diff < 0 ? Math.abs(diff) : 0,
+    months
+  };
+}
+
+function getAllBalances() {
+  return getLocal('students').map(s => ({ student: s, ...getStudentBalance(s) }));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function waLink(phone, message) {
+  let p = (phone || '').replace(/\D/g, '');
+  if (p.length === 10) p = '91' + p; // assume Indian number if no country code given
+  return 'https://wa.me/' + p + '?text=' + encodeURIComponent(message);
+}
+
+// ==========================================================
+// Navigation
+// ==========================================================
+const ALL_VIEWS = ['dashboardView', 'studentsView', 'profileView', 'attendanceView', 'feesView', 'homeworkView', 'marksView', 'reportsView', 'settingsView'];
+
+function openView(name) {
+  const loginView = document.getElementById('loginView');
+  loginView.style.display = 'none';
+
+  ALL_VIEWS.forEach(v => document.getElementById(v).style.display = 'none');
+
+  if (name === 'dashboard') {
+    document.getElementById('dashboardView').style.display = 'block';
+    loadTeacherName(); showToday(); renderSyncBanner(); refreshDashboard();
+  } else if (name === 'students') {
+    document.getElementById('studentsView').style.display = 'block';
+    populateClassFilter(); renderStudents();
+  } else if (name === 'profile') {
+    document.getElementById('profileView').style.display = 'block';
+    renderProfile();
+  } else if (name === 'attendance') {
+    document.getElementById('attendanceView').style.display = 'block';
+    document.getElementById('attDate').value = document.getElementById('attDate').value || todayISO();
+    populateAttClassFilter(); renderAttendance();
+  } else if (name === 'fees') {
+    document.getElementById('feesView').style.display = 'block';
+    populateFeeStudentSelect(); populateFeeFilters();
+    document.getElementById('feeDate').value = todayISO(); renderFees();
+  } else if (name === 'homework') {
+    document.getElementById('homeworkView').style.display = 'block';
+    document.getElementById('hwDate').value = todayISO();
+    renderHomework();
+  } else if (name === 'marks') {
+    document.getElementById('marksView').style.display = 'block';
+    populateMarkStudentSelect(); document.getElementById('markDate').value = todayISO(); renderMarks();
+  } else if (name === 'reports') {
+    document.getElementById('reportsView').style.display = 'block';
+    renderReports();
+  } else if (name === 'settings') {
+    document.getElementById('settingsView').style.display = 'block';
+    document.getElementById('apiUrlInput').value = getApiUrl();
+    renderSettingsStatus();
+  }
+}
+
+function toggleForm(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ==========================================================
+// Login / Logout
+// ==========================================================
+function login() {
+  const teacherId = document.getElementById('teacherId').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (!teacherId) { alert('Please enter Teacher ID'); return; }
+  if (!password) { alert('Please enter Password'); return; }
+
+  if (teacherId === 'admin' && password === '1234') {
+    localStorage.setItem('loggedIn', 'true');
+    localStorage.setItem('teacherName', 'Arul Sir');
+    openView('dashboard');
+    fullSync(false);
+  } else {
+    alert('Invalid Teacher ID or Password');
+  }
+}
+
+function checkLoginStatus() {
+  if (localStorage.getItem('loggedIn') === 'true') {
+    openView('dashboard');
+    fullSync(false);
+  } else {
+    openView('login');
+  }
+}
+
+function logout() {
+  if (!confirm('Are you sure you want to logout?')) return;
+  localStorage.removeItem('loggedIn');
+  localStorage.removeItem('teacherName');
+  document.getElementById('teacherId').value = '';
+  document.getElementById('password').value = '';
+  openView('login');
+}
+
+function loadTeacherName() {
+  const el = document.getElementById('teacherName');
+  const teacher = localStorage.getItem('teacherName');
+  if (el && teacher) el.innerHTML = teacher;
+}
+
+function showToday() {
+  const el = document.getElementById('todayDate');
+  if (el) el.innerHTML = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// ==========================================================
+// Google Apps Script API layer
+// ==========================================================
+async function apiList(sheet) {
+  const url = getApiUrl();
+  if (!url) return null;
+  try {
+    const res = await fetch(url + '?action=list&sheet=' + encodeURIComponent(sheet));
+    const json = await res.json();
+    if (json && json.error) { console.error(json.error); return null; }
+    return json;
+  } catch (err) {
+    console.error('apiList error', err);
+    return null;
+  }
+}
+
+async function apiWrite(sheet, action, data) {
+  const url = getApiUrl();
+  if (!url) return null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ sheet, action, data })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('apiWrite error', err);
+    return null;
+  }
+}
+
+async function fullSync(showBanner) {
+  const url = getApiUrl();
+  if (!url) { if (showBanner) showToast('No Google Sheet connected yet'); return; }
+  showToast('Syncing...');
+  const keys = [['students', SHEETS.students], ['attendance', SHEETS.attendance], ['fees', SHEETS.fees], ['homework', SHEETS.homework], ['marks', SHEETS.marks]];
+  let ok = true;
+  for (const [localKey, sheetName] of keys) {
+    const data = await apiList(sheetName);
+    if (Array.isArray(data)) setLocal(localKey, data);
+    else ok = false;
+  }
+  showToast(ok ? 'Synced with Google Sheets' : 'Sync had issues — check Settings');
+  renderSyncBanner();
+  refreshDashboard();
+}
+
+function renderSyncBanner() {
+  const host = document.getElementById('syncBannerHost');
+  if (!host) return;
+  if (getApiUrl()) {
+    host.innerHTML = '<div class="sync-banner sync-ok">✅ Connected to Google Sheets</div>';
+  } else {
+    host.innerHTML = '<div class="sync-banner">⚠️ Not connected to Google Sheets — data saves only on this device. <a href="#" onclick="openView(\'settings\'); return false;">Connect now</a></div>';
+  }
+}
+
+function renderSettingsStatus() {
+  const el = document.getElementById('settingsStatus');
+  el.innerHTML = getApiUrl()
+    ? '✅ Connected: <code>' + getApiUrl() + '</code>'
+    : 'Not connected yet.';
+}
+
+function saveApiUrl() {
+  const val = document.getElementById('apiUrlInput').value.trim();
+  if (!val) { localStorage.removeItem('apiUrl'); showToast('Disconnected'); renderSettingsStatus(); return; }
+  if (!val.startsWith('https://script.google.com/')) {
+    alert('Please paste a valid Google Apps Script Web App URL (starts with https://script.google.com/macros/...)');
+    return;
+  }
+  localStorage.setItem('apiUrl', val);
+  showToast('Connected! Syncing...');
+  renderSettingsStatus();
+  fullSync(true);
+}
+
+// ==========================================================
+// STUDENTS
+// ==========================================================
+function populateClassFilter() {
+  const students = getLocal('students');
+  const sel = document.getElementById('studentClassFilter');
+  const current = sel.value;
+  const classes = [...new Set(students.map(s => s.className).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Classes</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = current;
+}
+
+function renderStudents() {
+  const students = getLocal('students');
+  const search = (document.getElementById('studentSearch').value || '').toLowerCase();
+  const classFilter = document.getElementById('studentClassFilter').value;
+  const list = document.getElementById('studentsList');
+
+  let filtered = students.filter(s =>
+    (!search || (s.name || '').toLowerCase().includes(search)) &&
+    (!classFilter || s.className === classFilter)
+  );
+  filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div>👨‍🎓</div>No students found. Tap + to add one.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(s => `
+    <div class="list-item">
+      <div class="info" style="cursor:pointer;" onclick="openProfile('${s.id}')">
+        <h4>${escapeHtml(s.name)}</h4>
+        <p>Class ${escapeHtml(s.className || '-')} · ₹${s.fee || 0}/mo · ${escapeHtml(s.parentPhone || 'No contact')}</p>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" onclick="editStudent('${s.id}')">✏️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleFeeMode() {
+  const wise = document.getElementById('sFeeWise').checked;
+  document.getElementById('sFlatFeeGroup').style.display = wise ? 'none' : 'block';
+  document.getElementById('sSubjectFeesGroup').style.display = wise ? 'block' : 'none';
+  if (wise && document.getElementById('subjectFeeRows').children.length === 0) addSubjectFeeRow('', '');
+}
+
+function addSubjectFeeRow(subject, amount) {
+  const host = document.getElementById('subjectFeeRows');
+  const row = document.createElement('div');
+  row.className = 'subject-fee-row';
+  row.innerHTML = `
+    <input class="sf-subject" placeholder="Subject" value="${escapeHtml(subject || '')}">
+    <input class="sf-amount" type="number" placeholder="₹/month" value="${amount !== undefined && amount !== null ? amount : ''}">
+    <button type="button" onclick="this.parentElement.remove()">✕</button>
+  `;
+  host.appendChild(row);
+}
+
+function collectSubjectFees() {
+  const rows = document.querySelectorAll('#subjectFeeRows .subject-fee-row');
+  const result = [];
+  rows.forEach(row => {
+    const subject = row.querySelector('.sf-subject').value.trim();
+    const amount = Number(row.querySelector('.sf-amount').value) || 0;
+    if (subject) result.push({ subject, amount });
+  });
+  return result;
+}
+
+function editStudent(id) {
+  const s = getLocal('students').find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('studentId').value = s.id;
+  document.getElementById('sName').value = s.name || '';
+  document.getElementById('sClass').value = s.className || '';
+  document.getElementById('sPhone').value = s.phone || '';
+  document.getElementById('sParentPhone').value = s.parentPhone || '';
+  document.getElementById('sAdmDate').value = s.admissionDate || '';
+
+  document.getElementById('subjectFeeRows').innerHTML = '';
+  const isWise = s.feeType === 'subjectwise';
+  document.getElementById('sFeeWise').checked = isWise;
+  if (isWise) {
+    let subjectFees = [];
+    try { subjectFees = JSON.parse(s.subjectFeesJson || '[]'); } catch (e) { subjectFees = []; }
+    if (subjectFees.length === 0) subjectFees = [{ subject: '', amount: '' }];
+    subjectFees.forEach(sf => addSubjectFeeRow(sf.subject, sf.amount));
+    document.getElementById('sFee').value = '';
+  } else {
+    document.getElementById('sFee').value = s.fee || '';
+  }
+  toggleFeeMode();
+
+  document.getElementById('studentFormTitle').textContent = 'Edit Student';
+  document.getElementById('studentForm').classList.add('open');
+}
+
+async function saveStudent() {
+  const name = document.getElementById('sName').value.trim();
+  if (!name) { alert('Please enter student name'); return; }
+
+  const id = document.getElementById('studentId').value;
+  const isWise = document.getElementById('sFeeWise').checked;
+  const subjectFees = isWise ? collectSubjectFees() : [];
+  const feeType = isWise ? 'subjectwise' : 'flat';
+  const fee = isWise
+    ? subjectFees.reduce((sum, sf) => sum + Number(sf.amount || 0), 0)
+    : (Number(document.getElementById('sFee').value) || 0);
+
+  const obj = {
+    id: id || uid(),
+    name,
+    className: document.getElementById('sClass').value.trim(),
+    phone: document.getElementById('sPhone').value.trim(),
+    parentPhone: document.getElementById('sParentPhone').value.trim(),
+    fee,
+    feeType,
+    subjectFeesJson: JSON.stringify(subjectFees),
+    admissionDate: document.getElementById('sAdmDate').value || todayISO(),
+    status: 'active'
+  };
+
+  const students = getLocal('students');
+  if (id) {
+    const idx = students.findIndex(s => s.id === id);
+    if (idx > -1) students[idx] = obj;
+    await apiWrite(SHEETS.students, 'update', obj);
+  } else {
+    students.push(obj);
+    await apiWrite(SHEETS.students, 'add', obj);
+  }
+  setLocal('students', students);
+
+  clearStudentForm();
+  document.getElementById('studentForm').classList.remove('open');
+  populateClassFilter();
+  renderStudents();
+  showToast('Student saved');
+}
+
+function clearStudentForm() {
+  document.getElementById('studentId').value = '';
+  ['sName', 'sClass', 'sPhone', 'sParentPhone', 'sFee', 'sAdmDate'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('sFeeWise').checked = false;
+  document.getElementById('subjectFeeRows').innerHTML = '';
+  toggleFeeMode();
+  document.getElementById('studentFormTitle').textContent = 'Add Student';
+}
+
+async function deleteStudent(id) {
+  if (!confirm('Delete this student? This cannot be undone.')) return false;
+  let students = getLocal('students');
+  students = students.filter(s => s.id !== id);
+  setLocal('students', students);
+  await apiWrite(SHEETS.students, 'delete', { id });
+  renderStudents();
+  showToast('Student deleted');
+  return true;
+}
+
+async function deleteStudentFromProfile() {
+  if (!currentProfileStudentId) return;
+  const deleted = await deleteStudent(currentProfileStudentId);
+  if (deleted) openView('students');
+}
+
+// ==========================================================
+// STUDENT PROFILE / LEDGER
+// ==========================================================
+let currentProfileStudentId = null;
+let currentProfileMonth = null;
+let profileChartInstance = null;
+
+function openProfile(studentId) {
+  currentProfileStudentId = studentId;
+  currentProfileMonth = thisMonthKey();
+  openView('profile');
+}
+
+// Shared chart config builder — used for the live profile chart and for the Report Card PDF image,
+// so both always show the exact same picture of a student's performance.
+function buildPerformanceChartConfig(marks) {
+  const labels = marks.map(m => m.subject + ' · ' + m.exam);
+  const data = marks.map(m => m.maxMarks ? Math.round((Number(m.marks) / Number(m.maxMarks)) * 100) : 0);
+  return {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Score %',
+        data,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,.15)',
+        tension: 0.25,
+        fill: true,
+        pointBackgroundColor: '#2563eb',
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+      plugins: { legend: { display: false } }
+    }
+  };
+}
+
+function renderProfileChart(marks) {
+  const host = document.getElementById('profileChartHost');
+  const empty = document.getElementById('profileChartEmpty');
+  if (profileChartInstance) { profileChartInstance.destroy(); profileChartInstance = null; }
+
+  if (!marks || marks.length === 0) {
+    host.style.display = 'none';
+    empty.style.display = 'block';
+    empty.textContent = 'Add marks to see a performance chart.';
+    return;
+  }
+  if (typeof Chart === 'undefined') {
+    host.style.display = 'none';
+    empty.style.display = 'block';
+    empty.textContent = 'Chart library failed to load — check your internet connection.';
+    return;
+  }
+  host.style.display = 'block';
+  empty.style.display = 'none';
+
+  const canvas = document.getElementById('profileChart');
+  profileChartInstance = new Chart(canvas.getContext('2d'), buildPerformanceChartConfig(marks));
+}
+
+// Renders the same chart onto an off-screen canvas and returns a PNG data URL,
+// for embedding into the Report Card PDF. Independent of whatever chart is currently on screen.
+function renderChartToImage(marks) {
+  return new Promise(resolve => {
+    if (!marks || marks.length === 0 || typeof Chart === 'undefined') { resolve(null); return; }
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 300;
+    canvas.style.position = 'fixed';
+    canvas.style.left = '-9999px';
+    document.body.appendChild(canvas);
+    const chart = new Chart(canvas.getContext('2d'), buildPerformanceChartConfig(marks));
+    setTimeout(() => {
+      const dataUrl = canvas.toDataURL('image/png');
+      chart.destroy();
+      document.body.removeChild(canvas);
+      resolve(dataUrl);
+    }, 50);
+  });
+}
+
+function renderProfile() {
+  const student = getLocal('students').find(s => s.id === currentProfileStudentId);
+  if (!student) { openView('students'); return; }
+
+  document.getElementById('profileAvatar').textContent = (student.name || '?').charAt(0).toUpperCase();
+  document.getElementById('profileName').textContent = student.name;
+  document.getElementById('profileMeta').textContent = 'Class ' + (student.className || '-') + ' · ' + (student.parentPhone || 'No contact');
+
+  const bal = getStudentBalance(student);
+  document.getElementById('profileBalance').textContent = bal.balance > 0
+    ? '₹' + bal.balance.toLocaleString('en-IN') + ' due'
+    : (bal.credit > 0 ? '₹' + bal.credit.toLocaleString('en-IN') + ' credit' : 'Fully Paid');
+  document.getElementById('profileFeeSub').textContent = 'Expected ₹' + bal.totalExpected.toLocaleString('en-IN') + ' · Paid ₹' + bal.totalPaid.toLocaleString('en-IN');
+
+  const fees = getLocal('fees').filter(f => f.studentId === student.id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const feesList = document.getElementById('profileFeesList');
+  feesList.innerHTML = fees.length ? fees.map(f => `
+    <div class="list-item">
+      <div class="info"><h4>₹${f.amount}</h4><p>${escapeHtml(f.date)} · ${escapeHtml(f.mode || '')}</p></div>
+      <div class="actions"><button class="icon-btn" onclick="downloadReceipt('${f.id}')">🧾</button></div>
+    </div>`).join('') : '<div class="empty-state" style="padding:20px;">No payments yet.</div>';
+
+  renderProfileCalendar();
+
+  const marks = getLocal('marks').filter(m => m.studentId === student.id).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  renderProfileChart(marks);
+
+  const marksList = document.getElementById('profileMarksList');
+  marksList.innerHTML = marks.length ? marks.slice().reverse().map(m => {
+    const pct = m.maxMarks ? Math.round((Number(m.marks) / Number(m.maxMarks)) * 100) : 0;
+    return `<div class="list-item"><div class="info"><h4>${escapeHtml(m.subject)} — ${escapeHtml(m.exam)}</h4><p>${m.marks}/${m.maxMarks} (${pct}%) · ${escapeHtml(m.date)}</p></div></div>`;
+  }).join('') : '<div class="empty-state" style="padding:20px;">No marks yet.</div>';
+
+  const hw = getLocal('homework').filter(h => h.className === student.className).sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 10);
+  const hwList = document.getElementById('profileHomeworkList');
+  hwList.innerHTML = hw.length ? hw.map(h => `<div class="list-item"><div class="info"><h4>${escapeHtml(h.subject)}</h4><p>${escapeHtml(h.description || '')}</p><p>Due: ${escapeHtml(h.dueDate || '-')}</p></div></div>`).join('') : '<div class="empty-state" style="padding:20px;">No homework yet.</div>';
+}
+
+function renderProfileCalendar() {
+  document.getElementById('profileCalLabel').textContent = formatMonthLabel(currentProfileMonth);
+  const [y, m] = currentProfileMonth.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const records = getLocal('attendance').filter(a => a.studentId === currentProfileStudentId && (a.date || '').slice(0, 7) === currentProfileMonth);
+  const map = {};
+  records.forEach(r => map[r.date] = r.status);
+
+  let present = 0, absent = 0;
+  let html = '';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = currentProfileMonth + '-' + String(d).padStart(2, '0');
+    const status = map[ds];
+    if (status === 'Present') present++;
+    if (status === 'Absent') absent++;
+    const cls = status === 'Present' ? 'cal-present' : status === 'Absent' ? 'cal-absent' : '';
+    html += `<div class="cal-day ${cls}">${d}</div>`;
+  }
+  document.getElementById('profileCalGrid').innerHTML = html;
+  document.getElementById('profileCalSummary').textContent = 'Present: ' + present + ' · Absent: ' + absent;
+}
+
+function profileCalPrev() { currentProfileMonth = shiftMonth(currentProfileMonth, -1); renderProfileCalendar(); }
+function profileCalNext() { currentProfileMonth = shiftMonth(currentProfileMonth, 1); renderProfileCalendar(); }
+
+function waMessageParent() {
+  const student = getLocal('students').find(s => s.id === currentProfileStudentId);
+  if (!student || !student.parentPhone) { alert('No parent phone number on file for this student.'); return; }
+  const bal = getStudentBalance(student);
+  let msg = 'Dear Parent, this is an update from Arul Siragugal Academy regarding ' + student.name + '.';
+  if (bal.balance > 0) msg += ' Pending fee balance: ₹' + bal.balance + '.';
+  window.open(waLink(student.parentPhone, msg), '_blank');
+}
+
+function notifyAbsent(studentId, date) {
+  const student = getLocal('students').find(s => s.id === studentId);
+  if (!student || !student.parentPhone) { alert('No parent phone number on file for this student.'); return; }
+  const msg = 'Dear Parent, your child ' + student.name + ' was marked ABSENT today (' + date + ') at Arul Siragugal Academy. Please contact us if you have any questions.';
+  window.open(waLink(student.parentPhone, msg), '_blank');
+}
+
+// ==========================================================
+// PDF / Excel export helpers
+// ==========================================================
+function downloadReceipt(feeId) {
+  const fee = getLocal('fees').find(f => f.id === feeId);
+  if (!fee) return;
+  const student = getLocal('students').find(s => s.id === fee.studentId);
+  generateReceiptPDF(fee, student);
+}
+
+function generateReceiptPDF(fee, student) {
+  if (!window.jspdf) { alert('PDF library did not load — check your internet connection.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 20;
+  doc.setFontSize(16); doc.text('Arul Siragugal Academy', 15, y); y += 8;
+  doc.setFontSize(12); doc.text('Fee Payment Receipt', 15, y); y += 12;
+  doc.setFontSize(11);
+  doc.text('Receipt No: ' + fee.id, 15, y); y += 8;
+  doc.text('Date: ' + fee.date, 15, y); y += 8;
+  doc.text('Student: ' + (student ? student.name : (fee.studentName || '-')), 15, y); y += 8;
+  doc.text('Class: ' + (student ? (student.className || '-') : '-'), 15, y); y += 8;
+  doc.text('Amount Paid: Rs. ' + fee.amount, 15, y); y += 8;
+  doc.text('Mode: ' + (fee.mode || '-'), 15, y); y += 8;
+  if (fee.note) { doc.text('Note: ' + fee.note, 15, y); y += 8; }
+  doc.save('Receipt_' + (student ? student.name : 'student') + '_' + fee.date + '.pdf');
+}
+
+async function exportReportCard() {
+  if (!window.jspdf) { alert('PDF library did not load — check your internet connection.'); return; }
+  const student = getLocal('students').find(s => s.id === currentProfileStudentId);
+  if (!student) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 20;
+  doc.setFontSize(16); doc.text('Arul Siragugal Academy', 15, y); y += 8;
+  doc.setFontSize(12); doc.text('Report Card', 15, y); y += 10;
+  doc.setFontSize(11);
+  doc.text('Student: ' + student.name, 15, y); y += 8;
+  doc.text('Class: ' + (student.className || '-'), 15, y); y += 8;
+
+  const bal = getStudentBalance(student);
+  const att = getLocal('attendance').filter(a => a.studentId === student.id);
+  const presentCount = att.filter(a => a.status === 'Present').length;
+  const attPct = att.length ? Math.round((presentCount / att.length) * 100) : 0;
+  doc.text('Attendance: ' + presentCount + '/' + att.length + ' days (' + attPct + '%)', 15, y); y += 8;
+  doc.text('Fee Balance: Rs. ' + bal.balance, 15, y); y += 12;
+
+  const marks = getLocal('marks').filter(m => m.studentId === student.id).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  if (marks.length > 0) {
+    doc.setFontSize(12); doc.text('Performance', 15, y); y += 6;
+    const chartImg = await renderChartToImage(marks);
+    if (chartImg) {
+      const imgWidth = 180, imgHeight = 90;
+      if (y + imgHeight > 280) { doc.addPage(); y = 20; }
+      doc.addImage(chartImg, 'PNG', 15, y, imgWidth, imgHeight);
+      y += imgHeight + 10;
+    }
+  }
+
+  doc.setFontSize(12); doc.text('Marks', 15, y); y += 8;
+  doc.setFontSize(10);
+  if (marks.length === 0) { doc.text('No marks recorded.', 15, y); y += 6; }
+  marks.slice().reverse().forEach(m => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    doc.text(m.exam + ' — ' + m.subject + ': ' + m.marks + '/' + m.maxMarks, 15, y);
+    y += 6;
+  });
+
+  doc.save('ReportCard_' + student.name + '.pdf');
+}
+
+function exportAllExcel() {
+  if (!window.XLSX) { alert('Excel library did not load — check your internet connection.'); return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getLocal('students')), 'Students');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getLocal('attendance')), 'Attendance');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getLocal('fees')), 'Fees');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getLocal('homework')), 'Homework');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getLocal('marks')), 'Marks');
+  XLSX.writeFile(wb, 'AcademyData_' + todayISO() + '.xlsx');
+}
+
+function exportFeesExcel() {
+  if (!window.XLSX) { alert('Excel library did not load — check your internet connection.'); return; }
+  const fees = getFilteredFees();
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fees), 'Fees');
+  XLSX.writeFile(wb, 'Fees_' + todayISO() + '.xlsx');
+}
+
+// ==========================================================
+// ATTENDANCE
+// ==========================================================
+function populateAttClassFilter() {
+  const students = getLocal('students');
+  const sel = document.getElementById('attClassFilter');
+  const current = sel.value;
+  const classes = [...new Set(students.map(s => s.className).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Classes</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = current;
+}
+
+function renderAttendance() {
+  const date = document.getElementById('attDate').value || todayISO();
+  const classFilter = document.getElementById('attClassFilter').value;
+  const students = getLocal('students').filter(s => !classFilter || s.className === classFilter);
+  const attendance = getLocal('attendance');
+  const list = document.getElementById('attendanceList');
+
+  if (students.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div>✅</div>No students to mark. Add students first.</div>';
+  } else {
+    list.innerHTML = students.map(s => {
+      const rec = attendance.find(a => a.studentId === s.id && a.date === date);
+      const status = rec ? rec.status : '';
+      return `
+        <div class="att-row" data-student="${s.id}">
+          <div><strong>${escapeHtml(s.name)}</strong><br><small style="color:#888;">${escapeHtml(s.className || '')}</small></div>
+          <div class="att-toggle">
+            <button type="button" class="p-btn ${status === 'Present' ? 'p-active' : ''}" onclick="setAttStatus('${s.id}','Present')">Present</button>
+            <button type="button" class="a-btn ${status === 'Absent' ? 'a-active' : ''}" onclick="setAttStatus('${s.id}','Absent')">Absent</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+  renderAbsentNotifyPanel(date);
+}
+
+function setAttStatus(studentId, status) {
+  // Purely a DOM toggle — the current on-screen state IS the source of truth (read fresh at save time),
+  // so switching date or class filter can never leak marks made for a different date.
+  const row = document.querySelector(`.att-row[data-student="${studentId}"]`);
+  if (!row) return;
+  row.querySelector('.p-btn').classList.toggle('p-active', status === 'Present');
+  row.querySelector('.a-btn').classList.toggle('a-active', status === 'Absent');
+}
+
+function markAllPresent() {
+  document.querySelectorAll('.att-row').forEach(row => {
+    setAttStatus(row.dataset.student, 'Present');
+  });
+}
+
+async function saveAttendance() {
+  const date = document.getElementById('attDate').value || todayISO();
+  const students = getLocal('students');
+  let attendance = getLocal('attendance');
+
+  // Build the payload fresh from what's currently on screen for THIS date/filter — never from
+  // leftover state from a previous date, so attendance can't be misattributed to the wrong day.
+  const toSave = {};
+  document.querySelectorAll('.att-row').forEach(row => {
+    const sid = row.dataset.student;
+    if (row.querySelector('.p-active')) toSave[sid] = 'Present';
+    else if (row.querySelector('.a-active')) toSave[sid] = 'Absent';
+  });
+
+  const idsToSave = Object.keys(toSave);
+  if (idsToSave.length === 0) { alert('Mark at least one student before saving.'); return; }
+
+  showToast('Saving attendance...');
+  for (const sid of idsToSave) {
+    const status = toSave[sid];
+    const student = students.find(s => s.id === sid);
+    const existing = attendance.find(a => a.studentId === sid && a.date === date);
+    const obj = {
+      id: existing ? existing.id : uid(),
+      studentId: sid,
+      studentName: student ? student.name : '',
+      date,
+      status
+    };
+    if (existing) {
+      Object.assign(existing, obj);
+      await apiWrite(SHEETS.attendance, 'update', obj);
+    } else {
+      attendance.push(obj);
+      await apiWrite(SHEETS.attendance, 'add', obj);
+    }
+  }
+  setLocal('attendance', attendance);
+  showToast('Attendance saved for ' + date);
+  renderAbsentNotifyPanel(date);
+  refreshDashboard();
+}
+
+function renderAbsentNotifyPanel(date) {
+  const host = document.getElementById('absentNotifyHost');
+  if (!host) return;
+  const absentees = getLocal('attendance').filter(a => a.date === date && a.status === 'Absent');
+  if (absentees.length === 0) { host.innerHTML = ''; return; }
+  host.innerHTML = '<div class="section-title">Notify Parents (Absent)</div>' + absentees.map(a => `
+    <div class="list-item">
+      <div class="info"><h4>${escapeHtml(a.studentName)}</h4></div>
+      <div class="actions"><button class="icon-btn" onclick="notifyAbsent('${a.studentId}','${date}')">💬</button></div>
+    </div>`).join('');
+}
+
+// ==========================================================
+// FEES
+// ==========================================================
+function populateFeeStudentSelect() {
+  const students = getLocal('students').sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const sel = document.getElementById('feeStudent');
+  sel.innerHTML = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.className || '-')})</option>`).join('');
+}
+
+function populateFeeFilters() {
+  const students = getLocal('students');
+  const classSel = document.getElementById('feeClassFilterSel');
+  const currentClass = classSel.value;
+  const classes = [...new Set(students.map(s => s.className).filter(Boolean))].sort();
+  classSel.innerHTML = '<option value="">All Classes</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+  classSel.value = currentClass;
+
+  const fees = getLocal('fees');
+  const monthSel = document.getElementById('feeMonthFilter');
+  const currentMonth = monthSel.value;
+  const months = [...new Set(fees.map(f => (f.date || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+  monthSel.innerHTML = '<option value="">All Months</option>' + months.map(m => `<option value="${m}">${formatMonthLabel(m)}</option>`).join('');
+  monthSel.value = currentMonth;
+}
+
+function getFilteredFees() {
+  const fees = getLocal('fees');
+  const students = getLocal('students');
+  const classFilter = document.getElementById('feeClassFilterSel') ? document.getElementById('feeClassFilterSel').value : '';
+  const monthFilter = document.getElementById('feeMonthFilter') ? document.getElementById('feeMonthFilter').value : '';
+
+  return fees.filter(f => {
+    if (monthFilter && (f.date || '').slice(0, 7) !== monthFilter) return false;
+    if (classFilter) {
+      const student = students.find(s => s.id === f.studentId);
+      if (!student || student.className !== classFilter) return false;
+    }
+    return true;
+  });
+}
+
+function renderFees() {
+  const students = getLocal('students');
+  const month = thisMonthKey();
+
+  const allFees = getLocal('fees');
+  const collected = allFees.filter(f => (f.date || '').slice(0, 7) === month).reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  document.getElementById('feeCollected').textContent = '₹' + collected.toLocaleString('en-IN');
+
+  // Carry-forward balances (all-time), optionally filtered by class
+  const classFilter = document.getElementById('feeClassFilterSel') ? document.getElementById('feeClassFilterSel').value : '';
+  const balances = getAllBalances().filter(b => !classFilter || b.student.className === classFilter);
+  const owing = balances.filter(b => b.balance > 0);
+  const pendingAmount = owing.reduce((sum, b) => sum + b.balance, 0);
+  document.getElementById('feePendingSub').textContent = owing.length + (owing.length === 1 ? ' student' : ' students');
+  document.getElementById('feePendingAmount').textContent = '₹' + pendingAmount.toLocaleString('en-IN');
+
+  const balanceList = document.getElementById('feeBalanceList');
+  if (owing.length === 0) {
+    balanceList.innerHTML = '<div class="empty-state" style="padding:20px;"><div>🎉</div>Everyone is paid up.</div>';
+  } else {
+    balanceList.innerHTML = owing.map(b => `
+      <div class="list-item">
+        <div class="info">
+          <h4>${escapeHtml(b.student.name)}</h4>
+          <p>Expected ₹${b.totalExpected} · Paid ₹${b.totalPaid} · <strong style="color:#ef4444;">Balance ₹${b.balance}</strong></p>
+        </div>
+        <div class="actions"><button class="icon-btn" onclick="openProfile('${b.student.id}')">👁️</button></div>
+      </div>`).join('');
+  }
+
+  const filteredFees = getFilteredFees().slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const list = document.getElementById('feesList');
+  if (filteredFees.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div>💰</div>No payments match this filter.</div>';
+    return;
+  }
+
+  list.innerHTML = filteredFees.map(f => {
+    const student = students.find(s => s.id === f.studentId);
+    return `
+    <div class="list-item">
+      <div class="info">
+        <h4>${escapeHtml(student ? student.name : (f.studentName || 'Unknown'))} — ₹${f.amount}</h4>
+        <p>${escapeHtml(f.date)} · ${escapeHtml(f.mode || '')} ${f.note ? '· ' + escapeHtml(f.note) : ''}</p>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" onclick="downloadReceipt('${f.id}')">🧾</button>
+        <button class="icon-btn del" onclick="deleteFee('${f.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveFee() {
+  const studentId = document.getElementById('feeStudent').value;
+  const amount = Number(document.getElementById('feeAmount').value);
+  if (!studentId) { alert('Please add a student first'); return; }
+  if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
+
+  const student = getLocal('students').find(s => s.id === studentId);
+  const date = document.getElementById('feeDate').value || todayISO();
+  const obj = {
+    id: uid(),
+    studentId,
+    studentName: student ? student.name : '',
+    amount,
+    date,
+    month: date.slice(0, 7),
+    mode: document.getElementById('feeMode').value,
+    note: document.getElementById('feeNote').value.trim()
+  };
+
+  const fees = getLocal('fees');
+  fees.push(obj);
+  setLocal('fees', fees);
+  await apiWrite(SHEETS.fees, 'add', obj);
+
+  ['feeAmount', 'feeNote'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('feeForm').classList.remove('open');
+  populateFeeFilters();
+  renderFees();
+  showToast('Payment recorded');
+  refreshDashboard();
+
+  if (confirm('Payment saved. Download receipt now?')) {
+    generateReceiptPDF(obj, student);
+  }
+}
+
+async function deleteFee(id) {
+  if (!confirm('Delete this payment record?')) return;
+  let fees = getLocal('fees');
+  fees = fees.filter(f => f.id !== id);
+  setLocal('fees', fees);
+  await apiWrite(SHEETS.fees, 'delete', { id });
+  populateFeeFilters();
+  renderFees();
+  showToast('Deleted');
+}
+
+// ==========================================================
+// HOMEWORK
+// ==========================================================
+function renderHomework() {
+  const hw = getLocal('homework').slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const list = document.getElementById('homeworkList');
+
+  if (hw.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div>📚</div>No homework assigned yet.</div>';
+    return;
+  }
+
+  list.innerHTML = hw.map(h => `
+    <div class="list-item">
+      <div class="info">
+        <h4>${escapeHtml(h.subject)} — Class ${escapeHtml(h.className)}</h4>
+        <p>${escapeHtml(h.description || '')}</p>
+        <p>Assigned: ${escapeHtml(h.date)} · Due: ${escapeHtml(h.dueDate || '-')}</p>
+      </div>
+      <div class="actions">
+        <button class="icon-btn del" onclick="deleteHomework('${h.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function saveHomework() {
+  const className = document.getElementById('hwClass').value.trim();
+  const subject = document.getElementById('hwSubject').value.trim();
+  if (!className || !subject) { alert('Please enter class and subject'); return; }
+
+  const obj = {
+    id: uid(),
+    className,
+    subject,
+    description: document.getElementById('hwDesc').value.trim(),
+    date: document.getElementById('hwDate').value || todayISO(),
+    dueDate: document.getElementById('hwDueDate').value || ''
+  };
+
+  const hw = getLocal('homework');
+  hw.push(obj);
+  setLocal('homework', hw);
+  await apiWrite(SHEETS.homework, 'add', obj);
+
+  ['hwClass', 'hwSubject', 'hwDesc', 'hwDueDate'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('hwForm').classList.remove('open');
+  renderHomework();
+  showToast('Homework assigned');
+}
+
+async function deleteHomework(id) {
+  if (!confirm('Delete this homework entry?')) return;
+  let hw = getLocal('homework');
+  hw = hw.filter(h => h.id !== id);
+  setLocal('homework', hw);
+  await apiWrite(SHEETS.homework, 'delete', { id });
+  renderHomework();
+  showToast('Deleted');
+}
+
+// ==========================================================
+// MARKS
+// ==========================================================
+function populateMarkStudentSelect() {
+  const students = getLocal('students').sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const sel = document.getElementById('markStudent');
+  sel.innerHTML = students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.className || '-')})</option>`).join('');
+}
+
+function renderMarks() {
+  const marks = getLocal('marks').slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const students = getLocal('students');
+  const list = document.getElementById('marksList');
+
+  if (marks.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div>📝</div>No marks recorded yet.</div>';
+    return;
+  }
+
+  list.innerHTML = marks.map(m => {
+    const student = students.find(s => s.id === m.studentId);
+    const pct = m.maxMarks ? Math.round((Number(m.marks) / Number(m.maxMarks)) * 100) : 0;
+    return `
+    <div class="list-item">
+      <div class="info">
+        <h4>${escapeHtml(student ? student.name : (m.studentName || 'Unknown'))} — ${escapeHtml(m.subject)}</h4>
+        <p>${escapeHtml(m.exam)} · ${m.marks}/${m.maxMarks} (${pct}%) · ${escapeHtml(m.date)}</p>
+      </div>
+      <div class="actions">
+        <button class="icon-btn del" onclick="deleteMark('${m.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveMark() {
+  const studentId = document.getElementById('markStudent').value;
+  const subject = document.getElementById('markSubject').value.trim();
+  const marks = Number(document.getElementById('markObtained').value);
+  const maxMarks = Number(document.getElementById('markMax').value);
+
+  if (!studentId) { alert('Please add a student first'); return; }
+  if (!subject) { alert('Please enter subject'); return; }
+  if (isNaN(marks) || isNaN(maxMarks) || maxMarks <= 0) { alert('Please enter valid marks'); return; }
+
+  const student = getLocal('students').find(s => s.id === studentId);
+  const obj = {
+    id: uid(),
+    studentId,
+    studentName: student ? student.name : '',
+    exam: document.getElementById('markExam').value.trim() || 'Test',
+    subject,
+    marks,
+    maxMarks,
+    date: document.getElementById('markDate').value || todayISO()
+  };
+
+  const list = getLocal('marks');
+  list.push(obj);
+  setLocal('marks', list);
+  await apiWrite(SHEETS.marks, 'add', obj);
+
+  ['markExam', 'markSubject', 'markObtained', 'markMax'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('marksForm').classList.remove('open');
+  renderMarks();
+  showToast('Marks saved');
+}
+
+async function deleteMark(id) {
+  if (!confirm('Delete this marks entry?')) return;
+  let marks = getLocal('marks');
+  marks = marks.filter(m => m.id !== id);
+  setLocal('marks', marks);
+  await apiWrite(SHEETS.marks, 'delete', { id });
+  renderMarks();
+  showToast('Deleted');
+}
+
+// ==========================================================
+// REPORTS
+// ==========================================================
+function renderReports() {
+  const students = getLocal('students');
+  const fees = getLocal('fees');
+  const attendance = getLocal('attendance');
+  const month = thisMonthKey();
+  const today = todayISO();
+
+  document.getElementById('rTotalStudents').textContent = students.length;
+
+  const collected = fees.filter(f => (f.date || '').slice(0, 7) === month).reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  document.getElementById('rCollected').textContent = '₹' + collected.toLocaleString('en-IN');
+
+  const balances = getAllBalances();
+  const balanceByStudent = {};
+  balances.forEach(b => balanceByStudent[b.student.id] = b);
+  document.getElementById('rPending').textContent = balances.filter(b => b.balance > 0).length;
+
+  const todayAtt = attendance.filter(a => a.date === today);
+  const presentToday = todayAtt.filter(a => a.status === 'Present').length;
+  const pct = todayAtt.length ? Math.round((presentToday / todayAtt.length) * 100) : 0;
+  document.getElementById('rAttPct').textContent = pct + '%';
+
+  const list = document.getElementById('reportsList');
+  if (students.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div>📊</div>No students yet.</div>';
+    return;
+  }
+
+  list.innerHTML = students.map(s => {
+    const studAtt = attendance.filter(a => a.studentId === s.id);
+    const presentCount = studAtt.filter(a => a.status === 'Present').length;
+    const absentCount = studAtt.filter(a => a.status === 'Absent').length;
+    const attPct = studAtt.length ? Math.round((presentCount / studAtt.length) * 100) : 0;
+    const b = balanceByStudent[s.id];
+    const paid = !b || b.balance <= 0;
+    const badgeText = paid ? 'Paid' : ('₹' + b.balance + ' due');
+    return `
+      <div class="list-item">
+        <div class="info">
+          <h4>${escapeHtml(s.name)}</h4>
+          <p>Class ${escapeHtml(s.className || '-')} · Present ${presentCount} / Absent ${absentCount} days (${attPct}%)</p>
+        </div>
+        <div class="actions">
+          <span class="badge ${paid ? 'paid' : 'pending'}">${badgeText}</span>
+          <button class="icon-btn" onclick="openProfile('${s.id}')">👁️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ==========================================================
+// Dashboard aggregates
+// ==========================================================
+function refreshDashboard() {
+  const students = getLocal('students');
+  const attendance = getLocal('attendance');
+  const fees = getLocal('fees');
+  const today = todayISO();
+  const month = thisMonthKey();
+
+  const todayAtt = attendance.filter(a => a.date === today);
+  const present = todayAtt.filter(a => a.status === 'Present').length;
+  const absent = todayAtt.filter(a => a.status === 'Absent').length;
+
+  const balances = getAllBalances();
+  const pending = balances.filter(b => b.balance > 0).length;
+  const income = fees.filter(f => (f.date || '').slice(0, 7) === month).reduce((sum, f) => sum + Number(f.amount || 0), 0);
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('totalStudents', students.length);
+  set('presentStudents', present);
+  set('absentStudents', absent);
+  set('pendingFees', pending);
+  set('monthlyIncome', '₹' + income.toLocaleString('en-IN'));
+}
+
+// ==========================================================
+// Utils
+// ==========================================================
+function escapeHtml(str) {
+  if (str === undefined || str === null) return '';
+  return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+
+// ==========================================================
+// Boot
+// ==========================================================
+window.onload = function () {
+  checkLoginStatus();
+};
+</script>
 </body>
 </html>
