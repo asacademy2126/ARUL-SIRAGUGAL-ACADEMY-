@@ -108,9 +108,24 @@ function marksPage(){content.innerHTML=`<div class="toolbar"><button class="btn"
 function markForm(){openModal('Marks',`<label>Student</label><select id="markStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><label>Exam / Subject</label><input id="markExam"><div class="two"><div><label>Mark</label><input id="markValue" type="number"></div><div><label>Total Mark</label><input id="markTotal" type="number" value="100"></div></div><br><button class="btn" onclick="saveMark()">Save Mark</button>`)}
 function saveMark(){db.marks.push({studentId:markStudent.value,exam:markExam.value,mark:Number(markValue.value),total:Number(markTotal.value)});save();closeModal();marksPage()}
 function deleteMark(i){db.marks.splice(i,1);save();marksPage()}
-function settingsPage(){const m=db.settings.messages;content.innerHTML=`<div class="card"><h3>🏫 Academy Settings</h3><div class="two"><div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div><div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div><div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div><div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div><div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div></div><img id="logoPrev" src="${db.settings.logo||''}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;margin:10px 0"><label>Google Sheets Apps Script URL</label><input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec"><br><br><h3>🇮🇳 Tamil Reminder Templates</h3><label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea><label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea><p class="user">Automatic placeholders: {student}, {amount}, {date}, {academy}</p><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn secondary" style="margin-left:8px" onclick="syncSheets()">☁️ Sync to Google Sheets</button></div>`}
+function settingsPage(){const m=db.settings.messages;content.innerHTML=`<div class="card"><h3>🏫 Academy Settings</h3><div class="two"><div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div><div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div><div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div><div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div><div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div></div><div id="logoPreviewBox" style="margin:10px 0;display:${db.settings.logo?'block':'none'}">
+<img id="logoPrev" src="${db.settings.logo||''}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;display:block">
+</div><label>Google Sheets Apps Script URL</label><input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec"><br><br><h3>🇮🇳 Tamil Reminder Templates</h3><label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea><label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea><p class="user">Automatic placeholders: {student}, {amount}, {date}, {academy}</p><p class="user">☁️ Google Sheets: Web App URL must end with <b>/exec</b>. Sync sends all current data as a <b>payload</b> to Apps Script <b>doPost(e)</b>.</p><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn secondary" style="margin-left:8px" onclick="syncSheets()">☁️ Sync to Google Sheets</button></div>`}
 let uploadedLogo='';
-function logoPreview(input){const f=input.files?.[0];if(!f)return;const r=new FileReader();r.onload=e=>{uploadedLogo=e.target.result;logoPrev.src=uploadedLogo};r.readAsDataURL(f)}
+function logoPreview(input){
+const f=input.files?.[0];
+if(!f)return;
+if(!f.type.startsWith('image/')){alert('Image file மட்டும் தேர்வு செய்யவும்.');input.value='';return}
+if(f.size>2*1024*1024){alert('Logo image 2 MB-க்கு குறைவாக இருக்க வேண்டும்.');input.value='';return}
+const r=new FileReader();
+r.onload=e=>{
+ uploadedLogo=e.target.result;
+ const box=document.getElementById('logoPreviewBox');
+ const img=document.getElementById('logoPrev');
+ if(box&&img){img.src=uploadedLogo;box.style.display='block'}
+};
+r.readAsDataURL(f);
+}
 function saveSettings(){db.settings={...db.settings,academy:setAcademy.value,teacher:setTeacher.value,mobile:setMobile.value,fee:Number(setFee.value)||0,upi:setUpi.value,teacherId:setTid.value,teacherPass:setTpass.value,sheetsUrl:setSheets.value,messages:{fee:feeMsg.value,absent:absMsg.value}};if(uploadedLogo)db.settings.logo=uploadedLogo;save();applySettings();alert('Settings saved');}
 function replaceMsg(t,s,amount=''){return t.replaceAll('{student}',s.name).replaceAll('{amount}',money(amount)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
 function whatsapp(id,type){const s=db.students.find(x=>x.id===id);if(!s)return;let amount=calcPending(id,new Date().toISOString().slice(0,7));let text=replaceMsg(type==='fee'?db.settings.messages.fee:db.settings.messages.absent,s,amount);window.open('https://wa.me/'+(s.mobile||'')+'?text='+encodeURIComponent(text),'_blank')}
@@ -122,7 +137,47 @@ function payFeeInfo(amount){alert('Payable amount: '+money(amount)+'\\nUPI ID: '
 function openModal(t,b){modalTitle.textContent=t;modalBody.innerHTML=b;modal.classList.remove('hidden')}
 function closeModal(){modal.classList.add('hidden')}
 function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
-async function syncSheets(){const url=db.settings.sheetsUrl;if(!url)return alert('Settings-ல் Google Sheets Apps Script URL சேர்க்கவும்.');try{const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(db)});alert(res.ok?'Google Sheets sync request sent.':'Sync failed: '+res.status)}catch(e){alert('Sync failed. Apps Script Web App URL மற்றும் deployment access check செய்யவும்.')}}
+function syncSheets(){
+const url=(db.settings.sheetsUrl||'').trim();
+if(!url)return alert('Settings-ல் Google Sheets Apps Script Web App URL சேர்க்கவும்.');
+if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)){
+  return alert('Google Apps Script Web App URL சரியாக இல்லை. /exec என்று முடியும் deployed URL-ஐ பயன்படுத்தவும்.');
+}
+try{
+  const frame=document.getElementById('sheetsSyncFrame')||(()=>{
+    const f=document.createElement('iframe');
+    f.id='sheetsSyncFrame';
+    f.name='sheetsSyncFrame';
+    f.style.display='none';
+    document.body.appendChild(f);
+    return f;
+  })();
+  const form=document.createElement('form');
+  form.method='POST';
+  form.action=url;
+  form.target='sheetsSyncFrame';
+  form.style.display='none';
+  const input=document.createElement('input');
+  input.type='hidden';
+  input.name='payload';
+  input.value=JSON.stringify({
+    source:'Arul Siragugal Academy',
+    syncedAt:new Date().toISOString(),
+    settings:db.settings,
+    students:db.students,
+    attendance:db.attendance,
+    fees:db.fees,
+    marks:db.marks
+  });
+  form.appendChild(input);
+  document.body.appendChild(form);
+  form.submit();
+  setTimeout(()=>form.remove(),3000);
+  alert('Google Sheets sync request அனுப்பப்பட்டது.\n\nApps Script doPost(e) payload-ஐ receive செய்து Sheet-ல் save செய்ய வேண்டும்.');
+}catch(e){
+  alert('Sync தொடங்க முடியவில்லை: '+e.message);
+}}
+
 if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');applySettings();
 </script>
 </body>
