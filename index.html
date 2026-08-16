@@ -1,214 +1,273 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ta">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f172a">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
 <title>Arul Siragugal Academy</title>
 <style>
-:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--primary:#4f46e5;--primary2:#7c3aed;--line:#e5e7eb;--ok:#16a34a;--warn:#d97706;--danger:#dc2626;--shadow:0 12px 35px rgba(15,23,42,.08)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Noto Sans Tamil",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
-.hidden{display:none!important}.app{min-height:100vh}.top{height:68px;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:20}.brand{display:flex;gap:12px;align-items:center}.logo{width:44px;height:44px;border-radius:12px;object-fit:contain;background:#fff}.brand b{font-size:17px}.brand small{display:block;color:#cbd5e1;margin-top:2px}
-.layout{display:flex;min-height:calc(100vh - 68px)}.side{width:235px;background:#fff;border-right:1px solid var(--line);padding:18px 12px}.navbtn{width:100%;border:0;background:transparent;text-align:left;padding:12px 13px;border-radius:10px;margin:3px 0;color:#475569}.navbtn.active,.navbtn:hover{background:#eef2ff;color:#4338ca;font-weight:700}
-.main{flex:1;padding:24px;max-width:1500px;margin:auto;width:100%}.pagehead{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:20px}.pagehead h1{margin:0;font-size:27px}.muted{color:var(--muted);font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}.stat{font-size:28px;font-weight:800;margin-top:8px}.iconbox{width:40px;height:40px;border-radius:12px;background:#eef2ff;display:grid;place-items:center;font-size:20px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700}.primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff}.soft{background:#eef2ff;color:#4338ca}.success{background:#dcfce7;color:#166534}.warning{background:#fef3c7;color:#92400e}.danger{background:#fee2e2;color:#991b1b}.outline{background:#fff;border:1px solid var(--line)}.input{width:100%;padding:11px 12px;border:1px solid #dbe1ea;border-radius:10px;background:#fff;color:var(--text);outline:none}.input:focus{border-color:#818cf8;box-shadow:0 0 0 3px #e0e7ff}.formgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:#475569}.tablewrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:650px}.table th,.table td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}.table th{background:#f8fafc;color:#64748b}.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}.pill.ok{background:#dcfce7;color:#166534}.pill.warn{background:#fef3c7;color:#92400e}.pill.red{background:#fee2e2;color:#991b1b}.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at top left,#e0e7ff,transparent 40%),radial-gradient(circle at bottom right,#ede9fe,transparent 40%),#f8fafc}.loginbox{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:24px;padding:28px;box-shadow:0 25px 70px rgba(15,23,42,.14)}.loginlogo{width:78px;height:78px;display:block;margin:0 auto 12px;object-fit:contain;border-radius:18px}.role{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0}.role button{padding:11px;border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:800}.role button.sel{background:#eef2ff;border-color:#818cf8;color:#4338ca}.toast{position:fixed;right:18px;bottom:18px;background:#0f172a;color:#fff;padding:12px 15px;border-radius:12px;z-index:100;box-shadow:var(--shadow)}.mobiletop{display:none}.empty{text-align:center;padding:30px;color:var(--muted)}.section{display:none}.section.active{display:block}.paybox{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:14px}.chart{height:220px;display:flex;align-items:end;gap:10px;padding:15px 5px}.bar{flex:1;background:linear-gradient(180deg,#7c3aed,#4f46e5);border-radius:8px 8px 3px 3px;min-width:14px;position:relative}.bar span{position:absolute;bottom:-20px;font-size:10px;color:var(--muted);width:100%;text-align:center}.bar em{position:absolute;top:-18px;font-size:10px;color:var(--muted);font-style:normal;width:100%;text-align:center}
-@media(max-width:850px){.side{display:none}.mobiletop{display:block}.main{padding:16px}.grid{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.top{padding:0 14px}.pagehead h1{font-size:22px}.formgrid{grid-template-columns:1fr}.mobilemenu{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:30;padding:7px}.mobilemenu button{flex:1;border:0;background:transparent;font-size:11px;padding:7px}.mobilemenu button b{display:block;font-size:18px}}
-@media(min-width:851px){.mobilemenu{display:none}}
-body.dark{--bg:#0b1220;--card:#111827;--text:#f1f5f9;--muted:#94a3b8;--line:#263244}body.dark .side,body.dark .top{background:#0b1220}body.dark .input,body.dark .outline,body.dark .role button{background:#111827;color:#f1f5f9}body.dark .table th{background:#172033}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Tamil",sans-serif;background:#f5f7fb;color:#172033}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#eef2ff,#f8fafc,#ede9fe)}
+.login-card{width:min(430px,100%);background:white;padding:30px;border-radius:24px;box-shadow:0 25px 70px #0002;text-align:center}
+.logo-lg{width:82px;height:82px;object-fit:contain;border-radius:18px;margin-bottom:10px}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:20px 0}.role{border:1px solid #dbe2ea;background:white;padding:12px;border-radius:12px;font-weight:700}.role.active{background:#eef2ff;border-color:#6366f1;color:#4338ca}
+.input{width:100%;padding:12px;border:1px solid #dbe2ea;border-radius:10px;outline:0;background:white;color:#172033}.input:focus{border-color:#6366f1;box-shadow:0 0 0 3px #e0e7ff}
+.field{text-align:left;margin-bottom:12px}.field label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700}.primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white}.soft{background:#eef2ff;color:#4338ca}.success{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.danger{background:#fee2e2;color:#991b1b}.outline{background:white;border:1px solid #dbe2ea}
+.top{height:68px;background:#111827;color:white;display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:20}.brand{display:flex;gap:10px;align-items:center}.brand img{width:43px;height:43px;border-radius:11px;object-fit:contain;background:white}.brand small{display:block;color:#cbd5e1}
+.layout{display:flex;min-height:calc(100vh - 68px)}.side{width:230px;background:white;border-right:1px solid #e5e7eb;padding:15px}.nav{width:100%;border:0;background:transparent;text-align:left;padding:12px;border-radius:10px;margin:3px 0;color:#475569}.nav.active,.nav:hover{background:#eef2ff;color:#4338ca;font-weight:700}.main{flex:1;padding:24px;max-width:1500px;width:100%;margin:auto}
+.section{display:none}.section.active{display:block}.head{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px}.head h1{margin:0;font-size:27px}.muted{color:#64748b;font-size:13px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}.card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:18px;box-shadow:0 10px 30px #0f172a0a}.stat{font-size:28px;font-weight:800;margin-top:8px}.icon{font-size:21px;background:#eef2ff;width:42px;height:42px;display:grid;place-items:center;border-radius:12px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.tablewrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:680px}.table th,.table td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:13px}.table th{background:#f8fafc;color:#64748b}.pill{padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}.ok{background:#dcfce7;color:#166534}.pending{background:#fef3c7;color:#92400e}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.modal{position:fixed;inset:0;background:#0f172a99;display:grid;place-items:center;padding:18px;z-index:50}.modal-box{background:white;width:min(650px,100%);max-height:90vh;overflow:auto;border-radius:18px;padding:22px}.chart{height:210px;display:flex;align-items:end;gap:10px;padding:15px}.bar{flex:1;min-width:15px;background:linear-gradient(#7c3aed,#4f46e5);border-radius:7px 7px 2px 2px;position:relative}.bar em{position:absolute;top:-18px;width:100%;text-align:center;font-size:10px;font-style:normal}.bar span{position:absolute;bottom:-20px;width:100%;text-align:center;font-size:10px;color:#64748b}.paybox{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:14px}
+.mobile-nav{display:none}
+body.dark{background:#0b1220;color:#f1f5f9}body.dark .card,body.dark .side,body.dark .login-card,body.dark .modal-box,body.dark .outline,body.dark .role{background:#111827;color:#f1f5f9;border-color:#263244}body.dark .input{background:#111827;color:white;border-color:#334155}body.dark .table th{background:#172033}body.dark .muted{color:#94a3b8}
+@media(max-width:850px){.side{display:none}.main{padding:15px;padding-bottom:80px}.grid{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.top{padding:0 12px}.head h1{font-size:22px}.mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid #ddd;z-index:30}.mobile-nav button{flex:1;border:0;background:transparent;padding:7px;font-size:10px}.mobile-nav b{display:block;font-size:18px}.formgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <div id="login" class="login">
-  <div class="loginbox">
-    <img id="loginLogo" class="loginlogo" alt="Academy Logo">
-    <h2 id="loginAcademy" style="text-align:center;margin:0">Arul Siragugal Academy</h2>
-    <p class="muted" style="text-align:center">Tuition Management • Secure Login</p>
-    <div class="role">
-      <button id="teacherRole" class="sel" onclick="setRole('teacher')">👨‍🏫 Teacher</button>
-      <button id="studentRole" onclick="setRole('student')">👨‍🎓 Student</button>
-    </div>
-    <div class="field" style="margin-bottom:10px"><label id="userLabel">Teacher ID</label><input id="loginUser" class="input" placeholder="Teacher ID"></div>
-    <div class="field" style="margin-bottom:15px"><label>Password</label><input id="loginPass" class="input" type="password" placeholder="Password"></div>
-    <button class="btn primary" style="width:100%" onclick="login()">Login</button>
-    <p class="muted" style="text-align:center;margin:14px 0 0">Google Sheets mode • Free Apps Script backend</p>
+ <div class="login-card">
+  <img id="loginLogo" class="logo-lg" alt="">
+  <h2 id="loginAcademy">Arul Siragugal Academy</h2>
+  <p class="muted">Tuition Management</p>
+  <div class="roles">
+   <button id="teacherRole" class="role active" onclick="chooseRole('teacher')">👨‍🏫 Teacher</button>
+   <button id="studentRole" class="role" onclick="chooseRole('student')">👨‍🎓 Student</button>
   </div>
+  <div class="field"><label id="idLabel">Teacher ID</label><input id="loginId" class="input" placeholder="Teacher ID"></div>
+  <div class="field"><label>Password</label><input id="loginPassword" class="input" type="password" placeholder="Password"></div>
+  <button class="btn primary" style="width:100%" onclick="login()">Login</button>
+ </div>
 </div>
 
-<div id="app" class="app hidden">
+<div id="app" class="hidden">
 <header class="top">
-  <div class="brand"><img id="brandLogo" class="logo" alt=""><div><b id="brandName">Arul Siragugal Academy</b><small id="roleText">Teacher Portal</small></div></div>
-  <div style="display:flex;gap:8px"><button class="btn outline" onclick="toggleDark()">🌙</button><button class="btn outline" onclick="logout()">Logout</button></div>
+ <div class="brand"><img id="brandLogo"><div><b id="brandName">Arul Siragugal Academy</b><small id="roleName">Teacher Portal</small></div></div>
+ <div><button class="btn outline" onclick="toggleDark()">🌙</button> <button class="btn outline" onclick="logout()">Logout</button></div>
 </header>
 <div class="layout">
-<aside class="side" id="sideNav"></aside>
+<aside id="side" class="side"></aside>
 <main class="main">
-  <section id="teacherDashboard" class="section active">
-    <div class="pagehead"><div><h1>Overview</h1><p class="muted">இன்றைய academy நிலவரம்</p></div><button class="btn primary" onclick="openSection('students')">+ Student</button></div>
-    <div class="grid">
-      <div class="card"><div class="iconbox">👨‍🎓</div><div class="muted">மாணவர்கள்</div><div class="stat" id="sTotal">0</div></div>
-      <div class="card"><div class="iconbox">✅</div><div class="muted">இன்று வந்தவர்கள்</div><div class="stat" id="sPresent">0</div></div>
-      <div class="card"><div class="iconbox">⚠️</div><div class="muted">Pending Fee</div><div class="stat" id="sPending">₹0</div></div>
-      <div class="card"><div class="iconbox">💰</div><div class="muted">இந்த மாத வசூல்</div><div class="stat" id="sIncome">₹0</div></div>
-    </div>
-    <div class="grid2" style="margin-top:16px">
-      <div class="card"><h3>📈 Monthly Fee Analysis</h3><div id="incomeChart" class="chart"></div></div>
-      <div class="card"><h3>🔔 Quick Reminders</h3><div class="toolbar"><button class="btn warning" onclick="sendFeeReminders()">💬 Fee Reminder</button><button class="btn danger" onclick="sendAbsentReminders()">💬 Absent Reminder</button></div><p class="muted">WhatsApp message open செய்யப்படும்; நீங்கள் review செய்து Send செய்யலாம்.</p></div>
-    </div>
-  </section>
 
-  <section id="students" class="section">
-    <div class="pagehead"><div><h1>Students</h1><p class="muted">மாணவர் பதிவுகள் மற்றும் தொடர்பு</p></div><button class="btn primary" onclick="studentForm()">+ Add Student</button></div>
-    <div class="card"><div class="toolbar"><input id="studentSearch" class="input" style="max-width:350px" placeholder="Search name / class / phone" oninput="renderStudents()"></div><div id="studentTable" class="tablewrap"></div></div>
-  </section>
+<section id="dashboard" class="section active">
+ <div class="head"><div><h1>Overview</h1><p class="muted">Academy முழு நிலவரம்</p></div><button class="btn primary" onclick="openStudentForm()">+ Student</button></div>
+ <div class="grid">
+  <div class="card"><div class="icon">👨‍🎓</div><div class="muted">Total Students</div><div id="dashStudents" class="stat">0</div></div>
+  <div class="card"><div class="icon">✅</div><div class="muted">Today Present</div><div id="dashPresent" class="stat">0</div></div>
+  <div class="card"><div class="icon">⚠️</div><div class="muted">Pending Fees</div><div id="dashPending" class="stat">₹0</div></div>
+  <div class="card"><div class="icon">💰</div><div class="muted">This Month Collection</div><div id="dashIncome" class="stat">₹0</div></div>
+ </div>
+ <div class="grid2" style="margin-top:15px">
+  <div class="card"><h3>📈 Monthly Fee Analysis</h3><div id="chart" class="chart"></div></div>
+  <div class="card"><h3>🔔 Quick Reminder</h3><div class="toolbar"><button class="btn warn" onclick="bulkFeeReminder()">💬 Fee Reminder</button><button class="btn danger" onclick="bulkAbsentReminder()">💬 Absent Reminder</button></div><p class="muted">WhatsApp opens with your customised Tamil message.</p></div>
+ </div>
+</section>
 
-  <section id="attendance" class="section">
-    <div class="pagehead"><div><h1>Attendance</h1><p class="muted">Present / Absent details</p></div><button class="btn primary" onclick="markToday()">Mark Today</button></div>
-    <div class="grid"><div class="card"><div class="muted">Present Today</div><div class="stat" id="aPresent">0</div></div><div class="card"><div class="muted">Absent Today</div><div class="stat" id="aAbsent">0</div></div></div>
-    <div class="card" style="margin-top:16px"><div id="attendanceTable" class="tablewrap"></div></div>
-  </section>
+<section id="students" class="section">
+ <div class="head"><div><h1>Students</h1><p class="muted">மாணவர் + Parent contact details</p></div><button class="btn primary" onclick="openStudentForm()">+ Add Student</button></div>
+ <div class="card"><div class="toolbar"><input id="studentSearch" class="input" style="max-width:360px" placeholder="Search student / class / phone" oninput="renderStudents()"></div><div id="studentsTable" class="tablewrap"></div></div>
+</section>
 
-  <section id="fees" class="section">
-    <div class="pagehead"><div><h1>Fees</h1><p class="muted">Monthly Tuition + Extra Fees</p></div><button class="btn primary" onclick="feeForm()">+ Add Payment / Extra Fee</button></div>
-    <div class="grid"><div class="card"><div class="muted">Collected This Month</div><div class="stat" id="fIncome">₹0</div></div><div class="card"><div class="muted">Pending</div><div class="stat" id="fPending">₹0</div></div></div>
-    <div class="card" style="margin-top:16px"><div class="toolbar"><button class="btn warning" onclick="sendFeeReminders()">💬 Send Fee Reminders</button></div><div id="feeTable" class="tablewrap"></div></div>
-  </section>
+<section id="attendance" class="section">
+ <div class="head"><div><h1>Attendance</h1><p class="muted">Present / Absent</p></div><button class="btn primary" onclick="markAllToday()">Mark Today</button></div>
+ <div class="grid"><div class="card"><div class="muted">Present</div><div id="presentCount" class="stat">0</div></div><div class="card"><div class="muted">Absent</div><div id="absentCount" class="stat">0</div></div></div>
+ <div class="card" style="margin-top:15px"><div id="attendanceTable" class="tablewrap"></div></div>
+</section>
 
-  <section id="marks" class="section">
-    <div class="pagehead"><div><h1>Marks</h1><p class="muted">Student • Total Mark • Mark</p></div><button class="btn primary" onclick="markForm()">+ Add Mark</button></div>
-    <div class="card"><div id="markTable" class="tablewrap"></div></div>
-  </section>
+<section id="fees" class="section">
+ <div class="head"><div><h1>Fees</h1><p class="muted">Fixed Monthly Fee + Extra Fee</p></div><button class="btn primary" onclick="openFeeForm()">+ Add Fee</button></div>
+ <div class="grid"><div class="card"><div class="muted">Monthly Collection</div><div id="feeCollection" class="stat">₹0</div></div><div class="card"><div class="muted">Total Pending</div><div id="feePending" class="stat">₹0</div></div></div>
+ <div class="card" style="margin-top:15px"><div class="toolbar"><button class="btn warn" onclick="bulkFeeReminder()">💬 Fee Reminder</button></div><div id="feesTable" class="tablewrap"></div></div>
+</section>
 
-  <section id="settings" class="section">
-    <div class="pagehead"><div><h1>Settings</h1><p class="muted">App முழுவதையும் Teacher இங்கிருந்து control செய்யலாம்</p></div></div>
-    <div class="grid2">
-      <div class="card"><h3>🏫 Academy Profile</h3><div class="formgrid">
-        <div class="field"><label>Academy Name</label><input id="setName" class="input"></div>
-        <div class="field"><label>Teacher Name</label><input id="setTeacher" class="input"></div>
-        <div class="field"><label>Mobile</label><input id="setMobile" class="input"></div>
-        <div class="field"><label>Monthly Default Fee</label><input id="setFee" type="number" class="input"></div>
-        <div class="field" style="grid-column:1/-1"><label>UPI ID (Student Pay option)</label><input id="setUpi" class="input" placeholder="example@upi"></div>
-      </div><div style="margin-top:12px"><label class="btn soft">🖼️ Upload Logo<input id="setLogo" type="file" accept="image/*" hidden onchange="logoPreview(this)"></label><img id="logoPreview" style="width:65px;height:65px;object-fit:contain;vertical-align:middle;margin-left:10px"><button class="btn primary" onclick="saveSettings()">Save Profile</button></div></div>
+<section id="marks" class="section">
+ <div class="head"><div><h1>Marks</h1><p class="muted">Student • Total Mark • Mark</p></div><button class="btn primary" onclick="openMarkForm()">+ Add Mark</button></div>
+ <div class="card"><div id="marksTable" class="tablewrap"></div></div>
+</section>
 
-      <div class="card"><h3>💬 Tamil Reminder Templates</h3>
-        <div class="field"><label>Fee Reminder</label><textarea id="msgFee" class="input" rows="5"></textarea></div>
-        <div class="field" style="margin-top:10px"><label>Absent Reminder</label><textarea id="msgAbsent" class="input" rows="5"></textarea></div>
-        <p class="muted">Use: {student}, {amount}, {date}, {academy}</p><button class="btn primary" onclick="saveMessages()">Save Messages</button>
-      </div>
+<section id="settings" class="section">
+ <div class="head"><div><h1>Settings</h1><p class="muted">Teacher Control</p></div></div>
+ <div class="grid2">
+  <div class="card"><h3>🏫 Academy Profile</h3>
+   <div class="formgrid">
+    <div class="field"><label>Academy Name</label><input id="setAcademy" class="input"></div>
+    <div class="field"><label>Teacher Name</label><input id="setTeacher" class="input"></div>
+    <div class="field"><label>Mobile</label><input id="setMobile" class="input"></div>
+    <div class="field"><label>Default Monthly Fee</label><input id="setDefaultFee" class="input" type="number"></div>
+    <div class="field"><label>UPI ID</label><input id="setUPI" class="input" placeholder="yourname@upi"></div>
+   </div>
+   <div style="margin-top:10px"><label class="btn soft">🖼️ Upload Logo <input id="logoFile" type="file" accept="image/*" hidden onchange="uploadLogo(this)"></label><button class="btn primary" onclick="saveProfile()">Save Profile</button></div>
+   <img id="logoPreview" style="width:65px;height:65px;object-fit:contain;margin-top:10px">
+  </div>
 
-      <div class="card"><h3>☁️ Google Sheets</h3><p class="muted">இந்த app-ல் data localStorage-ல் அல்ல; Google Apps Script Web App URL கொடுத்தால் Google Sheet-க்கு save/load செய்யப்படும்.</p>
-        <div class="field"><label>Apps Script Web App URL</label><input id="setApi" class="input" placeholder="https://script.google.com/macros/s/.../exec"></div>
-        <button class="btn primary" onclick="saveApi()">Connect Google Sheets</button>
-        <button class="btn outline" onclick="testApi()">Test Connection</button>
-        <div id="apiStatus" class="muted" style="margin-top:8px"></div>
-      </div>
+  <div class="card"><h3>💬 Tamil Reminder Messages</h3>
+   <div class="field"><label>Fee Reminder</label><textarea id="feeMsg" class="input" rows="5"></textarea></div>
+   <div class="field"><label>Absent Reminder</label><textarea id="absentMsg" class="input" rows="5"></textarea></div>
+   <p class="muted">{student} {amount} {date} {academy}</p>
+   <button class="btn primary" onclick="saveMessages()">Save Messages</button>
+  </div>
 
-      <div class="card"><h3>🔐 Teacher Control</h3><p class="muted">Teacher மட்டுமே student, attendance, fees, marks, settings மாற்ற முடியும்.</p>
-        <div class="field"><label>Teacher ID</label><input id="setTeacherId" class="input"></div>
-        <div class="field" style="margin-top:8px"><label>New Teacher Password</label><input id="setTeacherPass" class="input" type="password"></div>
-        <button class="btn primary" style="margin-top:10px" onclick="saveTeacherLogin()">Save Login</button>
-      </div>
-    </div>
-  </section>
+  <div class="card"><h3>☁️ Google Sheets</h3>
+   <p class="muted">Google Apps Script Web App URL இங்கே paste செய்யவும். Data Google Sheets-க்கு sync ஆகும்.</p>
+   <input id="setAPI" class="input" placeholder="https://script.google.com/macros/s/.../exec">
+   <div style="margin-top:10px"><button class="btn primary" onclick="saveAPI()">Connect</button><button class="btn outline" onclick="testAPI()">Test</button></div>
+   <p id="apiStatus" class="muted"></p>
+  </div>
 
-  <section id="studentPortal" class="section">
-    <div class="pagehead"><div><h1>Student Portal</h1><p class="muted">உங்கள் கல்வி விவரங்கள்</p></div></div>
-    <div class="grid">
-      <div class="card"><div class="iconbox">📊</div><div class="muted">Marks</div><div class="stat" id="spMark">-</div></div>
-      <div class="card"><div class="iconbox">📅</div><div class="muted">Attendance</div><div class="stat" id="spAttend">-</div></div>
-      <div class="card"><div class="iconbox">💰</div><div class="muted">Pending Fee</div><div class="stat" id="spFee">₹0</div></div>
-    </div>
-    <div class="grid2" style="margin-top:16px">
-      <div class="card"><h3>📊 My Marks</h3><div id="spMarksTable"></div></div>
-      <div class="card"><h3>📅 My Attendance</h3><div id="spAttendanceTable"></div></div>
-    </div>
-    <div class="card" style="margin-top:16px"><h3>💰 My Fees</h3><div id="spFees"></div><div class="paybox" style="margin-top:12px"><b>Online Payment</b><p class="muted">Teacher Settings-ல் UPI ID அமைத்திருந்தால் Pay button வரும்.</p><button class="btn success" onclick="payFee()">💳 Pay Fee</button></div></div>
-  </section>
-</main>
-</div>
-<div class="mobilemenu" id="mobileNav"></div>
-</div>
+  <div class="card"><h3>🔐 Teacher Login</h3>
+   <div class="field"><label>Teacher ID</label><input id="setTeacherID" class="input"></div>
+   <div class="field"><label>New Password</label><input id="setTeacherPass" class="input" type="password"></div>
+   <button class="btn primary" onclick="saveTeacherLogin()">Save Login</button>
+  </div>
+ </div>
+</section>
+
+<section id="studentPortal" class="section">
+ <div class="head"><div><h1 id="studentWelcome">My Portal</h1><p class="muted">உங்கள் கல்வி விவரங்கள்</p></div></div>
+ <div class="grid">
+  <div class="card"><div class="icon">📊</div><div class="muted">Latest Mark</div><div id="spMark" class="stat">-</div></div>
+  <div class="card"><div class="icon">📅</div><div class="muted">Attendance</div><div id="spAttendance" class="stat">-</div></div>
+  <div class="card"><div class="icon">⚠️</div><div class="muted">Pending Fee</div><div id="spPending" class="stat">₹0</div></div>
+ </div>
+ <div class="grid2" style="margin-top:15px">
+  <div class="card"><h3>📊 My Marks</h3><div id="spMarks"></div></div>
+  <div class="card"><h3>📅 My Attendance</h3><div id="spAttDetails"></div></div>
+ </div>
+ <div class="card" style="margin-top:15px"><h3>💰 My Fees</h3><div id="spFees"></div><div class="paybox" style="margin-top:12px"><b>💳 Pay Fee</b><p class="muted">Teacher Settings-ல் UPI ID அமைத்திருந்தால் payment option வரும்.</p><button class="btn success" onclick="payStudentFee()">Pay Now</button></div></div>
+</section>
+
+</main></div><div id="mobileNav" class="mobile-nav"></div></div>
 <div id="modal" class="hidden"></div>
-<div id="toast" class="toast hidden"></div>
 
 <script>
+const KEY="ASA_FULL_V4";
+let role="teacher", currentStudent=null;
+let db={students:[],attendance:[],fees:[],marks:[],settings:{
+ academy:"Arul Siragugal Academy",teacher:"",mobile:"",defaultFee:700,upi:"",
+ logo:"",api:"",teacherId:"teacher",teacherPass:"1234",
+ feeMsg:"வணக்கம் பெற்றோர் அவர்களுக்கு,\n{academy} சார்பாக கட்டண நினைவூட்டல்.\nமாணவர்: {student}\nநிலுவை கட்டணம்: ₹{amount}\nதயவுசெய்து கட்டணத்தை செலுத்தவும். நன்றி.",
+ absentMsg:"வணக்கம் பெற்றோர் அவர்களுக்கு,\n{academy} சார்பாக தகவல்.\nமாணவர்: {student} இன்று {date} அன்று வகுப்பிற்கு வரவில்லை.\nதயவுசெய்து கவனிக்கவும். நன்றி."
+}};
 const $=id=>document.getElementById(id);
-const LS='asa_v3_';
-let role='teacher', currentStudent=null, data={students:[],attendance:[],fees:[],marks:[],settings:{academy:'Arul Siragugal Academy',teacher:'',mobile:'',fee:700,upi:'',logo:'',api:'',teacherId:'teacher',teacherPass:'1234',msgFee:'வணக்கம் பெற்றோர் அவர்களுக்கு, {academy} சார்பாக கட்டண நினைவூட்டல். மாணவர்: {student}. நிலுவை கட்டணம்: ₹{amount}. தயவுசெய்து கட்டணத்தை செலுத்தவும். நன்றி.',msgAbsent:'வணக்கம் பெற்றோர் அவர்களுக்கு, {academy}. உங்கள் குழந்தை {student} இன்று ({date}) வருகையில் ABSENT. தயவுசெய்து கவனிக்கவும். நன்றி.'}};
-function loadLocal(){try{let x=JSON.parse(localStorage.getItem(LS+'data')||'null');if(x)data=Object.assign(data,x)}catch(e){}}
-function saveLocal(){localStorage.setItem(LS+'data',JSON.stringify(data))}
-function toast(t){$('toast').textContent=t;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),2200)}
-function setRole(r){role=r;$('teacherRole').classList.toggle('sel',r==='teacher');$('studentRole').classList.toggle('sel',r==='student');$('userLabel').textContent=r==='teacher'?'Teacher ID':'Student ID';$('loginUser').placeholder=r==='teacher'?'Teacher ID':'Student ID'}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])}
+function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
+function today(){return new Date().toISOString().slice(0,10)}
+function month(){return today().slice(0,7)}
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY)||"null");if(x)db=Object.assign(db,x)}catch(e){}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function chooseRole(r){role=r;$("teacherRole").classList.toggle("active",r==="teacher");$("studentRole").classList.toggle("active",r==="student");$("idLabel").textContent=r==="teacher"?"Teacher ID":"Student ID";$("loginId").placeholder=r==="teacher"?"Teacher ID":"Student ID"}
 function login(){
- let u=$('loginUser').value.trim(),p=$('loginPass').value;
- if(role==='teacher'){
-  if(u!==(data.settings.teacherId||'teacher')||p!==(data.settings.teacherPass||'1234'))return alert('Teacher ID / Password தவறு.');
-  currentStudent=null;enterApp();
+ const id=$("loginId").value.trim(),pw=$("loginPassword").value;
+ if(role==="teacher"){
+  if(id!==db.settings.teacherId||pw!==db.settings.teacherPass)return alert("Teacher ID / Password தவறு.");
  }else{
-  let s=data.students.find(x=>String(x.id).toLowerCase()===u.toLowerCase()&&(x.password||'1234')===p);
-  if(!s)return alert('Student ID / Password தவறு.');
-  currentStudent=s;enterApp();
+  currentStudent=db.students.find(s=>String(s.id).toLowerCase()===id.toLowerCase()&&(s.password||"1234")===pw);
+  if(!currentStudent)return alert("Student ID / Password தவறு.");
  }
+ $("login").classList.add("hidden");$("app").classList.remove("hidden");$("roleName").textContent=role==="teacher"?"Teacher Portal":"Student Portal";setBrand();buildNav();openSection(role==="teacher"?"dashboard":"studentPortal")
 }
-function enterApp(){$('login').classList.add('hidden');$('app').classList.remove('hidden');$('brandName').textContent=data.settings.academy;$('roleText').textContent=role==='teacher'?'Teacher Portal':'Student Portal';setBrand();buildNav();role==='teacher'?openSection('teacherDashboard'):openSection('studentPortal');}
-function logout(){$('app').classList.add('hidden');$('login').classList.remove('hidden');$('loginPass').value='';}
-function setBrand(){let logo=data.settings.logo||'';$('brandLogo').src=logo;$('loginLogo').src=logo;$('loginAcademy').textContent=data.settings.academy}
+function logout(){$("app").classList.add("hidden");$("login").classList.remove("hidden");$("loginPassword").value="";currentStudent=null}
+function setBrand(){$("brandName").textContent=db.settings.academy;$("loginAcademy").textContent=db.settings.academy;$("brandLogo").src=db.settings.logo||"";$("loginLogo").src=db.settings.logo||""}
 function buildNav(){
- let nav=role==='teacher'?[['teacherDashboard','🏠','Overview'],['students','👨‍🎓','Students'],['attendance','📅','Attendance'],['fees','💰','Fees'],['marks','📝','Marks'],['settings','⚙️','Settings']]:[['studentPortal','🏠','My Portal']];
- $('sideNav').innerHTML=nav.map(x=>`<button class="navbtn" onclick="openSection('${x[0]}')">${x[1]} ${x[2]}</button>`).join('');
- $('mobileNav').innerHTML=nav.slice(0,4).map(x=>`<button onclick="openSection('${x[0]}')"><b>${x[1]}</b>${x[2]}</button>`).join('');
+ let n=role==="teacher"?[
+  ["dashboard","🏠","Overview"],["students","👨‍🎓","Students"],["attendance","📅","Attendance"],["fees","💰","Fees"],["marks","📝","Marks"],["settings","⚙️","Settings"]
+ ]:[["studentPortal","🏠","My Portal"]];
+ $("side").innerHTML=n.map(x=>`<button class="nav" onclick="openSection('${x[0]}')">${x[1]} ${x[2]}</button>`).join("");
+ $("mobileNav").innerHTML=n.slice(0,4).map(x=>`<button onclick="openSection('${x[0]}')"><b>${x[1]}</b>${x[2]}</button>`).join("")
 }
-function openSection(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));$(id)?.classList.add('active');document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.getAttribute('onclick')?.includes(id)));refresh(id)}
-function refresh(){if(role==='teacher'){renderStudents();renderAttendance();renderFees();renderMarks();dashboard();loadSettings()}else renderStudentPortal()}
+function openSection(id){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));$(id)?.classList.add("active");refresh()}
+function refresh(){if(role==="teacher"){dashboard();renderStudents();renderAttendance();renderFees();renderMarks();loadSettings()}else renderStudentPortal()}
+function studentMonthly(s){return Number(s.monthlyFee??db.settings.defaultFee??700)}
+function studentFees(s){return db.fees.filter(f=>String(f.studentId)===String(s.id))}
+function pending(s){
+ const fs=studentFees(s),paid=fs.reduce((a,f)=>a+Number(f.paid||0),0);
+ const extra=fs.reduce((a,f)=>a+Number(f.extra||0),0);
+ return Math.max(0,studentMonthly(s)+extra-paid)
+}
 function dashboard(){
- let today=new Date().toISOString().slice(0,10),att=data.attendance.filter(x=>x.date===today),present=att.filter(x=>x.status==='Present').length;
- $('sTotal').textContent=data.students.length;$('sPresent').textContent=present;$('sPending').textContent='₹'+pendingTotal();let m=new Date().toISOString().slice(0,7);$('sIncome').textContent='₹'+data.fees.filter(x=>(x.date||'').startsWith(m)).reduce((a,x)=>a+Number(x.paid||0),0);$('fIncome').textContent=$('sIncome').textContent;$('fPending').textContent='₹'+pendingTotal();$('aPresent').textContent=present;$('aAbsent').textContent=Math.max(0,data.students.length-present);drawChart();
+ let a=db.attendance.filter(x=>x.date===today()),present=a.filter(x=>x.status==="Present").length;
+ let inc=db.fees.filter(x=>(x.date||"").startsWith(month())).reduce((a,f)=>a+Number(f.paid||0),0);
+ $("dashStudents").textContent=db.students.length;$("dashPresent").textContent=present;$("dashPending").textContent=money(db.students.reduce((a,s)=>a+pending(s),0));$("dashIncome").textContent=money(inc);
+ $("feeCollection").textContent=money(inc);$("feePending").textContent=money(db.students.reduce((a,s)=>a+pending(s),0));$("presentCount").textContent=present;$("absentCount").textContent=Math.max(0,db.students.length-present);drawChart()
 }
-function pending(s){if(!s)return 0;let monthly=Number(s.monthlyFee??data.settings.fee??700);let paid=data.fees.filter(x=>String(x.studentId)===String(s.id)).reduce((a,x)=>a+Number(x.paid||0),0);let extra=data.fees.filter(x=>String(x.studentId)===String(s.id)).reduce((a,x)=>a+Number(x.extra||0),0);return Math.max(0,monthly+extra-paid)}
-function pendingTotal(){return data.students.reduce((a,s)=>a+pending(s),0)}
-function drawChart(){let months=[];for(let i=5;i>=0;i--){let d=new Date();d.setMonth(d.getMonth()-i);let k=d.toISOString().slice(0,7);months.push([k,data.fees.filter(x=>(x.date||'').startsWith(k)).reduce((a,x)=>a+Number(x.paid||0),0)])}let max=Math.max(1,...months.map(x=>x[1]));$('incomeChart').innerHTML=months.map(x=>`<div class="bar" style="height:${Math.max(10,x[1]/max*170)}px"><em>₹${x[1]}</em><span>${x[0].slice(5)}</span></div>`).join('')}
-function renderStudents(){let q=($('studentSearch')?.value||'').toLowerCase();let list=data.students.filter(s=>[s.name,s.className,s.phone,s.id].join(' ').toLowerCase().includes(q));$('studentTable').innerHTML=list.length?`<table class="table"><thead><tr><th>Name</th><th>Class</th><th>Phone</th><th>Fee</th><th>Pending</th><th>Contact</th></tr></thead><tbody>${list.map(s=>`<tr><td><b>${esc(s.name)}</b><br><small>${esc(s.id)}</small></td><td>${esc(s.className||'-')}</td><td>${esc(s.phone||'-')}</td><td>₹${s.monthlyFee||data.settings.fee}</td><td><span class="pill ${pending(s)>0?'warn':'ok'}">₹${pending(s)}</span></td><td><button class="btn soft" onclick="callStudent('${s.id}')">📞</button> <button class="btn success" onclick="feeReminder('${s.id}')">💬 Fee</button> <button class="btn danger" onclick="absentReminder('${s.id}')">💬 Absent</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">No students</div>'}
-function studentForm(){modal(`<h2>➕ Add Student</h2><div class="formgrid"><div class="field"><label>Student ID</label><input id="mId" class="input"></div><div class="field"><label>Name</label><input id="mName" class="input"></div><div class="field"><label>Class</label><input id="mClass" class="input"></div><div class="field"><label>Parent Phone</label><input id="mPhone" class="input"></div><div class="field"><label>Monthly Fee</label><input id="mFee" type="number" class="input" value="${data.settings.fee}"></div><div class="field"><label>Student Password</label><input id="mPass" class="input" value="1234"></div></div><button class="btn primary" style="margin-top:14px" onclick="saveStudent()">Save Student</button>`)}
-function saveStudent(){let s={id:$('mId').value.trim(),name:$('mName').value.trim(),className:$('mClass').value.trim(),phone:$('mPhone').value.trim(),monthlyFee:Number($('mFee').value||data.settings.fee),password:$('mPass').value||'1234'};if(!s.id||!s.name)return alert('ID and Name required');data.students.push(s);closeModal();commit('students');toast('Student saved')}
-function renderAttendance(){let today=new Date().toISOString().slice(0,10);$('attendanceTable').innerHTML=`<table class="table"><thead><tr><th>Student</th><th>Class</th><th>Status</th><th>Call</th></tr></thead><tbody>${data.students.map(s=>{let a=data.attendance.find(x=>x.date===today&&String(x.studentId)===String(s.id));return `<tr><td>${esc(s.name)}</td><td>${esc(s.className||'-')}</td><td><button class="btn ${a?.status==='Present'?'success':'danger'}" onclick="toggleAttendance('${s.id}')">${a?.status||'Not Marked'}</button></td><td><button class="btn soft" onclick="callStudent('${s.id}')">📞</button></td></tr>`}).join('')}</tbody></table>`}
-function markToday(){data.students.forEach(s=>{if(!data.attendance.some(a=>a.date===new Date().toISOString().slice(0,10)&&String(a.studentId)===String(s.id)))data.attendance.push({date:new Date().toISOString().slice(0,10),studentId:s.id,status:'Present'})});commit('attendance')}
-function toggleAttendance(id){let d=new Date().toISOString().slice(0,10),a=data.attendance.find(x=>x.date===d&&String(x.studentId)===String(id));if(!a)data.attendance.push({date:d,studentId:id,status:'Present'});else a.status=a.status==='Present'?'Absent':'Present';commit('attendance')}
-function renderFees(){$('feeTable').innerHTML=`<table class="table"><thead><tr><th>Student</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th><th>Action</th></tr></thead><tbody>${data.students.map(s=>{let fs=data.fees.filter(x=>String(x.studentId)===String(s.id)),extra=fs.reduce((a,x)=>a+Number(x.extra||0),0),paid=fs.reduce((a,x)=>a+Number(x.paid||0),0);return `<tr><td>${esc(s.name)}</td><td>₹${s.monthlyFee||data.settings.fee}</td><td>₹${extra}</td><td>₹${paid}</td><td><span class="pill ${pending(s)>0?'warn':'ok'}">₹${pending(s)}</span></td><td><button class="btn success" onclick="feeReminder('${s.id}')">💬 Remind</button></td></tr>`}).join('')}</tbody></table>`}
-function feeForm(){let opts=data.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');modal(`<h2>💰 Add Fee</h2><div class="formgrid"><div class="field"><label>Student</label><select id="fmStudent" class="input">${opts}</select></div><div class="field"><label>Payment Amount</label><input id="fmPaid" type="number" class="input" value="0"></div><div class="field"><label>Extra Fee (Book / Pen / Exam / Other)</label><input id="fmExtra" type="number" class="input" value="0"></div><div class="field"><label>Extra Fee Note</label><input id="fmNote" class="input" placeholder="Book / Pen..."></div></div><button class="btn primary" style="margin-top:14px" onclick="saveFee()">Save Fee</button>`)}
-function saveFee(){data.fees.push({studentId:$('fmStudent').value,paid:Number($('fmPaid').value||0),extra:Number($('fmExtra').value||0),note:$('fmNote').value,date:new Date().toISOString().slice(0,10)});closeModal();commit('fees');toast('Fee updated')}
-function renderMarks(){let rows=data.marks;$('markTable').innerHTML=`<table class="table"><thead><tr><th>Student</th><th>Total Mark</th><th>Mark</th></tr></thead><tbody>${rows.map(m=>`<tr><td>${esc(m.name)}</td><td>${m.total}</td><td><b>${m.mark}</b></td></tr>`).join('')}</tbody></table>`}
-function markForm(){let opts=data.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');modal(`<h2>📝 Add Mark</h2><div class="formgrid"><div class="field"><label>Student</label><select id="mkStudent" class="input">${opts}</select></div><div class="field"><label>Total Mark</label><input id="mkTotal" class="input" type="number" value="100"></div><div class="field"><label>Mark</label><input id="mkMark" class="input" type="number"></div></div><button class="btn primary" style="margin-top:14px" onclick="saveMark()">Save Mark</button>`)}
-function saveMark(){let s=data.students.find(x=>String(x.id)===String($('mkStudent').value));data.marks.push({studentId:s.id,name:s.name,total:Number($('mkTotal').value),mark:Number($('mkMark').value)});closeModal();commit('marks')}
-function renderStudentPortal(){let s=currentStudent;if(!s)return;$('spFee').textContent='₹'+pending(s);let ms=data.marks.filter(x=>String(x.studentId)===String(s.id));$('spMark').textContent=ms.length?ms[ms.length-1].mark+'/'+ms[ms.length-1].total:'-';let aa=data.attendance.filter(x=>String(x.studentId)===String(s.id)),pr=aa.filter(x=>x.status==='Present').length;$('spAttend').textContent=aa.length?Math.round(pr/aa.length*100)+'%':'-';$('spMarksTable').innerHTML=ms.length?`<table class="table"><tr><th>Total</th><th>Mark</th></tr>${ms.map(m=>`<tr><td>${m.total}</td><td>${m.mark}</td></tr>`).join('')}</table>`:'<div class="empty">No marks</div>';$('spAttendanceTable').innerHTML=`<p>Present: <b>${pr}</b> / ${aa.length}</p>`;let fs=data.fees.filter(x=>String(x.studentId)===String(s.id));$('spFees').innerHTML=`<p>Monthly Fee: <b>₹${s.monthlyFee||data.settings.fee}</b></p><p>Extra Fees: <b>₹${fs.reduce((a,x)=>a+Number(x.extra||0),0)}</b></p><p>Paid: <b>₹${fs.reduce((a,x)=>a+Number(x.paid||0),0)}</b></p><p>Pending: <b>₹${pending(s)}</b></p>`}
-function callStudent(id){let s=data.students.find(x=>String(x.id)===String(id));if(s?.phone)location.href='tel:'+s.phone;else alert('Phone number இல்லை')}
-function feeReminder(id){let s=data.students.find(x=>String(x.id)===String(id));if(!s?.phone)return alert('Parent phone number இல்லை');let msg=template(data.settings.msgFee,{student:s.name,amount:pending(s)});openWA(s.phone,msg)}
-function absentReminder(id){let s=data.students.find(x=>String(x.id)===String(id));if(!s?.phone)return alert('Parent phone number இல்லை');openWA(s.phone,template(data.settings.msgAbsent,{student:s.name,date:new Date().toLocaleDateString('ta-IN')}))}
-function sendFeeReminders(){data.students.filter(s=>pending(s)>0&&s.phone).slice(0,10).forEach((s,i)=>setTimeout(()=>feeReminder(s.id),i*700))}
-function sendAbsentReminders(){let today=new Date().toISOString().slice(0,10);data.students.filter(s=>data.attendance.some(a=>a.date===today&&String(a.studentId)===String(s.id)&&a.status==='Absent')&&s.phone).slice(0,10).forEach((s,i)=>setTimeout(()=>absentReminder(s.id),i*700))}
-function openWA(phone,msg){let n=String(phone).replace(/\D/g,'');window.open('https://wa.me/'+n+'?text='+encodeURIComponent(msg),'_blank')}
-function template(t,o){return (t||'').replaceAll('{student}',o.student||'').replaceAll('{amount}',o.amount??'').replaceAll('{date}',o.date||'').replaceAll('{academy}',data.settings.academy)}
-function payFee(){if(!data.settings.upi)return alert('Teacher Settings-ல் UPI ID அமைக்கப்படவில்லை.');let amount=pending(currentStudent);location.href='upi://pay?pa='+encodeURIComponent(data.settings.upi)+'&pn='+encodeURIComponent(data.settings.academy)+'&am='+amount+'&cu=INR'}
-function loadSettings(){let s=data.settings;$('setName').value=s.academy;$('setTeacher').value=s.teacher;$('setMobile').value=s.mobile;$('setFee').value=s.fee;$('setUpi').value=s.upi;$('setApi').value=s.api;$('setTeacherId').value=s.teacherId;$('msgFee').value=s.msgFee;$('msgAbsent').value=s.msgAbsent;if(s.logo)$('logoPreview').src=s.logo}
-function logoPreview(i){if(i.files?.[0]){let r=new FileReader();r.onload=()=>{data.settings.logo=r.result;$('logoPreview').src=r.result};r.readAsDataURL(i.files[0])}}
-function saveSettings(){data.settings.academy=$('setName').value||'Arul Siragugal Academy';data.settings.teacher=$('setTeacher').value;data.settings.mobile=$('setMobile').value;data.settings.fee=Number($('setFee').value||700);data.settings.upi=$('setUpi').value;saveLocal();setBrand();toast('Profile saved')}
-function saveMessages(){data.settings.msgFee=$('msgFee').value;data.settings.msgAbsent=$('msgAbsent').value;saveLocal();toast('Tamil messages saved')}
-function saveApi(){data.settings.api=$('setApi').value.trim();saveLocal();testApi()}
-async function testApi(){if(!data.settings.api)return alert('Apps Script URL கொடுக்கவும்');try{let r=await fetch(data.settings.api+'?action=ping');let j=await r.json();$('apiStatus').textContent='✓ Google Sheets connected';toast('Google Sheets connection OK')}catch(e){$('apiStatus').textContent='Connection failed — URL / deployment check செய்யவும்'}}
+function drawChart(){
+ let arr=[];for(let i=5;i>=0;i--){let d=new Date();d.setMonth(d.getMonth()-i);let k=d.toISOString().slice(0,7);arr.push([k,db.fees.filter(f=>(f.date||"").startsWith(k)).reduce((a,f)=>a+Number(f.paid||0),0)])}
+ let max=Math.max(1,...arr.map(x=>x[1]));$("chart").innerHTML=arr.map(x=>`<div class="bar" style="height:${Math.max(10,x[1]/max*165)}px"><em>${money(x[1])}</em><span>${x[0].slice(5)}</span></div>`).join("")
+}
+function renderStudents(){
+ let q=($("studentSearch")?.value||"").toLowerCase(),list=db.students.filter(s=>[s.name,s.className,s.phone,s.id].join(" ").toLowerCase().includes(q));
+ $("studentsTable").innerHTML=list.length?`<table class="table"><thead><tr><th>Student</th><th>Class</th><th>Parent Phone</th><th>Monthly</th><th>Pending</th><th>Action</th></tr></thead><tbody>${list.map(s=>`<tr><td><b>${esc(s.name)}</b><br><small>${esc(s.id)}</small></td><td>${esc(s.className||"-")}</td><td>${esc(s.phone||"-")}</td><td>${money(studentMonthly(s))}</td><td><span class="pill ${pending(s)>0?"pending":"ok"}">${money(pending(s))}</span></td><td><button class="btn soft" onclick="callStudent('${esc(s.id)}')">📞</button> <button class="btn success" onclick="feeReminder('${esc(s.id)}')">💬</button></td></tr>`).join("")}</tbody></table>`:`<div class="muted" style="padding:30px;text-align:center">No students</div>`
+}
+function openStudentForm(){
+ modal(`<h2>➕ Add Student</h2><div class="formgrid">
+ <div class="field"><label>Student ID</label><input id="mId" class="input"></div><div class="field"><label>Student Name</label><input id="mName" class="input"></div>
+ <div class="field"><label>Class</label><input id="mClass" class="input"></div><div class="field"><label>Parent Phone</label><input id="mPhone" class="input"></div>
+ <div class="field"><label>Monthly Fee</label><input id="mFee" type="number" class="input" value="${db.settings.defaultFee}"></div><div class="field"><label>Student Password</label><input id="mPass" class="input" value="1234"></div>
+ </div><button class="btn primary" onclick="saveStudent()">Save Student</button>`)
+}
+function saveStudent(){
+ let s={id:$("mId").value.trim(),name:$("mName").value.trim(),className:$("mClass").value.trim(),phone:$("mPhone").value.trim(),monthlyFee:Number($("mFee").value||db.settings.defaultFee),password:$("mPass").value||"1234"};
+ if(!s.id||!s.name)return alert("Student ID மற்றும் Name தேவை.");if(db.students.some(x=>String(x.id)===String(s.id)))return alert("Student ID already exists.");
+ db.students.push(s);closeModal();commit("students")
+}
+function renderAttendance(){
+ let d=today();$("attendanceTable").innerHTML=`<table class="table"><thead><tr><th>Student</th><th>Class</th><th>Status</th><th>WhatsApp</th></tr></thead><tbody>${db.students.map(s=>{let a=db.attendance.find(x=>x.date===d&&String(x.studentId)===String(s.id));return `<tr><td>${esc(s.name)}</td><td>${esc(s.className||"-")}</td><td><button class="btn ${a?.status==="Present"?"success":"danger"}" onclick="toggleAttendance('${esc(s.id)}')">${a?.status||"Not Marked"}</button></td><td><button class="btn danger" onclick="absentReminder('${esc(s.id)}')">💬</button></td></tr>`}).join("")}</tbody></table>`
+}
+function toggleAttendance(id){
+ let a=db.attendance.find(x=>x.date===today()&&String(x.studentId)===String(id));
+ if(!a)db.attendance.push({date:today(),studentId:id,status:"Present"});else a.status=a.status==="Present"?"Absent":"Present";commit("attendance")
+}
+function markAllToday(){db.students.forEach(s=>{if(!db.attendance.some(a=>a.date===today()&&String(a.studentId)===String(s.id)))db.attendance.push({date:today(),studentId:s.id,status:"Present"})});commit("attendance")}
+function renderFees(){
+ $("feesTable").innerHTML=`<table class="table"><thead><tr><th>Student</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th><th>Reminder</th></tr></thead><tbody>${db.students.map(s=>{let fs=studentFees(s),extra=fs.reduce((a,f)=>a+Number(f.extra||0),0),paid=fs.reduce((a,f)=>a+Number(f.paid||0),0);return `<tr><td>${esc(s.name)}</td><td>${money(studentMonthly(s))}</td><td>${money(extra)}</td><td>${money(paid)}</td><td><span class="pill ${pending(s)>0?"pending":"ok"}">${money(pending(s))}</span></td><td><button class="btn warn" onclick="feeReminder('${esc(s.id)}')">💬 Remind</button></td></tr>`}).join("")}</tbody></table>`
+}
+function openFeeForm(){
+ let opts=db.students.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("");
+ modal(`<h2>💰 Add Payment / Extra Fee</h2><div class="formgrid"><div class="field"><label>Student</label><select id="fStudent" class="input">${opts}</select></div><div class="field"><label>Paid Amount</label><input id="fPaid" class="input" type="number" value="0"></div><div class="field"><label>Extra Fee</label><input id="fExtra" class="input" type="number" value="0"></div><div class="field"><label>Extra Type</label><select id="fType" class="input"><option>Book</option><option>Pen</option><option>Notebook</option><option>Exam</option><option>Other</option></select></div><div class="field" style="grid-column:1/-1"><label>Note</label><input id="fNote" class="input" placeholder="Book / Pen / Exam..."></div></div><button class="btn primary" onclick="saveFee()">Save Fee</button>`)
+}
+function saveFee(){db.fees.push({studentId:$("fStudent").value,paid:Number($("fPaid").value||0),extra:Number($("fExtra").value||0),extraType:$("fType").value,note:$("fNote").value,date:today()});closeModal();commit("fees")}
+function renderMarks(){$("marksTable").innerHTML=`<table class="table"><thead><tr><th>Student</th><th>Total Mark</th><th>Mark</th></tr></thead><tbody>${db.marks.map(m=>`<tr><td>${esc(m.name)}</td><td>${m.total}</td><td><b>${m.mark}</b></td></tr>`).join("")}</tbody></table>`}
+function openMarkForm(){let o=db.students.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("");modal(`<h2>📝 Add Mark</h2><div class="formgrid"><div class="field"><label>Student</label><select id="mkStudent" class="input">${o}</select></div><div class="field"><label>Total Mark</label><input id="mkTotal" class="input" type="number" value="100"></div><div class="field"><label>Mark</label><input id="mkMark" class="input" type="number"></div></div><button class="btn primary" onclick="saveMark()">Save Mark</button>`)}
+function saveMark(){let s=db.students.find(x=>String(x.id)===String($("mkStudent").value));db.marks.push({studentId:s.id,name:s.name,total:Number($("mkTotal").value),mark:Number($("mkMark").value)});closeModal();commit("marks")}
+function renderStudentPortal(){
+ let s=currentStudent,ms=db.marks.filter(m=>String(m.studentId)===String(s.id)),aa=db.attendance.filter(a=>String(a.studentId)===String(s.id)),pr=aa.filter(a=>a.status==="Present").length,fs=studentFees(s);
+ $("studentWelcome").textContent="வணக்கம், "+s.name;$("spMark").textContent=ms.length?ms[ms.length-1].mark+"/"+ms[ms.length-1].total:"-";$("spAttendance").textContent=aa.length?Math.round(pr/aa.length*100)+"%":"-";$("spPending").textContent=money(pending(s));
+ $("spMarks").innerHTML=ms.length?`<table class="table"><tr><th>Total</th><th>Mark</th></tr>${ms.map(m=>`<tr><td>${m.total}</td><td>${m.mark}</td></tr>`).join("")}</table>`:"No marks";
+ $("spAttDetails").innerHTML=`<p>Present: <b>${pr}</b></p><p>Absent: <b>${aa.length-pr}</b></p><p>Total: <b>${aa.length}</b></p>`;
+ $("spFees").innerHTML=`<p>Monthly Fee: <b>${money(studentMonthly(s))}</b></p><p>Extra Fees: <b>${money(fs.reduce((a,f)=>a+Number(f.extra||0),0))}</b></p><p>Paid: <b>${money(fs.reduce((a,f)=>a+Number(f.paid||0),0))}</b></p><p>Pending: <b>${money(pending(s))}</b></p>`
+}
+function callStudent(id){let s=db.students.find(x=>String(x.id)===String(id));if(s?.phone)location.href="tel:"+s.phone;else alert("Parent phone number இல்லை.")}
+function message(template,s,extra={}){return String(template||"").replaceAll("{student}",s.name||"").replaceAll("{amount}",extra.amount??"").replaceAll("{date}",extra.date||today()).replaceAll("{academy}",db.settings.academy)}
+function whatsapp(phone,msg){let n=String(phone||"").replace(/\D/g,"");if(!n)return alert("Phone number இல்லை.");window.open("https://wa.me/"+n+"?text="+encodeURIComponent(msg),"_blank")}
+function feeReminder(id){let s=db.students.find(x=>String(x.id)===String(id));if(!s)return;whatsapp(s.phone,message(db.settings.feeMsg,s,{amount:pending(s)}))}
+function absentReminder(id){let s=db.students.find(x=>String(x.id)===String(id));if(!s)return;whatsapp(s.phone,message(db.settings.absentMsg,s,{date:new Date().toLocaleDateString("ta-IN")}))}
+function bulkFeeReminder(){db.students.filter(s=>pending(s)>0&&s.phone).forEach((s,i)=>setTimeout(()=>feeReminder(s.id),i*700))}
+function bulkAbsentReminder(){db.students.filter(s=>db.attendance.some(a=>a.date===today()&&String(a.studentId)===String(s.id)&&a.status==="Absent")&&s.phone).forEach((s,i)=>setTimeout(()=>absentReminder(s.id),i*700))}
+function payStudentFee(){if(!db.settings.upi)return alert("Teacher Settings-ல் UPI ID அமைக்கப்படவில்லை.");location.href="upi://pay?pa="+encodeURIComponent(db.settings.upi)+"&pn="+encodeURIComponent(db.settings.academy)+"&am="+pending(currentStudent)+"&cu=INR"}
+function loadSettings(){
+ let s=db.settings;$("setAcademy").value=s.academy;$("setTeacher").value=s.teacher;$("setMobile").value=s.mobile;$("setDefaultFee").value=s.defaultFee;$("setUPI").value=s.upi;$("setAPI").value=s.api;$("setTeacherID").value=s.teacherId;$("feeMsg").value=s.feeMsg;$("absentMsg").value=s.absentMsg;$("logoPreview").src=s.logo||""
+}
+function saveProfile(){db.settings.academy=$("setAcademy").value||"Arul Siragugal Academy";db.settings.teacher=$("setTeacher").value;db.settings.mobile=$("setMobile").value;db.settings.defaultFee=Number($("setDefaultFee").value||700);db.settings.upi=$("setUPI").value;save();setBrand();toast("Profile saved")}
+function uploadLogo(inp){if(!inp.files[0])return;let r=new FileReader();r.onload=()=>{db.settings.logo=r.result;$("logoPreview").src=r.result;save()};r.readAsDataURL(inp.files[0])}
+function saveMessages(){db.settings.feeMsg=$("feeMsg").value;db.settings.absentMsg=$("absentMsg").value;save();toast("Tamil messages saved")}
+function saveTeacherLogin(){db.settings.teacherId=$("setTeacherID").value||"teacher";let p=$("setTeacherPass").value;if(p)db.settings.teacherPass=p;save();toast("Teacher login saved")}
+function saveAPI(){db.settings.api=$("setAPI").value.trim();save();testAPI()}
+async function testAPI(){if(!db.settings.api)return alert("Apps Script URL கொடுக்கவும்.");try{let r=await fetch(db.settings.api+"?action=ping");let j=await r.json();$("apiStatus").textContent="✓ Google Sheets connected";toast("Google Sheets connected")}catch(e){$("apiStatus").textContent="Connection failed"}}
 async function commit(sheet){
- saveLocal();
- if(!data.settings.api)return;
- try{await fetch(data.settings.api,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'save',sheet,rows:data[sheet]})});toast('Google Sheets updated')}
- catch(e){toast('Local save OK; Google Sheets sync failed')}
+ save();
+ if(!db.settings.api){toast("Saved locally — Google Sheets URL not connected");return}
+ try{await fetch(db.settings.api,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"save",sheet:sheet,rows:db[sheet]})});toast("Google Sheets updated")}catch(e){toast("Local save OK; Sheets sync failed")}
 }
-function saveTeacherLogin(){data.settings.teacherId=$('setTeacherId').value||'teacher';data.settings.teacherPass=$('setTeacherPass').value||data.settings.teacherPass;saveLocal();toast('Teacher login saved')}
-function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem(LS+'dark',document.body.classList.contains('dark')?'1':'0')}
-function modal(content){$('modal').className='';$('modal').innerHTML=`<div style="position:fixed;inset:0;background:rgba(15,23,42,.55);display:grid;place-items:center;padding:20px;z-index:90"><div class="card" style="width:min(620px,100%);max-height:90vh;overflow:auto;position:relative"><button class="btn outline" onclick="closeModal()" style="position:absolute;right:12px;top:12px">✕</button>${content}</div></div>`}
-function closeModal(){$('modal').className='hidden';$('modal').innerHTML=''}
-function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])}
-async function syncFromSheets(){
- if(!data.settings.api)return;
- try{let r=await fetch(data.settings.api+'?action=all');let j=await r.json();if(j.students)data.students=j.students;if(j.attendance)data.attendance=j.attendance;if(j.fees)data.fees=j.fees;if(j.marks)data.marks=j.marks;if(j.settings)data.settings=Object.assign(data.settings,j.settings);saveLocal()}catch(e){}
+async function syncAll(){
+ if(!db.settings.api)return;
+ try{let r=await fetch(db.settings.api+"?action=all");let x=await r.json();if(x.students)db.students=x.students;if(x.attendance)db.attendance=x.attendance;if(x.fees)db.fees=x.fees;if(x.marks)db.marks=x.marks;if(x.settings)db.settings=Object.assign(db.settings,x.settings);save()}catch(e){}
 }
-loadLocal();if(localStorage.getItem(LS+'dark')==='1')document.body.classList.add('dark');setBrand();syncFromSheets().then(()=>{if(!$('app').classList.contains('hidden'))refresh()});
+function toggleDark(){document.body.classList.toggle("dark");localStorage.setItem(KEY+"_dark",document.body.classList.contains("dark")?"1":"0")}
+function modal(content){$("modal").className="modal";$("modal").innerHTML=`<div class="modal-box"><button class="btn outline" style="float:right" onclick="closeModal()">✕</button>${content}</div>`}
+function closeModal(){$("modal").className="hidden";$("modal").innerHTML=""}
+function toast(t){let x=document.createElement("div");x.textContent=t;x.style.cssText="position:fixed;right:18px;bottom:18px;background:#111827;color:white;padding:12px 16px;border-radius:10px;z-index:100";document.body.appendChild(x);setTimeout(()=>x.remove(),2200)}
+load();if(localStorage.getItem(KEY+"_dark")==="1")document.body.classList.add("dark");setBrand();syncAll().then(()=>{setBrand();});
 </script>
 </body>
 </html>
