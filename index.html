@@ -2574,5 +2574,112 @@ window.openTamilSettings=function(){
 .large-text{font-size:110%}.academy-logo{width:48px;height:48px;object-fit:contain;border-radius:10px}
 </style>
 
+
+<!-- Extra Fees Management -->
+<section id="extraFeesManager" class="app-section" style="display:none;padding:20px">
+  <div class="page-header">
+    <div>
+      <h2>🧾 Extra Fees</h2>
+      <p>Books • Pens • Notebooks • Exam • Materials • Other</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>➕ Add Extra Fee</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <select id="extraFeeStudent" class="form-control"></select>
+      <select id="extraFeeType" class="form-control">
+        <option>Book</option>
+        <option>Pen / Stationery</option>
+        <option>Notebook</option>
+        <option>Exam Fee</option>
+        <option>Material Fee</option>
+        <option>Other</option>
+      </select>
+      <input id="extraFeeAmount" type="number" class="form-control" placeholder="Amount">
+      <input id="extraFeeNote" class="form-control" placeholder="Note">
+      <input id="extraFeeDate" type="date" class="form-control">
+      <button class="btn btn-success" onclick="addExtraFee()">➕ Add Fee</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Extra Fee Records</h3>
+    <div id="extraFeeTable"></div>
+  </div>
+</section>
+
+<!-- Student Portal Fee View -->
+<section id="studentExtraFees" class="app-section" style="display:none;padding:20px">
+  <div class="card">
+    <h2>💰 My Fees</h2>
+    <div id="studentFeeSummary"></div>
+    <div id="studentExtraFeeTable"></div>
+  </div>
+</section>
+
+
+<script>
+(function(){
+  const EK='asa_extra_fees_v1';
+  const read=()=>{try{return JSON.parse(localStorage.getItem(EK)||'[]')}catch(e){return[]}};
+  const save=x=>localStorage.setItem(EK,JSON.stringify(x));
+  const students=()=>{try{return typeof getLocal==='function'?(getLocal('students')||[]):JSON.parse(localStorage.getItem('students')||'[]')}catch(e){return[]}};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const today=()=>new Date().toISOString().slice(0,10);
+
+  window.openExtraFeesManager=function(){
+    const s=document.getElementById('extraFeesManager');
+    if(!s)return;
+    s.style.display=s.style.display==='none'?'block':'none';
+    populateStudents();renderExtraFees();
+    s.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+
+  function populateStudents(){
+    const list=students(),sel=document.getElementById('extraFeeStudent');
+    if(sel)sel.innerHTML='<option value="">Select Student</option>'+list.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} — ${esc(s.className||'')}</option>`).join('');
+    const d=document.getElementById('extraFeeDate');if(d&&!d.value)d.value=today();
+  }
+
+  window.addExtraFee=function(){
+    const studentId=document.getElementById('extraFeeStudent').value;
+    const type=document.getElementById('extraFeeType').value;
+    const amount=Number(document.getElementById('extraFeeAmount').value);
+    const note=document.getElementById('extraFeeNote').value.trim();
+    const date=document.getElementById('extraFeeDate').value||today();
+    if(!studentId||!amount||amount<0)return alert('Please select student and enter amount.');
+    const s=students().find(x=>String(x.id)===String(studentId));
+    const arr=read();
+    arr.push({id:'EXF-'+Date.now(),studentId,type,amount,note,date,studentName:s?.name||''});
+    save(arr);
+    document.getElementById('extraFeeAmount').value='';
+    document.getElementById('extraFeeNote').value='';
+    renderExtraFees();
+    alert('Extra fee added successfully.');
+  };
+
+  window.deleteExtraFee=function(id){
+    if(!confirm('Delete this extra fee?'))return;
+    save(read().filter(x=>x.id!==id));renderExtraFees();
+  };
+
+  function renderExtraFees(){
+    const arr=read();
+    const el=document.getElementById('extraFeeTable');if(!el)return;
+    el.innerHTML=arr.length?`<div style="overflow:auto"><table class="data-table"><thead><tr><th>Student</th><th>Type</th><th>Amount</th><th>Date</th><th>Note</th><th>Action</th></tr></thead><tbody>${arr.slice().reverse().map(x=>`<tr><td>${esc(x.studentName||students().find(s=>String(s.id)===String(x.studentId))?.name||'-')}</td><td>${esc(x.type)}</td><td>₹${Number(x.amount||0)}</td><td>${esc(x.date)}</td><td>${esc(x.note||'-')}</td><td><button class="btn btn-outline" onclick="deleteExtraFee('${esc(x.id)}')">🗑️</button></td></tr>`).join('')}</tbody></table></div>`:'<p>No extra fees added.</p>';
+  }
+
+  window.renderStudentExtraFees=function(studentId){
+    const list=read().filter(x=>String(x.studentId)===String(studentId));
+    const total=list.reduce((a,x)=>a+Number(x.amount||0),0);
+    const box=document.getElementById('studentFeeSummary');
+    if(box)box.innerHTML=`<div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px"><div class="card"><small>Extra Fees</small><h2>₹${total}</h2></div><div class="card"><small>Items</small><h2>${list.length}</h2></div></div>`;
+    const el=document.getElementById('studentExtraFeeTable');
+    if(el)el.innerHTML=list.length?`<table class="data-table"><thead><tr><th>Fee</th><th>Amount</th><th>Date</th><th>Note</th></tr></thead><tbody>${list.map(x=>`<tr><td>${esc(x.type)}</td><td>₹${x.amount}</td><td>${esc(x.date)}</td><td>${esc(x.note||'-')}</td></tr>`).join('')}</tbody></table>`:'<p>No extra fees.</p>';
+  };
+})();
+</script>
+
 </body>
 </html>
