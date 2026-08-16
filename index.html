@@ -288,47 +288,40 @@ function payFeeInfo(amount){alert('Payable amount: '+money(amount)+'\\nUPI ID: '
 function openModal(t,b){modalTitle.textContent=t;modalBody.innerHTML=b;modal.classList.remove('hidden')}
 function closeModal(){modal.classList.add('hidden')}
 function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
-function syncSheets(){
+async function syncSheets(){
 const url=(db.settings.sheetsUrl||'').trim();
-if(!url)return alert('Settings-ல் Google Sheets Apps Script Web App URL சேர்க்கவும்.');
+if(!url)return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.');
 if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)){
-  return alert('Google Apps Script Web App URL சரியாக இல்லை. /exec என்று முடியும் deployed URL-ஐ பயன்படுத்தவும்.');
+  return alert('சரியான Google Apps Script Web App URL வேண்டும். URL /exec என்று முடிந்திருக்க வேண்டும்.');
 }
+const payload={
+ source:'Arul Siragugal Academy',
+ syncedAt:new Date().toISOString(),
+ settings:db.settings,
+ students:db.students||[],
+ attendance:db.attendance||[],
+ fees:db.fees||[],
+ marks:db.marks||[]
+};
 try{
-  const frame=document.getElementById('sheetsSyncFrame')||(()=>{
-    const f=document.createElement('iframe');
-    f.id='sheetsSyncFrame';
-    f.name='sheetsSyncFrame';
-    f.style.display='none';
-    document.body.appendChild(f);
-    return f;
-  })();
-  const form=document.createElement('form');
-  form.method='POST';
-  form.action=url;
-  form.target='sheetsSyncFrame';
-  form.style.display='none';
-  const input=document.createElement('input');
-  input.type='hidden';
-  input.name='payload';
-  input.value=JSON.stringify({
-    source:'Arul Siragugal Academy',
-    syncedAt:new Date().toISOString(),
-    settings:db.settings,
-    students:db.students,
-    attendance:db.attendance,
-    fees:db.fees,
-    marks:db.marks
-  });
-  form.appendChild(input);
-  document.body.appendChild(form);
-  form.submit();
-  setTimeout(()=>form.remove(),3000);
-  alert('Google Sheets sync request அனுப்பப்பட்டது.\n\nApps Script doPost(e) payload-ஐ receive செய்து Sheet-ல் save செய்ய வேண்டும்.');
-}catch(e){
-  alert('Sync தொடங்க முடியவில்லை: '+e.message);
+ const response=await fetch(url,{
+   method:'POST',
+   headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+   body:'payload='+encodeURIComponent(JSON.stringify(payload))
+ });
+ const text=await response.text();
+ let result;
+ try{result=JSON.parse(text)}catch(e){result=null}
+ if(response.ok && result && result.success){
+   alert('✅ Google Sheets-ல் data save/update ஆகிவிட்டது.');
+ }else if(response.ok){
+   alert('⚠️ Request சென்றது. Apps Script response: '+text.slice(0,300));
+ }else{
+   alert('❌ Google Sheets Sync Failed. HTTP '+response.status+'\n'+text.slice(0,300));
+ }
+}catch(err){
+ alert('❌ Sync failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
 }}
-
 if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');applySettings();
 </script>
 </body>
