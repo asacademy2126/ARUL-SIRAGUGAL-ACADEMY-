@@ -348,15 +348,48 @@ try{
 }}
 
 function applyIncomingData(result,url){
- db.students=(result.students||[]).map(s=>({...s,monthlyFee:Number(s.monthlyFee)||0}));
- db.attendance=result.attendance||[];
- db.fees=(result.fees||[]).map(f=>({...f,amount:Number(f.amount)||0,extraAmount:f.extraAmount!==undefined&&f.extraAmount!==''?Number(f.extraAmount)||0:undefined}));
- db.marks=(result.marks||[]).map(m=>({...m,mark:Number(m.mark)||0,total:Number(m.total)||0}));
+ // Google Sheets auto-detects numeric-looking cells (e.g. a teacher ID or student password of
+ // "1234") and stores them as NUMBERS, not text. Login and matching throughout the app use strict
+ // (===) comparison against text typed into <input> fields, which is always a string — so every
+ // identity/matching field coming back from Sheets must be forced back to a string here, or logins
+ // and lookups silently fail after every import even though the values look identical on screen.
+ db.students=(result.students||[]).map(s=>({
+   ...s,
+   id:String(s.id??''),
+   name:String(s.name??''),
+   class:String(s.class??''),
+   mobile:String(s.mobile??''),
+   password:String(s.password??''),
+   monthlyFee:Number(s.monthlyFee)||0
+ }));
+ db.attendance=(result.attendance||[]).map(a=>({
+   ...a,
+   studentId:String(a.studentId??''),
+   date:String(a.date??''),
+   status:String(a.status??'')
+ }));
+ db.fees=(result.fees||[]).map(f=>({
+   ...f,
+   studentId:String(f.studentId??''),
+   date:String(f.date??''),
+   type:String(f.type??'Payment'),
+   extraType:f.extraType!==undefined&&f.extraType!==''?String(f.extraType):f.extraType,
+   amount:Number(f.amount)||0,
+   extraAmount:f.extraAmount!==undefined&&f.extraAmount!==''?Number(f.extraAmount)||0:undefined
+ }));
+ db.marks=(result.marks||[]).map(m=>({
+   ...m,
+   studentId:String(m.studentId??''),
+   exam:String(m.exam??''),
+   mark:Number(m.mark)||0,
+   total:Number(m.total)||0
+ }));
  if(result.settings&&Object.keys(result.settings).length){
    const incoming={...result.settings};
    if(typeof incoming.messages==='string'){try{incoming.messages=JSON.parse(incoming.messages)}catch(e){delete incoming.messages}}
    if(incoming.fee!==undefined)incoming.fee=Number(incoming.fee)||0;
    if(incoming.autoSync!==undefined)incoming.autoSync=(incoming.autoSync===true||incoming.autoSync==='true'||incoming.autoSync==='TRUE');
+   ['academy','teacher','mobile','upi','teacherId','teacherPass'].forEach(k=>{if(incoming[k]!==undefined)incoming[k]=String(incoming[k])});
    db.settings={...db.settings,...incoming,sheetsUrl:url,logo:db.settings.logo}; // keep this device's logo + confirmed working URL
  }
 }
