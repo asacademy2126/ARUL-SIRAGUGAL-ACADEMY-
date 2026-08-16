@@ -71,7 +71,7 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <button class="btn danger" style="width:100%;margin-top:20px" onclick="logout()">Logout</button>
 </aside>
 <main class="main">
-<div class="topbar"><div><h2 id="pageTitle">Overview</h2><div class="user" id="welcome"></div></div><div style="display:flex;gap:8px"><button class="btn success" id="topSyncBtn" onclick="syncSheets()">☁️ Sync</button><button class="btn secondary" onclick="toggleDark()">🌙 Dark</button></div></div>
+<div class="topbar"><div><h2 id="pageTitle">Overview</h2><div class="user" id="welcome"></div></div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span id="syncStatus" style="font-size:12px;color:var(--muted)"></span><button class="btn success" id="topSyncBtn" onclick="syncSheets()">☁️ Sync</button><button class="btn secondary" onclick="toggleDark()">🌙 Dark</button></div></div>
 <div id="content"></div>
 </main></div>
 
@@ -80,12 +80,30 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <script>
 const KEY='asa_management_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
-settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',sheetsUrl:'',
+settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',sheetsUrl:'',autoSync:true,
 messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
 students:[],attendance:[],fees:[],marks:[]
 };
+if(db.settings.autoSync===undefined)db.settings.autoSync=true; // migration for data saved before auto-sync existed
 let role='teacher', currentStudent=null;
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+let suppressAutoSync=false, autoSyncTimer=null;
+function save(){localStorage.setItem(KEY,JSON.stringify(db));if(!suppressAutoSync)scheduleAutoSync()}
+function scheduleAutoSync(){
+if(!db.settings.autoSync)return;
+if(!(db.settings.sheetsUrl||'').trim())return;
+setSyncStatus('pending');
+clearTimeout(autoSyncTimer);
+autoSyncTimer=setTimeout(()=>syncSheets(true),1500);
+}
+function setSyncStatus(state){
+const el=document.getElementById('syncStatus');
+if(!el)return;
+if(state==='pending')el.innerHTML='🕓 Sync pending…';
+else if(state==='syncing')el.innerHTML='⏳ Syncing…';
+else if(state==='success')el.innerHTML='✅ Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+else if(state==='error')el.innerHTML='⚠️ Sync failed <button class="btn secondary" style="padding:2px 8px;font-size:11px;margin-left:4px" onclick="syncSheets()">Retry</button>';
+else el.innerHTML='';
+}
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
 function today(){return new Date().toISOString().slice(0,10)}
 function dateText(){return new Date().toLocaleDateString('ta-IN')}
@@ -261,7 +279,7 @@ function saveMark(){db.marks.push({studentId:markStudent.value,exam:markExam.val
 function deleteMark(i){db.marks.splice(i,1);save();marksPage()}
 function settingsPage(){const m=db.settings.messages;content.innerHTML=`<div class="card"><h3>🏫 Academy Settings</h3><div class="two"><div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div><div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div><div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div><div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div><div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div></div><div id="logoPreviewBox" style="margin:10px 0;display:${db.settings.logo?'block':'none'}">
 <img id="logoPrev" src="${db.settings.logo||''}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;display:block">
-</div><label>Google Sheets Apps Script URL</label><input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec"><br><br><h3>🇮🇳 Tamil Reminder Templates</h3><label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea><label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea><p class="user">Automatic placeholders: {student}, {amount}, {date}, {academy}</p><p class="user">☁️ Google Sheets: Web App URL must end with <b>/exec</b>. Sync sends all current data as a <b>payload</b> to Apps Script <b>doPost(e)</b>.</p><p class="user">📥 First time on a NEW device? Enter the same URL above and use "Import from Google Sheets" to pull down existing data — don't use Sync first, or you'll push this device's empty data over what's already saved.</p><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn secondary" style="margin-left:8px" onclick="syncSheets()">☁️ Sync to Google Sheets</button><button class="btn secondary" style="margin-left:8px" onclick="importFromSheets()">📥 Import from Google Sheets</button></div>`}
+</div><label>Google Sheets Apps Script URL</label><input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec"><label style="margin-top:14px"><input type="checkbox" id="setAutoSync" ${db.settings.autoSync?'checked':''} style="width:auto;margin-right:8px"> Auto-Sync — ஒவ்வொரு Add/Edit-க்கும் தானாக Google Sheets-ல் Save செய்யவும் (சில வினாடிகள் தாமதத்துடன்)</label><br><br><h3>🇮🇳 Tamil Reminder Templates</h3><label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea><label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea><p class="user">Automatic placeholders: {student}, {amount}, {date}, {academy}</p><p class="user">☁️ Google Sheets: Web App URL must end with <b>/exec</b>. Sync sends all current data as a <b>payload</b> to Apps Script <b>doPost(e)</b>.</p><p class="user">📥 First time on a NEW device? Enter the same URL above and use "Import from Google Sheets" to pull down existing data — don't use Sync first, or you'll push this device's empty data over what's already saved.</p><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn secondary" style="margin-left:8px" onclick="syncSheets()">☁️ Sync to Google Sheets</button><button class="btn secondary" style="margin-left:8px" onclick="importFromSheets()">📥 Import from Google Sheets</button></div>`}
 let uploadedLogo='';
 function logoPreview(input){
 const f=input.files?.[0];
@@ -277,7 +295,7 @@ r.onload=e=>{
 };
 r.readAsDataURL(f);
 }
-function saveSettings(){db.settings={...db.settings,academy:setAcademy.value,teacher:setTeacher.value,mobile:setMobile.value,fee:Number(setFee.value)||0,upi:setUpi.value,teacherId:setTid.value,teacherPass:setTpass.value,sheetsUrl:setSheets.value,messages:{fee:feeMsg.value,absent:absMsg.value}};if(uploadedLogo)db.settings.logo=uploadedLogo;save();applySettings();alert('Settings saved');}
+function saveSettings(){db.settings={...db.settings,academy:setAcademy.value,teacher:setTeacher.value,mobile:setMobile.value,fee:Number(setFee.value)||0,upi:setUpi.value,teacherId:setTid.value,teacherPass:setTpass.value,sheetsUrl:setSheets.value,autoSync:setAutoSync.checked,messages:{fee:feeMsg.value,absent:absMsg.value}};if(uploadedLogo)db.settings.logo=uploadedLogo;save();applySettings();alert('Settings saved');}
 function replaceMsg(t,s,amount=''){return t.replaceAll('{student}',s.name).replaceAll('{amount}',money(amount)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
 function whatsapp(id,type){const s=db.students.find(x=>x.id===id);if(!s)return;if(!s.mobile){alert('இந்த student-க்கு mobile number சேமிக்கப்படவில்லை.');return}let amount=calcPending(id,new Date().toISOString().slice(0,7));let text=replaceMsg(type==='fee'?db.settings.messages.fee:db.settings.messages.absent,s,amount);window.open('https://wa.me/'+s.mobile+'?text='+encodeURIComponent(text),'_blank')}
 function callStudent(id){const s=db.students.find(x=>x.id===id);if(s?.mobile)location.href='tel:'+s.mobile}
@@ -288,12 +306,15 @@ function payFeeInfo(amount){alert('Payable amount: '+money(amount)+'\\nUPI ID: '
 function openModal(t,b){modalTitle.textContent=t;modalBody.innerHTML=b;modal.classList.remove('hidden')}
 function closeModal(){modal.classList.add('hidden')}
 function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
-async function syncSheets(){
+async function syncSheets(silent){
+silent=!!silent;
 const url=(db.settings.sheetsUrl||'').trim();
-if(!url)return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.');
+if(!url){if(silent){setSyncStatus('error');return}return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.')}
 if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)){
+  if(silent){setSyncStatus('error');return}
   return alert('சரியான Google Apps Script Web App URL வேண்டும். URL /exec என்று முடிந்திருக்க வேண்டும்.');
 }
+if(silent)setSyncStatus('syncing');
 const payload={
  source:'Arul Siragugal Academy',
  syncedAt:new Date().toISOString(),
@@ -313,14 +334,14 @@ try{
  let result;
  try{result=JSON.parse(text)}catch(e){result=null}
  if(response.ok && result && result.success){
-   alert('✅ Google Sheets-ல் data save/update ஆகிவிட்டது.');
+   if(silent)setSyncStatus('success');else alert('✅ Google Sheets-ல் data save/update ஆகிவிட்டது.');
  }else if(response.ok){
-   alert('⚠️ Request சென்றது. Apps Script response: '+text.slice(0,300));
+   if(silent)setSyncStatus('error');else alert('⚠️ Request சென்றது. Apps Script response: '+text.slice(0,300));
  }else{
-   alert('❌ Google Sheets Sync Failed. HTTP '+response.status+'\n'+text.slice(0,300));
+   if(silent)setSyncStatus('error');else alert('❌ Google Sheets Sync Failed. HTTP '+response.status+'\n'+text.slice(0,300));
  }
 }catch(err){
- alert('❌ Sync failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
+ if(silent)setSyncStatus('error');else alert('❌ Sync failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
 }}
 
 async function importFromSheets(){
@@ -339,6 +360,7 @@ try{
    alert('❌ Import failed. Response: '+text.slice(0,300));
    return;
  }
+ suppressAutoSync=true; // data just came FROM the sheet — no need to immediately push it back
  db.students=(result.students||[]).map(s=>({...s,monthlyFee:Number(s.monthlyFee)||0}));
  db.attendance=result.attendance||[];
  db.fees=(result.fees||[]).map(f=>({...f,amount:Number(f.amount)||0,extraAmount:f.extraAmount!==undefined&&f.extraAmount!==''?Number(f.extraAmount)||0:undefined}));
@@ -347,13 +369,17 @@ try{
    const incoming={...result.settings};
    if(typeof incoming.messages==='string'){try{incoming.messages=JSON.parse(incoming.messages)}catch(e){delete incoming.messages}}
    if(incoming.fee!==undefined)incoming.fee=Number(incoming.fee)||0;
+   if(incoming.autoSync!==undefined)incoming.autoSync=(incoming.autoSync===true||incoming.autoSync==='true'||incoming.autoSync==='TRUE');
    db.settings={...db.settings,...incoming,sheetsUrl:url,logo:db.settings.logo}; // keep this device's logo + confirmed working URL
  }
  save();
+ suppressAutoSync=false;
+ setSyncStatus('success');
  applySettings();
  alert('✅ Google Sheets-ல் இருந்து data இந்த device-க்கு import ஆகிவிட்டது.\n\nStudents: '+db.students.length+' | Attendance: '+db.attendance.length+' | Fees: '+db.fees.length+' | Marks: '+db.marks.length);
  showPage(role==='teacher'?'overview':'studentHome');
 }catch(err){
+ suppressAutoSync=false;
  alert('❌ Import failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
 }}
 
