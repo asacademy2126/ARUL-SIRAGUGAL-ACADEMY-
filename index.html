@@ -38,16 +38,17 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <img id="loginLogo" class="logo" alt="Logo">
 <h1 id="loginAcademy">Arul Siragugal Academy</h1>
 <p>Tuition Management System</p>
+<div id="loginLoading" style="display:none;text-align:center;color:var(--muted);font-size:13px;margin:6px 0">⏳ Shared data ஏற்றப்படுகிறது...</div>
 <div class="role-tabs"><button id="teacherRole" class="active" onclick="setRole('teacher')">👨‍🏫 Teacher Login</button><button id="studentRole" onclick="setRole('student')">👨‍🎓 Student Login</button></div>
 <div id="teacherLogin">
 <label>Teacher ID</label><input id="teacherId" placeholder="Teacher ID">
 <label>Password</label><input id="teacherPass" type="password" placeholder="Password">
-<button class="btn" style="width:100%;margin-top:16px" onclick="loginTeacher()">Login</button>
+<button class="btn" id="teacherLoginBtn" style="width:100%;margin-top:16px" onclick="loginTeacher()">Login</button>
 </div>
 <div id="studentLogin" class="hidden">
 <label>Student ID</label><input id="studentId" placeholder="Student ID">
 <label>Password</label><input id="studentPass" type="password" placeholder="Password">
-<button class="btn" style="width:100%;margin-top:16px" onclick="loginStudent()">Login</button>
+<button class="btn" id="studentLoginBtn" style="width:100%;margin-top:16px" onclick="loginStudent()">Login</button>
 </div>
 <div id="loginMsg" class="msg"></div>
 </div></div>
@@ -80,11 +81,13 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <script>
 const KEY='asa_management_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
-settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',sheetsUrl:'',autoSync:true,
+settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
 messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
 students:[],attendance:[],fees:[],marks:[]
 };
 if(db.settings.autoSync===undefined)db.settings.autoSync=true; // migration for data saved before auto-sync existed
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
+if(!(db.settings.sheetsUrl||'').trim())db.settings.sheetsUrl=DEFAULT_SHEETS_URL; // migration for data saved before a default URL was built in
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false, autoSyncTimer=null;
 function save(){localStorage.setItem(KEY,JSON.stringify(db));if(!suppressAutoSync)scheduleAutoSync()}
@@ -344,6 +347,20 @@ try{
  if(silent)setSyncStatus('error');else alert('❌ Sync failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
 }}
 
+function applyIncomingData(result,url){
+ db.students=(result.students||[]).map(s=>({...s,monthlyFee:Number(s.monthlyFee)||0}));
+ db.attendance=result.attendance||[];
+ db.fees=(result.fees||[]).map(f=>({...f,amount:Number(f.amount)||0,extraAmount:f.extraAmount!==undefined&&f.extraAmount!==''?Number(f.extraAmount)||0:undefined}));
+ db.marks=(result.marks||[]).map(m=>({...m,mark:Number(m.mark)||0,total:Number(m.total)||0}));
+ if(result.settings&&Object.keys(result.settings).length){
+   const incoming={...result.settings};
+   if(typeof incoming.messages==='string'){try{incoming.messages=JSON.parse(incoming.messages)}catch(e){delete incoming.messages}}
+   if(incoming.fee!==undefined)incoming.fee=Number(incoming.fee)||0;
+   if(incoming.autoSync!==undefined)incoming.autoSync=(incoming.autoSync===true||incoming.autoSync==='true'||incoming.autoSync==='TRUE');
+   db.settings={...db.settings,...incoming,sheetsUrl:url,logo:db.settings.logo}; // keep this device's logo + confirmed working URL
+ }
+}
+
 async function importFromSheets(){
 const url=(db.settings.sheetsUrl||'').trim();
 if(!url)return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.');
@@ -361,17 +378,7 @@ try{
    return;
  }
  suppressAutoSync=true; // data just came FROM the sheet — no need to immediately push it back
- db.students=(result.students||[]).map(s=>({...s,monthlyFee:Number(s.monthlyFee)||0}));
- db.attendance=result.attendance||[];
- db.fees=(result.fees||[]).map(f=>({...f,amount:Number(f.amount)||0,extraAmount:f.extraAmount!==undefined&&f.extraAmount!==''?Number(f.extraAmount)||0:undefined}));
- db.marks=(result.marks||[]).map(m=>({...m,mark:Number(m.mark)||0,total:Number(m.total)||0}));
- if(result.settings&&Object.keys(result.settings).length){
-   const incoming={...result.settings};
-   if(typeof incoming.messages==='string'){try{incoming.messages=JSON.parse(incoming.messages)}catch(e){delete incoming.messages}}
-   if(incoming.fee!==undefined)incoming.fee=Number(incoming.fee)||0;
-   if(incoming.autoSync!==undefined)incoming.autoSync=(incoming.autoSync===true||incoming.autoSync==='true'||incoming.autoSync==='TRUE');
-   db.settings={...db.settings,...incoming,sheetsUrl:url,logo:db.settings.logo}; // keep this device's logo + confirmed working URL
- }
+ applyIncomingData(result,url);
  save();
  suppressAutoSync=false;
  setSyncStatus('success');
@@ -383,7 +390,58 @@ try{
  alert('❌ Import failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
 }}
 
+// Runs automatically the moment the app is opened on ANY device, before login — so every
+// device shows the same shared data without anyone tapping Import manually.
+// Safety rule: if the sheet comes back completely empty but this device already has real
+// local data, we do NOT wipe the device — that usually means the sheet isn't set up yet,
+// or a network hiccup returned nothing. In that case we push this device's data up instead.
+async function autoImportOnLoad(){
+if(!db.settings.autoSync)return;
+const url=(db.settings.sheetsUrl||'').trim();
+if(!url||!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url))return;
+setSyncStatus('syncing');
+const loadingEl=document.getElementById('loginLoading');
+const tBtn=document.getElementById('teacherLoginBtn'),sBtn=document.getElementById('studentLoginBtn');
+if(loadingEl)loadingEl.style.display='block';
+if(tBtn)tBtn.disabled=true;
+if(sBtn)sBtn.disabled=true;
+try{
+ const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
+ const text=await response.text();
+ let result;
+ try{result=JSON.parse(text)}catch(e){result=null}
+ if(!response.ok||!result){setSyncStatus('error');return}
+
+ const incomingHasData=(result.students||[]).length>0||(result.attendance||[]).length>0||(result.fees||[]).length>0||(result.marks||[]).length>0;
+ const localHasData=db.students.length>0||db.attendance.length>0||db.fees.length>0||db.marks.length>0;
+
+ if(!incomingHasData&&localHasData){
+   // Sheet looks empty but this device has real data — protect it, push up instead of pulling down.
+   scheduleAutoSync();
+   return;
+ }
+
+ suppressAutoSync=true;
+ applyIncomingData(result,url);
+ save();
+ suppressAutoSync=false;
+ setSyncStatus('success');
+ applySettings();
+ // Refresh whatever's currently on screen so the pulled-in data actually shows up
+ if(!app.classList.contains('hidden')){
+   const activePage=document.querySelector('.nav button.active')?.dataset.page;
+   if(activePage)showPage(activePage);
+ }
+}catch(err){
+ setSyncStatus('error');
+}finally{
+ if(loadingEl)loadingEl.style.display='none';
+ if(tBtn)tBtn.disabled=false;
+ if(sBtn)sBtn.disabled=false;
+}}
+
 if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');applySettings();
+autoImportOnLoad();
 </script>
 </body>
 </html>
