@@ -17,7 +17,13 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 .app{min-height:100vh;display:flex}.sidebar{width:245px;background:#111827;color:white;padding:20px;position:fixed;left:0;top:0;bottom:0;overflow:auto}.brand{font-size:20px;font-weight:bold;margin-bottom:24px}.nav button{width:100%;text-align:left;padding:12px;margin:4px 0;border-radius:10px;background:transparent;color:#dbe3f0}.nav button.active,.nav button:hover{background:#374151;color:#fff}.main{margin-left:245px;width:calc(100% - 245px);padding:22px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px}.topbar .user{color:var(--muted);font-size:14px}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 4px 14px #00000008}.stat .label{color:var(--muted);font-size:13px}.stat .value{font-size:26px;font-weight:bold;margin-top:8px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.section{margin-top:18px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:14px}.table th{background:#f8fafc}.badge{display:inline-block;padding:5px 8px;border-radius:999px;font-size:12px;font-weight:bold}.badge.ok{background:#dcfce7;color:#166534}.badge.pending{background:#fee2e2;color:#991b1b}.badge.info{background:#e0e7ff;color:#3730a3}.bar-chart{display:flex;align-items:flex-end;gap:12px;height:220px;padding:20px 8px}.bar{flex:1;min-width:25px;background:var(--primary);border-radius:8px 8px 0 0;position:relative}.bar span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:11px;margin-bottom:4px}.bar small{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:5px;color:var(--muted)}
 .modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}.modal-box{width:100%;max-width:650px;max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:22px}
-.actions{display:flex;gap:6px;flex-wrap:wrap}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.paybox{background:#eefbf2;border:1px solid #bbf7d0;padding:15px;border-radius:12px}.danger-text{color:var(--danger)}.success-text{color:var(--success)}
+.actions{display:flex;gap:6px;flex-wrap:wrap}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.paybox{background:#eefbf2;border:1px solid #bbf7d0;padding:15px;border-radius:12px}.danger-text{color:var(--danger)}.success-text{color:var(--success)}.att-buttons{display:flex;gap:7px;flex-wrap:wrap}
+.att-btn{padding:9px 13px;border-radius:9px;border:2px solid #d1d5db;background:#f8fafc;color:#374151;font-weight:bold}
+.att-btn.present.selected{background:#16a34a;color:#fff;border-color:#16a34a}
+.att-btn.absent.selected{background:#dc2626;color:#fff;border-color:#dc2626}
+.att-btn:hover{transform:translateY(-1px)}
+.student-link{background:none;border:0;padding:0;color:var(--primary);font-weight:bold;text-decoration:underline;cursor:pointer}
+
 @media(max-width:900px){.sidebar{width:72px;padding:10px}.brand{font-size:0}.brand:after{content:"ASA";font-size:18px}.nav button{font-size:0;text-align:center}.nav button:first-letter{font-size:20px}.main{margin-left:72px;width:calc(100% - 72px)}.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 @media(max-width:600px){.main{padding:12px}.cards{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.topbar{align-items:flex-start}.topbar h2{font-size:19px}}
 .dark{--bg:#0b1220;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--border:#273449}.dark input,.dark select,.dark textarea{background:#0f172a;color:#e5e7eb}.dark .table th{background:#172033}
@@ -95,14 +101,156 @@ function renderStudents(){const q=(document.getElementById('studentSearch')?.val
 function studentForm(id=''){const s=db.students.find(x=>x.id===id)||{id:'',name:'',class:'',mobile:'',monthlyFee:db.settings.fee,password:''};openModal(id?'Edit Student':'Add Student',`<div class="two"><div><label>Student ID</label><input id="fId" value="${esc(s.id)}" ${id?'readonly':''}></div><div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div><label>Student Name</label><input id="fName" value="${esc(s.name)}"><div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div><div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div></div><label>Fixed Monthly Tuition Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"><br><br><button class="btn" onclick="saveStudent('${id}')">Save Student</button>`)}
 function saveStudent(old){const id=fId.value.trim();if(!id||!fName.value.trim()){alert('Student ID மற்றும் Name தேவை');return}if(!old&&db.students.some(s=>s.id===id)){alert('Student ID already exists');return}const obj={id,name:fName.value.trim(),class:fClass.value.trim(),mobile:fMobile.value.trim(),monthlyFee:Number(fFee.value)||0,password:fPass.value||'1234'};if(old)db.students[db.students.findIndex(s=>s.id===old)]=obj;else db.students.push(obj);save();closeModal();studentsPage()}
 function deleteStudent(id){if(confirm('இந்த student-ஐ delete செய்யவா?')){db.students=db.students.filter(s=>s.id!==id);db.attendance=db.attendance.filter(a=>a.studentId!==id);db.fees=db.fees.filter(f=>f.studentId!==id);db.marks=db.marks.filter(m=>m.studentId!==id);save();renderStudents()}}
-function attendancePage(){content.innerHTML=`<div class="toolbar"><input id="attDate" type="date" value="${today()}"><select id="attStudent"><option value="">Student தேர்வு</option>${db.students.map(s=>`<option value="${s.id}">${esc(s.name)} (${esc(s.class)})</option>`).join('')}</select><select id="attStatus"><option>Present</option><option>Absent</option></select><button class="btn" onclick="saveAttendance()">Save Attendance</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Date</th><th>Student</th><th>Status</th><th>Reminder</th></tr></thead><tbody>${db.attendance.slice().reverse().map(a=>{const s=db.students.find(x=>x.id===a.studentId);return `<tr><td>${a.date}</td><td>${esc(s?.name||a.studentId)}</td><td><span class="badge ${a.status==='Present'?'ok':'pending'}">${a.status}</span></td><td>${a.status==='Absent'&&s?`<button class="btn secondary" onclick="whatsapp('${s.id}','absent')">💬 WhatsApp</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="4">Attendance இல்லை.</td></tr>'}</tbody></table></div>`}
+function attendancePage(){
+const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+content.innerHTML=`
+<div class="card">
+<h3>📅 Class-wise Attendance</h3>
+<div class="toolbar">
+<div style="min-width:160px"><label>Date</label><input id="attDate" type="date" value="${today()}" onchange="renderClassAttendance()"></div>
+<div style="min-width:180px"><label>Class</label>
+<select id="attClass" onchange="renderClassAttendance()"><option value="">Select Class</option>
+${classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
+<button class="btn success" onclick="saveClassAttendance()">💾 Save / Update Class</button>
+</div>
+<div id="classAttendanceBox"><p class="user">முதலில் Class தேர்வு செய்யவும்.</p></div>
+</div>
+<div class="card section"><h3>📋 Attendance History</h3>
+<div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Class</th><th>Student</th><th>Status</th><th>Reminder</th></tr></thead>
+<tbody>${db.attendance.slice().reverse().map(a=>{
+const s=db.students.find(x=>x.id===a.studentId);
+return `<tr><td>${a.date}</td><td>${esc(s?.class||'-')}</td><td>${esc(s?.name||a.studentId)}</td>
+<td><span class="badge ${a.status==='Present'?'ok':'pending'}">${a.status}</span></td>
+<td>${s?`<button class="btn secondary" onclick="callStudent('${s.id}')">📞 Call</button> ${a.status==='Absent'?`<button class="btn secondary" onclick="whatsapp('${s.id}','absent')">💬 WhatsApp</button>`:''}`:''}</td></tr>`;
+}).join('')||'<tr><td colspan="5">Attendance இல்லை.</td></tr>'}</tbody></table></div></div>`;
+}
+
+function renderClassAttendance(){
+const cls=document.getElementById('attClass')?.value;
+const date=document.getElementById('attDate')?.value||today();
+const box=document.getElementById('classAttendanceBox');
+if(!cls){box.innerHTML='<p class="user">முதலில் Class தேர்வு செய்யவும்.</p>';return;}
+const students=db.students.filter(s=>s.class===cls);
+const existing={};
+db.attendance.filter(a=>a.date===date).forEach(a=>existing[a.studentId]=a.status);
+
+box.innerHTML=`
+<div class="toolbar"><strong>Class: ${esc(cls)} — ${students.length} Students</strong></div>
+<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Student</th><th>Attendance</th></tr></thead>
+<tbody>${students.map((s,i)=>{
+const st=existing[s.id]||'';
+return `<tr>
+<td>${i+1}</td>
+<td><b>${esc(s.name)}</b><br><small>${esc(s.id)}</small></td>
+<td>
+<div class="att-buttons" data-student="${esc(s.id)}">
+<button type="button" class="att-btn present ${st==='Present'?'selected':''}" onclick="setAttendanceButton(this,'Present')">✓ Present</button>
+<button type="button" class="att-btn absent ${st==='Absent'?'selected':''}" onclick="setAttendanceButton(this,'Absent')">✕ Absent</button>
+</div>
+</td></tr>`;
+}).join('')||'<tr><td colspan="3">இந்த Class-ல் Students இல்லை.</td></tr>'}</tbody></table></div>`;
+}
+
+function setAttendanceButton(btn,status){
+const wrap=btn.parentElement;
+wrap.querySelectorAll('.att-btn').forEach(b=>b.classList.remove('selected'));
+btn.classList.add('selected');
+wrap.dataset.status=status;
+}
+
+function saveClassAttendance(){
+const cls=document.getElementById('attClass')?.value;
+const date=document.getElementById('attDate')?.value||today();
+if(!cls)return alert('Class தேர்வு செய்யவும்.');
+const buttons=[...document.querySelectorAll('.att-buttons')];
+if(!buttons.length)return alert('இந்த Class-ல் Students இல்லை.');
+
+let count=0;
+buttons.forEach(wrap=>{
+const studentId=wrap.dataset.student;
+const status=wrap.dataset.status;
+if(status){
+db.attendance=db.attendance.filter(a=>!(a.studentId===studentId&&a.date===date));
+db.attendance.push({studentId,date,status});
+count++;
+}
+});
+save();
+alert(count+' Students attendance Save / Update செய்யப்பட்டது.');
+attendancePage();
+}
+
 function saveAttendance(){if(!attStudent.value)return alert('Student தேர்வு செய்யவும்');db.attendance=db.attendance.filter(a=>!(a.studentId===attStudent.value&&a.date===attDate.value));db.attendance.push({studentId:attStudent.value,date:attDate.value,status:attStatus.value});save();attendancePage()}
 function calcPaid(id,month){return db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount),0)}
 function calcPending(id,month){const s=db.students.find(x=>x.id===id);return Math.max(0,Number(s?.monthlyFee||0)+db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month)&&f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0)-calcPaid(id,month))}
-function feesPage(){const month=new Date().toISOString().slice(0,7);content.innerHTML=`<div class="toolbar"><button class="btn" onclick="feeForm()">➕ Record Fee Payment</button><button class="btn secondary" onclick="extraForm()">➕ Extra Fee</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Student</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th><th>Reminder</th></tr></thead><tbody>${db.students.map(s=>{const extra=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(month)&&f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);const paid=calcPaid(s.id,month);const pending=Math.max(0,Number(s.monthlyFee)+extra-paid);return `<tr><td>${esc(s.name)}</td><td>${money(s.monthlyFee)}</td><td>${money(extra)}</td><td>${money(paid)}</td><td><span class="badge ${pending?'pending':'ok'}">${money(pending)}</span></td><td>${pending?`<button class="btn secondary" onclick="whatsapp('${s.id}','fee')">💬 WhatsApp</button>`:'Paid'}</td></tr>`}).join('')||'<tr><td colspan="6">Students இல்லை.</td></tr>'}</tbody></table></div>`}
-function feeForm(){openModal('Record Paid Amount',`<label>Student</label><select id="feeStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><label>Paid Amount</label><input id="feeAmount" type="number"><label>Date</label><input id="feeDate" type="date" value="${today()}"><br><br><button class="btn success" onclick="saveFee()">Save Payment</button>`)}
+function feesPage(){
+const month=new Date().toISOString().slice(0,7);
+content.innerHTML=`
+<div class="toolbar">
+<button class="btn" onclick="feeForm()">➕ Record Fee Payment</button>
+<button class="btn secondary" onclick="extraForm()">➕ Extra Fee</button>
+</div>
+<div class="card table-wrap"><table class="table">
+<thead><tr><th>Student</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th><th>Details</th><th>Reminder</th></tr></thead>
+<tbody>
+${db.students.map(s=>{
+const extras=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(month)&&f.type==='Extra');
+const extra=extras.reduce((a,f)=>a+Number(f.extraAmount||0),0);
+const paid=calcPaid(s.id,month);
+const pending=Math.max(0,Number(s.monthlyFee)+extra-paid);
+return `<tr>
+<td><button class="student-link" onclick="showStudentFeeDetails('${s.id}')">${esc(s.name)}</button></td>
+<td>${money(s.monthlyFee)}</td>
+<td>${money(extra)}</td>
+<td>${money(paid)}</td>
+<td><span class="badge ${pending?'pending':'ok'}">${money(pending)}</span></td>
+<td><button class="btn secondary" onclick="showStudentFeeDetails('${s.id}')">👁 View</button></td>
+<td>${s.mobile?`<button class="btn secondary" onclick="callStudent('${s.id}')">📞 Call</button>`:''} ${pending?`<button class="btn secondary" onclick="whatsapp('${s.id}','fee')">💬 WhatsApp</button>`:'Paid'}</td>
+</tr>`;
+}).join('')||'<tr><td colspan="7">Students இல்லை.</td></tr>'}
+</tbody></table></div>`;
+}
+
+function showStudentFeeDetails(id){
+const s=db.students.find(x=>x.id===id);
+if(!s)return;
+const month=new Date().toISOString().slice(0,7);
+const records=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+const extras=records.filter(f=>f.type==='Extra');
+const payments=records.filter(f=>f.type!=='Extra');
+const extraTotal=extras.reduce((a,f)=>a+Number(f.extraAmount||0),0);
+const paidTotal=payments.reduce((a,f)=>a+Number(f.amount||0),0);
+const pending=Math.max(0,Number(s.monthlyFee)+extraTotal-paidTotal);
+
+openModal('Student Fee Details',`
+<div class="paybox">
+<h3>👨‍🎓 ${esc(s.name)}</h3>
+<p>Class: <b>${esc(s.class)}</b> &nbsp; | &nbsp; ID: <b>${esc(s.id)}</b></p>
+<p>Monthly Tuition: <b>${money(s.monthlyFee)}</b></p>
+<p>Extra Fee: <b>${money(extraTotal)}</b></p>
+<p>Paid: <b class="success-text">${money(paidTotal)}</b></p>
+<p>Pending: <b class="${pending?'danger-text':'success-text'}">${money(pending)}</b></p>
+</div>
+<h3 style="margin-top:18px">➕ Extra Fee Details</h3>
+<table class="table">
+<tr><th>Date</th><th>Reason</th><th>Amount</th></tr>
+${extras.map(f=>`<tr><td>${f.date}</td><td>${esc(f.extraType||'Other')}</td><td>${money(f.extraAmount)}</td></tr>`).join('')||'<tr><td colspan="3">Extra Fee இல்லை.</td></tr>'}
+</table>
+<h3 style="margin-top:18px">💳 Payment Details</h3>
+<table class="table">
+<tr><th>Date</th><th>Paid Amount</th></tr>
+${payments.map(f=>`<tr><td>${f.date}</td><td>${money(f.amount)}</td></tr>`).join('')||'<tr><td colspan="2">Payment இல்லை.</td></tr>'}
+</table>
+<div class="actions" style="margin-top:16px">
+${s.mobile?`<button class="btn secondary" onclick="callStudent('${s.id}')">📞 Direct Call</button>`:''}
+<button class="btn" onclick="closeModal();extraForm('${s.id}')">➕ Add Extra Fee</button>
+<button class="btn success" onclick="closeModal();feeForm('${s.id}')">💳 Add Payment</button>
+</div>`);
+}
+
+function feeForm(preselect=''){openModal('Record Paid Amount',`<label>Student</label><select id="feeStudent">${db.students.map(s=>`<option value="${s.id}" ${s.id===preselect?'selected':''}>${esc(s.name)}</option>`).join('')}</select><label>Paid Amount</label><input id="feeAmount" type="number"><label>Date</label><input id="feeDate" type="date" value="${today()}"><br><br><button class="btn success" onclick="saveFee()">Save Payment</button>`)}
 function saveFee(){if(!feeStudent.value||Number(feeAmount.value)<=0)return alert('Student மற்றும் amount சரியாக கொடுக்கவும்');db.fees.push({studentId:feeStudent.value,amount:Number(feeAmount.value),date:feeDate.value,type:'Payment'});save();closeModal();feesPage()}
-function extraForm(){openModal('Extra Fee',`<label>Student</label><select id="extraStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><label>Type</label><select id="extraType"><option>Book</option><option>Pen</option><option>Notebook</option><option>Exam</option><option>Other</option></select><label>Amount</label><input id="extraAmount" type="number"><label>Date</label><input id="extraDate" type="date" value="${today()}"><br><br><button class="btn" onclick="saveExtra()">Save Extra Fee</button>`)}
+function extraForm(preselect=''){openModal('Extra Fee',`<label>Student</label><select id="extraStudent">${db.students.map(s=>`<option value="${s.id}" ${s.id===preselect?'selected':''}>${esc(s.name)}</option>`).join('')}</select><label>Type</label><select id="extraType"><option>Book</option><option>Pen</option><option>Notebook</option><option>Exam</option><option>Other</option></select><label>Amount</label><input id="extraAmount" type="number"><label>Date</label><input id="extraDate" type="date" value="${today()}"><br><br><button class="btn" onclick="saveExtra()">Save Extra Fee</button>`)}
 function saveExtra(){db.fees.push({studentId:extraStudent.value,amount:0,extraAmount:Number(extraAmount.value)||0,date:extraDate.value,type:'Extra',extraType:extraType.value});save();closeModal();feesPage()}
 function marksPage(){content.innerHTML=`<div class="toolbar"><button class="btn" onclick="markForm()">➕ Add / Update Mark</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Student</th><th>Exam</th><th>Mark</th><th>Total</th><th>Action</th></tr></thead><tbody>${db.marks.map((m,i)=>{const s=db.students.find(x=>x.id===m.studentId);return `<tr><td>${esc(s?.name||m.studentId)}</td><td>${esc(m.exam)}</td><td>${m.mark}</td><td>${m.total}</td><td><button class="btn danger" onclick="deleteMark(${i})">Delete</button></td></tr>`}).join('')||'<tr><td colspan="5">Marks இல்லை.</td></tr>'}</tbody></table></div>`}
 function markForm(){openModal('Marks',`<label>Student</label><select id="markStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><label>Exam / Subject</label><input id="markExam"><div class="two"><div><label>Mark</label><input id="markValue" type="number"></div><div><label>Total Mark</label><input id="markTotal" type="number" value="100"></div></div><br><button class="btn" onclick="saveMark()">Save Mark</button>`)}
