@@ -658,9 +658,9 @@ function marksPage(){
     </div>
 
     <div class="card table-wrap">
-      <h3>📝 Regular / Offline Marks (Teacher Entered)</h3>
+      <h3>📝 Regular / Offline Marks — Admin / Teacher Entered</h3>
       <table class="table">
-        <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Exam / Subject</th><th>Mark</th><th>Total</th><th>%</th><th>Action</th></tr></thead>
+        <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Exam / Subject</th><th>Mark</th><th>Total</th><th>%</th><th>Entered By</th><th>Action</th></tr></thead>
         <tbody>${db.marks.slice().reverse().map((m,i)=>{
           const s=db.students.find(x=>x.id===m.studentId);
           const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
@@ -672,16 +672,17 @@ function marksPage(){
             <td><b>${m.mark}</b></td>
             <td>${m.total}</td>
             <td><span class="badge info">${pct}</span></td>
+            <td>${esc(m.enteredBy||'Admin / Teacher')}</td>
             <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="deleteMark(${db.marks.length-1-i})">Delete</button></td>
           </tr>`;
-        }).join('')||'<tr><td colspan="8" style="text-align:center">Regular Marks இல்லை.</td></tr>'}</tbody>
+        }).join('')||'<tr><td colspan="9" style="text-align:center">Regular Marks இல்லை.</td></tr>'}</tbody>
       </table>
     </div>
 
     <div class="card table-wrap">
       <h3 style="color:var(--primary)">🧪 Student Submitted Online Test Marks</h3>
       <table class="table">
-        <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Test Name</th><th>Subject</th><th>Mark Scored</th><th>Total</th><th>%</th><th>Action</th></tr></thead>
+        <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Test Name</th><th>Subject</th><th>Mark Scored</th><th>Total</th><th>%</th><th>Source</th><th>Action</th></tr></thead>
         <tbody>${(db.onlineMarks||[]).slice().reverse().map((m,i)=>{
           const s=db.students.find(x=>x.id===m.studentId);
           const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
@@ -694,9 +695,10 @@ function marksPage(){
             <td><b class="success-text" style="font-size:16px">${m.mark}</b></td>
             <td>${m.total}</td>
             <td><span class="badge ok">${pct}</span></td>
+            <td><span class="badge ok">${esc(m.entryType||'Student Online Submission')}</span></td>
             <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="deleteOnlineMark(${db.onlineMarks.length-1-i})">Delete</button></td>
           </tr>`;
-        }).join('')||'<tr><td colspan="9" style="text-align:center">Online Test Marks எதுவும் பதிவு செய்யப்படவில்லை.</td></tr>'}</tbody>
+        }).join('')||'<tr><td colspan="10" style="text-align:center">Online Test Marks எதுவும் பதிவு செய்யப்படவில்லை.</td></tr>'}</tbody>
       </table>
     </div>`;
 }
@@ -719,7 +721,9 @@ function saveMark(){
     exam:document.getElementById('markExam').value,
     mark:Number(document.getElementById('markValue').value),
     total:Number(document.getElementById('markTotal').value),
-    date:document.getElementById('markDate').value||today()
+    date:document.getElementById('markDate').value||today(),
+    entryType:'Admin / Teacher Mark',
+    enteredBy:role==='admin'?'Admin':(db.settings.teacher||'Teacher')
   });
   save();closeModal();marksPage();
 }
@@ -741,7 +745,7 @@ function testsPage(){
     <div class="card table-wrap">
       <h3>🔗 Active Online Test Links</h3>
       <table class="table">
-        <thead><tr><th>Date</th><th>Test Name</th><th>Class</th><th>Subject</th><th>Total Mark</th><th>Link</th><th>Action</th></tr></thead>
+        <thead><tr><th>Date</th><th>Test Name</th><th>Class</th><th>Subject</th><th>Total Mark</th><th>Posted By</th><th>Link</th><th>Action</th></tr></thead>
         <tbody>${db.tests.slice().reverse().map((t,i)=>{
           return `<tr>
             <td>${t.date||today()}</td>
@@ -749,10 +753,11 @@ function testsPage(){
             <td><span class="badge info">${esc(t.class||'All')}</span></td>
             <td>${esc(t.subject||'-')}</td>
             <td>${t.total||100}</td>
+            <td>${esc(t.postedBy||'Admin / Teacher')}</td>
             <td><a href="${esc(t.link)}" target="_blank" class="btn secondary" style="padding:4px 10px;font-size:12px">🔗 Open Link</a></td>
             <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="db.tests.splice(${db.tests.length-1-i},1);save();testsPage()">Delete</button></td>
           </tr>`;
-        }).join('')||'<tr><td colspan="7" style="text-align:center">Test Links எதுவும் சேர்க்கப்படவில்லை.</td></tr>'}</tbody>
+        }).join('')||'<tr><td colspan="8" style="text-align:center">Test Links எதுவும் சேர்க்கப்படவில்லை.</td></tr>'}</tbody>
       </table>
     </div>`;
 }
@@ -792,7 +797,8 @@ function saveTestLink(){
     subject:document.getElementById('tSubject').value.trim(),
     link,
     total:Number(document.getElementById('tTotal').value)||100,
-    date:document.getElementById('tDate').value||today()
+    date:document.getElementById('tDate').value||today(),
+    postedBy:role==='admin'?'Admin':(db.settings.teacher||'Teacher')
   });
   save();closeModal();testsPage();
 }
@@ -806,15 +812,16 @@ function studentTestsPage(){
 
   document.getElementById('content').innerHTML=`
     <div class="card">
-      <h3 style="color:var(--primary)">🧪 Online Tests to Attend</h3>
+      <h3 style="color:var(--primary)">🧪 Online Tests to Attend</h3><p style="color:var(--muted)">Test link-ஐ click செய்து test எழுதுங்கள். முடித்த பிறகு உங்கள் score-ஐ மட்டும் Enter Mark மூலம் submit செய்யுங்கள். Admin / Teacher அதை தனியாக பார்க்க முடியும்.</p>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Test Name</th><th>Subject</th><th>Total</th><th>1. Attend Test</th><th>2. Enter Mark</th></tr></thead>
+          <thead><tr><th>Test Name</th><th>Subject</th><th>Posted By</th><th>Total</th><th>1. Attend Test</th><th>2. Enter Mark</th></tr></thead>
           <tbody>${tests.map((t,i)=>{
             const submitted=mySubmittedMarks.find(m=>m.testName===t.name);
             return `<tr>
               <td><b>${esc(t.name)}</b></td>
               <td>${esc(t.subject||'-')}</td>
+              <td>${esc(t.postedBy||'Admin / Teacher')}</td>
               <td>${t.total||100}</td>
               <td><a href="${esc(t.link)}" target="_blank" class="btn" style="padding:6px 12px;font-size:12px">🔗 Open & Attend Test</a></td>
               <td>
@@ -823,7 +830,7 @@ function studentTestsPage(){
                   : `<button class="btn success" style="padding:6px 12px;font-size:12px" onclick="studentMarkEntryForm('${esc(t.name)}','${esc(t.subject||'')}',${t.total||100})">📝 Submit My Mark</button>`}
               </td>
             </tr>`;
-          }).join('')||'<tr><td colspan="5" style="text-align:center">தற்போது Online Tests எதுவும் இல்லை.</td></tr>'}</tbody>
+          }).join('')||'<tr><td colspan="6" style="text-align:center">தற்போது Online Tests எதுவும் இல்லை.</td></tr>'}</tbody>
         </table>
       </div>
     </div>
@@ -854,7 +861,7 @@ function studentMarkEntryForm(testName, subject, total){
     <label>நீங்கள் பெற்ற மதிப்பெண் (Mark Scored):</label>
     <input id="stdMarkVal" type="number" max="${total}" min="0" placeholder="Enter mark scored">
     <br><br>
-    <button class="btn success" style="width:100%" onclick="saveStudentOnlineMark('${esc(testName)}','${esc(subject)}',${total})">Submit Mark to Teacher</button>
+    <p style="color:var(--muted);font-size:13px">இந்த mark <b>Online Test → Student Submitted</b> ஆக சேமிக்கப்படும்.</p><button class="btn success" style="width:100%" onclick="saveStudentOnlineMark('${esc(testName)}','${esc(subject)}',${total})">Submit Mark to Teacher</button>
   `);
 }
 
@@ -875,7 +882,9 @@ function saveStudentOnlineMark(testName, subject, total){
     subject,
     mark:num,
     total,
-    date:today()
+    date:today(),
+    entryType:'Student Online Submission',
+    enteredBy:currentStudent.name
   });
 
   save();
@@ -890,7 +899,7 @@ function studentMarks(){
 
   document.getElementById('content').innerHTML=`
     <div class="card">
-      <h3>📝 Regular / Offline Marks (Teacher Entered)</h3>
+      <h3>📝 Regular / Offline Marks — Admin / Teacher Entered</h3>
       <div class="table-wrap"><table class="table"><tr><th>Date</th><th>Exam / Subject</th><th>Mark Scored</th><th>Total</th><th>%</th></tr>
       ${regularRows.slice().reverse().map(m=>{
         const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
@@ -899,12 +908,12 @@ function studentMarks(){
     </div>
 
     <div class="card" style="margin-top:16px">
-      <h3 style="color:var(--primary)">🧪 Online Test Marks (Self Submitted)</h3>
-      <div class="table-wrap"><table class="table"><tr><th>Date</th><th>Test Name</th><th>Subject</th><th>Mark Scored</th><th>Total</th><th>%</th></tr>
+      <h3 style="color:var(--primary)">🧪 Online Test Marks — Student Submitted</h3>
+      <div class="table-wrap"><table class="table"><tr><th>Date</th><th>Test Name</th><th>Subject</th><th>Mark Scored</th><th>Total</th><th>%</th><th>Source</th></tr>
       ${onlineRows.slice().reverse().map(m=>{
         const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
-        return `<tr><td>${m.date}</td><td><b>${esc(m.testName)}</b></td><td>${esc(m.subject||'-')}</td><td><b class="success-text">${m.mark}</b></td><td>${m.total}</td><td><span class="badge ok">${pct}</span></td></tr>`;
-      }).join('')||'<tr><td colspan="6" style="text-align:center">Online Test Marks இல்லை.</td></tr>'}</table></div>
+        return `<tr><td>${m.date}</td><td><b>${esc(m.testName)}</b></td><td>${esc(m.subject||'-')}</td><td><b class="success-text">${m.mark}</b></td><td>${m.total}</td><td><span class="badge ok">${pct}</span></td><td>Student Online Submission</td></tr>`;
+      }).join('')||'<tr><td colspan="7" style="text-align:center">Online Test Marks இல்லை.</td></tr>'}</table></div>
     </div>`;
 }
 
