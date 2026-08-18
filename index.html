@@ -56,6 +56,8 @@ textarea{min-height:90px;resize:vertical}
 .hub-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));gap:16px;margin-top:16px}
 .hub-card{background:var(--card);border:1px solid var(--border);border-radius:var(--card-radius);padding:22px 18px;text-align:center;box-shadow:var(--card-shadow);cursor:pointer;transition:transform 0.18s ease, box-shadow 0.18s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px}
 .hub-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(15,23,42,0.12);border-color:#c7d2fe}
+.hub-card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
+.hub-card:active{transform:scale(.98)}
 .hub-icon{font-size:36px;margin-bottom:10px;line-height:1}
 .hub-title{font-size:16px;font-weight:bold;color:var(--text)}
 .hub-desc{font-size:12px;color:var(--muted);margin-top:4px}
@@ -79,7 +81,7 @@ textarea{min-height:90px;resize:vertical}
 .badge.pending{background:#fee2e2;color:#991b1b}
 .badge.info{background:#e0e7ff;color:#3730a3}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999}
-.modal-box{width:100%;max-width:650px;max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:24px}
+.modal-box{width:100%;max-width:650px;max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:24px;-webkit-overflow-scrolling:touch}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .paybox{background:#eefbf2;border:1px solid #bbf7d0;padding:16px;border-radius:14px}
 .danger-text{color:var(--danger)}.success-text{color:var(--success)}
@@ -262,8 +264,6 @@ db.settings.messages=db.settings.messages||{
   fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',
   absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'
 };
-localStorage.setItem(KEY,JSON.stringify(db));
-
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false;
 
