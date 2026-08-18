@@ -83,9 +83,6 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <button onclick="showPage('studentHome')" data-page="studentHome">📊 Marks</button>
 <button onclick="showPage('studentAttendance')" data-page="studentAttendance">📅 Attendance</button>
 <button onclick="showPage('studentFees')" data-page="studentFees">💰 Fees</button><button onclick="showPage('studentProfile')" data-page="studentProfile">👤 Profile</button>
-<button onclick="showPage('studentTests')" data-page="studentTests">📝 Test</button>
-<button onclick="showPage('studentHomework')" data-page="studentHomework">📚 Homework</button>
-<button onclick="showPage('studentNotices')" data-page="studentNotices">📢 Notice</button>
 </div>
 <button class="btn danger" style="width:100%;margin-top:20px" onclick="logout()">Logout</button>
 </aside>
@@ -97,179 +94,539 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <div id="modal" class="modal hidden"><div class="modal-box"><div class="topbar"><h3 id="modalTitle">Form</h3><button class="btn secondary" onclick="closeModal()">✕</button></div><div id="modalBody"></div></div></div>
 
 <script>
-const KEY='asa_management_v2';
-const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
-const SHEETS=['Students','Attendance','Fees','Marks','Tests','Homework','Notices','Teachers','Settings'];
+const KEY='asa_management_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
- settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:DEFAULT_SHEETS_URL,autoSync:true},
- students:[],attendance:[],fees:[],marks:[],tests:[],homework:[],notices:[],teachers:[]
+settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
+messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
+students:[],attendance:[],fees:[],marks:[]
 };
-db.settings=db.settings||{}; db.settings.sheetsUrl=(db.settings.sheetsUrl||DEFAULT_SHEETS_URL);
-db.settings.autoSync=true;
-['students','attendance','fees','marks','tests','homework','notices','teachers'].forEach(k=>db[k]=Array.isArray(db[k])?db[k]:[]);
-let role='teacher', currentStudent=null, suppressAutoSync=false, syncBusy=false;
-
-function save(){
- localStorage.setItem(KEY,JSON.stringify(db));
- if(!suppressAutoSync) syncNow();
+if(db.settings.adminId===undefined||db.settings.adminId==='')db.settings.adminId='admin';
+if(db.settings.adminPass===undefined||db.settings.adminPass==='')db.settings.adminPass='admin123';
+if(db.settings.teacherId===undefined||db.settings.teacherId==='')db.settings.teacherId='teacher';
+if(db.settings.teacherPass===undefined||db.settings.teacherPass==='')db.settings.teacherPass='1234';
+localStorage.setItem(KEY,JSON.stringify(db));
+if(db.settings.autoSync===undefined)db.settings.autoSync=true; // legacy field, always true now — sync is mandatory
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
+if(!(db.settings.sheetsUrl||'').trim())db.settings.sheetsUrl=DEFAULT_SHEETS_URL; // migration for data saved before a default URL was built in
+db.teachers=db.teachers||[];
+db.homework=db.homework||[];
+db.exams=db.exams||[];
+db.notices=db.notices||[];
+db.expenses=db.expenses||[];
+db.receipts=db.receipts||[];
+let role='teacher', currentStudent=null;
+let suppressAutoSync=false;
+function save(){localStorage.setItem(KEY,JSON.stringify(db));if(!suppressAutoSync)syncNow()}
+function syncNow(){
+if(!(db.settings.sheetsUrl||'').trim())return;
+setSyncStatus('syncing');
+syncSheets(true); // push immediately, no delay — every change goes straight to Google Sheets
 }
-function syncNow(){ if((db.settings.sheetsUrl||'').trim()) syncSheets(true); }
 function setSyncStatus(state){
- const el=document.getElementById('syncStatus'); if(!el)return;
- if(state==='syncing')el.innerHTML='⏳ Google Sheets-ல் Save ஆகிறது…';
- else if(state==='success')el.innerHTML='✅ Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
- else if(state==='error')el.innerHTML='⚠️ Sync failed <button class="btn secondary" style="padding:2px 8px;font-size:11px" onclick="syncSheets()">Retry</button>';
- else el.innerHTML='';
-}
-async function syncSheets(silent=false){
- if(syncBusy)return;
- const url=(db.settings.sheetsUrl||'').trim();
- if(!url){setSyncStatus('error');return}
- syncBusy=true; if(!silent)setSyncStatus('syncing'); else setSyncStatus('syncing');
- try{
-  const payload={action:'sync',timestamp:new Date().toISOString(),data:{
-   Students:db.students,Attendance:db.attendance,Fees:db.fees,Marks:db.marks,
-   Tests:db.tests,Homework:db.homework,Notices:db.notices,Teachers:db.teachers,
-   Settings:db.settings
-  }};
-  await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-  setSyncStatus('success');
- }catch(e){console.error(e);setSyncStatus('error')}finally{syncBusy=false}
-}
-async function loadFromSheets(){
- const url=(db.settings.sheetsUrl||'').trim(); if(!url)return;
- const loading=document.getElementById('loginLoading'); if(loading)loading.style.display='block';
- try{
-  const r=await fetch(url+'?action=load',{method:'GET'});
-  const j=await r.json();
-  if(j&&j.data){
-   suppressAutoSync=true;
-   if(Array.isArray(j.data.Students))db.students=j.data.Students;
-   if(Array.isArray(j.data.Attendance))db.attendance=j.data.Attendance;
-   if(Array.isArray(j.data.Fees))db.fees=j.data.Fees;
-   if(Array.isArray(j.data.Marks))db.marks=j.data.Marks;
-   if(Array.isArray(j.data.Tests))db.tests=j.data.Tests;
-   if(Array.isArray(j.data.Homework))db.homework=j.data.Homework;
-   if(Array.isArray(j.data.Notices))db.notices=j.data.Notices;
-   if(Array.isArray(j.data.Teachers))db.teachers=j.data.Teachers;
-   if(j.data.Settings&&typeof j.data.Settings==='object')db.settings={...db.settings,...j.data.Settings,sheetsUrl:url,autoSync:true};
-   localStorage.setItem(KEY,JSON.stringify(db)); suppressAutoSync=false; setSyncStatus('success');
-  }
- }catch(e){console.warn('Sheet load failed',e)}finally{if(loading)loading.style.display='none'}
+const el=document.getElementById('syncStatus');
+if(!el)return;
+if(state==='syncing')el.innerHTML='⏳ Google Sheets-ல் Save ஆகிறது…';
+else if(state==='success')el.innerHTML='✅ Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+else if(state==='error')el.innerHTML='⚠️ Google Sheets-ல் Save ஆகவில்லை — Internet சரிபார்க்கவும் <button class="btn secondary" style="padding:2px 8px;font-size:11px;margin-left:4px" onclick="syncSheets()">Retry</button>';
+else el.innerHTML='';
 }
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
 function today(){return new Date().toISOString().slice(0,10)}
+function dateText(){return new Date().toLocaleDateString('ta-IN')}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function uid(prefix='ID'){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6)}
 function setRole(r){
- role=r; adminRole.classList.toggle('active',r==='admin'); teacherRole.classList.toggle('active',r==='teacher'); studentRole.classList.toggle('active',r==='student');
- adminLogin.classList.toggle('hidden',r!=='admin'); teacherLogin.classList.toggle('hidden',r!=='teacher'); studentLogin.classList.toggle('hidden',r!=='student'); loginMsg.textContent='';
+ role=r;
+ adminRole.classList.toggle('active',r==='admin');
+ teacherRole.classList.toggle('active',r==='teacher');
+ studentRole.classList.toggle('active',r==='student');
+ adminLogin.classList.toggle('hidden',r!=='admin');
+ teacherLogin.classList.toggle('hidden',r!=='teacher');
+ studentLogin.classList.toggle('hidden',r!=='student');
+ loginMsg.textContent='';
 }
 function loginAdmin(){
- const id=String(adminId.value||'').trim(), pass=String(adminPass.value||'');
- if(id===String(db.settings.adminId||'admin')&&pass===String(db.settings.adminPass||'admin123'))enterApp('admin');
+ const id=String(document.getElementById('adminId').value||'').trim();
+ const pass=String(document.getElementById('adminPass').value||'');
+ const savedId=String(db.settings.adminId||'admin').trim();
+ const savedPass=String(db.settings.adminPass||'admin123');
+ if(id===savedId&&pass===savedPass){enterApp('admin')}
  else loginMsg.textContent='Admin ID / Password தவறாக உள்ளது.';
 }
-function loginTeacher(){
- if(String(teacherId.value||'')===String(db.settings.teacherId||'teacher')&&String(teacherPass.value||'')===String(db.settings.teacherPass||'1234'))enterApp('teacher');
- else loginMsg.textContent='Teacher ID / Password தவறாக உள்ளது.';
-}
-function loginStudent(){
- const s=db.students.find(x=>String(x.id)===String(studentId.value||'').trim()&&String(x.password||'')===String(studentPass.value||''));
- if(s){currentStudent=s;enterApp('student')}else loginMsg.textContent='Student ID / Password தவறாக உள்ளது.';
-}
+function loginTeacher(){if(teacherId.value===db.settings.teacherId&&teacherPass.value===db.settings.teacherPass){enterApp('teacher')}else loginMsg.textContent='Teacher ID / Password தவறாக உள்ளது.'}
+function loginStudent(){const s=db.students.find(x=>x.id===studentId.value&&x.password===studentPass.value);if(s){currentStudent=s;enterApp('student')}else loginMsg.textContent='Student ID / Password தவறாக உள்ளது.'}
 function enterApp(r){
  role=r;loginPage.classList.add('hidden');app.classList.remove('hidden');
- adminNav.classList.toggle('hidden',r!=='admin');teacherNav.classList.toggle('hidden',r!=='teacher');studentNav.classList.toggle('hidden',r!=='student');
+ adminNav.classList.toggle('hidden',r!=='admin');
+ teacherNav.classList.toggle('hidden',r!=='teacher');
+ studentNav.classList.toggle('hidden',r!=='student');
  topSyncBtn.classList.toggle('hidden',r==='student');
- welcome.textContent=r==='admin'?'👑 Admin':r==='teacher'?'👨‍🏫 '+(db.settings.teacher||'Teacher'):'👨‍🎓 '+(currentStudent?.name||'Student');
+ welcome.textContent=r==='admin'?'👑 Admin':r==='teacher'?'👨‍🏫 '+db.settings.teacher:'👨‍🎓 '+currentStudent.name;
  applySettings();showPage(r==='admin'?'overview':r==='teacher'?'attendance':'studentHome');
 }
-function logout(){currentStudent=null;app.classList.add('hidden');loginPage.classList.remove('hidden');setRole('teacher')}
-function applySettings(){
- document.title=(db.settings.academy||'Arul Siragugal Academy')+' - Management';
- loginAcademy.textContent=db.settings.academy||'Arul Siragugal Academy';sideAcademy.textContent=db.settings.academy||'Arul Siragugal Academy';
- if(db.settings.logo)loginLogo.src=db.settings.logo; else loginLogo.removeAttribute('src');
+function logout(){currentStudent=null;app.classList.add('hidden');loginPage.classList.remove('hidden');adminId.value='';adminPass.value='';teacherId.value='';teacherPass.value='';studentId.value='';studentPass.value='';setRole('teacher')}
+function applySettings(){document.title=db.settings.academy+' - Management';loginAcademy.textContent=db.settings.academy;sideAcademy.textContent=db.settings.academy;loginLogo.src=db.settings.logo||'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#4f46e5"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="35">AS</text></svg>')}
+function showPage(p){
+ if(role==='teacher'&&!['attendance','fees','marks'].includes(p))return;
+ if(role==='student'&&!['studentHome','studentAttendance','studentFees','studentProfile'].includes(p))return;
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+ const titles={overview:'Dashboard',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile'};
+ pageTitle.textContent=titles[p]||'';
+ if(p==='overview')overview();if(p==='students')studentsPage();if(p==='attendance')attendancePage();if(p==='fees')feesPage();if(p==='marks')marksPage();if(p==='reports')reportsPage();if(p==='communication')communicationPage();if(p==='homework')homeworkPage();if(p==='exams')examsPage();if(p==='teachers')teachersPage();if(p==='backup')backupPage();if(p==='finance')financePage();if(p==='tests')testsPage();if(p==='calendar')calendarPage();if(p==='birthdays')birthdayPage();if(p==='settings')settingsPage();if(p==='studentHome')studentMarks();if(p==='studentAttendance')studentAttendance();if(p==='studentFees')studentFees();if(p==='studentProfile')studentProfilePage();
 }
-function showPage(page){
- document.querySelectorAll('.nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
- const titles={overview:'Dashboard',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exams',teachers:'Teachers',backup:'Backup',finance:'Income & Expense',tests:'Test Management',calendar:'Calendar',birthdays:'Birthdays',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile',studentTests:'📝 Test',studentHomework:'📚 Homework',studentNotices:'📢 Notice'};
- pageTitle.textContent=titles[page]||page; content.innerHTML=pages[page]?pages[page]():`<div class="card"><h3>Page not found</h3></div>`;
- if(page==='overview')renderOverviewCharts();
+function overview(){const month=new Date().toISOString().slice(0,7), pending=db.students.reduce((a,s)=>a+calcPending(s.id,month),0), collection=db.fees.filter(f=>f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount),0),present=db.attendance.filter(a=>a.date===today()&&a.status==='Present').length;content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Total Students</div><div class="value">${db.students.length}</div></div><div class="card stat"><div class="label">Today Present</div><div class="value">${present}</div></div><div class="card stat"><div class="label">Total Pending Fee</div><div class="value danger-text">${money(pending)}</div></div><div class="card stat"><div class="label">Current Month Collection</div><div class="value success-text">${money(collection)}</div></div></div><div class="grid2"><div class="card"><h3>Monthly Fee Analysis</h3><div id="chart" class="bar-chart"></div></div><div class="card"><h3>Quick Actions</h3><div class="toolbar"><button class="btn" onclick="showPage('students')">➕ Add Student</button><button class="btn" onclick="showPage('fees')">💰 Add Payment</button><button class="btn" onclick="showPage('attendance')">📅 Attendance</button><button class="btn" onclick="showPage('marks')">📝 Marks</button><button class="btn" onclick="showPage('reports')">📊 Reports Dashboard</button><button class="btn success" onclick="syncSheets()">☁️ Sync Now</button></div><p class="user">Google Sheets Apps Script URL Settings-ல் சேர்க்கலாம். LocalStorage data offline-ஆகவும் இயங்கும்.</p></div></div>`;drawChart()}
+function drawChart(){const vals=[];for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);const m=d.toISOString().slice(0,7);vals.push([d.toLocaleDateString('en-IN',{month:'short'}),db.fees.filter(f=>f.date?.startsWith(m)).reduce((a,f)=>a+Number(f.amount),0)])}const max=Math.max(1,...vals.map(x=>x[1]));chart.innerHTML=vals.map(x=>`<div class="bar" style="height:${Math.max(8,x[1]/max*160)}px"><span>${money(x[1])}</span><small>${x[0]}</small></div>`).join('')}
+function studentsPage(){content.innerHTML=`<div class="toolbar"><button class="btn" onclick="studentForm()">➕ Add Student</button><input id="studentSearch" placeholder="Search student..." oninput="renderStudents()" style="max-width:300px"></div><div class="card table-wrap"><table class="table"><thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="studentRows"></tbody></table></div>`;renderStudents()}
+function renderStudents(){const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();studentRows.innerHTML=db.students.filter(s=>(s.name+' '+s.id+' '+s.class).toLowerCase().includes(q)).map(s=>`<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${esc(s.mobile)}</td><td>${money(s.monthlyFee)}</td><td class="actions"><button class="btn secondary" onclick="studentProfilePage('${s.id}')">Profile</button><button class="btn secondary" onclick="studentForm('${s.id}')">Edit</button><button class="btn danger" onclick="deleteStudent('${s.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="6">Student இல்லை.</td></tr>'}
+function studentForm(id=''){const s=db.students.find(x=>x.id===id)||{id:'',name:'',class:'',mobile:'',parent:'',birthday:'',address:'',monthlyFee:db.settings.fee,password:''};openModal(id?'Edit Student':'Add Student',`<div class="two"><div><label>Student ID</label><input id="fId" value="${esc(s.id)}" ${id?'readonly':''}></div><div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div><label>Student Name</label><input id="fName" value="${esc(s.name)}"><div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div><div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div><div><label>Parent Name</label><input id="fParent" value="${esc(s.parent||'')}"></div><div><label>Birthday</label><input id="fBirthday" type="date" value="${esc(s.birthday||'')}"></div></div><label>Address</label><input id="fAddress" value="${esc(s.address||'')}"><label>Fixed Monthly Tuition Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"><br><br><button class="btn" onclick="saveStudent('${id}')">Save Student</button>`)}
+function saveStudent(old){const id=fId.value.trim();if(!id||!fName.value.trim()){alert('Student ID மற்றும் Name தேவை');return}if(!old&&db.students.some(s=>s.id===id)){alert('Student ID already exists');return}const obj={id,name:fName.value.trim(),class:fClass.value.trim(),mobile:fMobile.value.trim(),parent:(document.getElementById('fParent')?.value||'').trim(),birthday:document.getElementById('fBirthday')?.value||'',address:(document.getElementById('fAddress')?.value||'').trim(),monthlyFee:Number(fFee.value)||0,password:fPass.value||'1234'};if(old)db.students[db.students.findIndex(s=>s.id===old)]=obj;else db.students.push(obj);save();closeModal();studentsPage()}
+function deleteStudent(id){if(confirm('இந்த student profile-ஐ மட்டும் delete செய்யவா?\n\nஇவரின் Attendance, Fees, Marks records பாதுகாக்கப்பட்டு தொடரும் — அவை delete ஆகாது.')){db.students=db.students.filter(s=>s.id!==id);save();renderStudents()}}
+function attendancePage(){
+const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+content.innerHTML=`
+<div class="card">
+<h3>📅 Class-wise Attendance</h3>
+<div class="toolbar">
+<div style="min-width:160px"><label>Date</label><input id="attDate" type="date" value="${today()}" onchange="renderClassAttendance()"></div>
+<div style="min-width:180px"><label>Class</label>
+<select id="attClass" onchange="renderClassAttendance()"><option value="">Select Class</option>
+${classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
+<button class="btn success" onclick="saveClassAttendance()">💾 Save / Update Class</button>
+</div>
+<div id="classAttendanceBox"><p class="user">முதலில் Class தேர்வு செய்யவும்.</p></div>
+</div>
+<div class="card section"><h3>📋 Attendance History</h3>
+<div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Class</th><th>Student</th><th>Status</th><th>Reminder</th></tr></thead>
+<tbody>${db.attendance.slice().reverse().map(a=>{
+const s=db.students.find(x=>x.id===a.studentId);
+return `<tr><td>${a.date}</td><td>${esc(s?.class||'-')}</td><td>${esc(s?.name||a.studentId)}</td>
+<td><span class="badge ${a.status==='Present'?'ok':'pending'}">${a.status}</span></td>
+<td>${s?`<button class="btn secondary" onclick="callStudent('${s.id}')">📞 Call</button> ${a.status==='Absent'?`<button class="btn secondary" onclick="whatsapp('${s.id}','absent')">💬 WhatsApp</button>`:''}`:''}</td></tr>`;
+}).join('')||'<tr><td colspan="5">Attendance இல்லை.</td></tr>'}</tbody></table></div></div>`;
 }
-function card(title,body){return `<div class="card"><h3>${title}</h3>${body}</div>`}
-function pagesListRows(arr,cols){
- return arr.length?arr.map(o=>'<tr>'+cols.map(c=>`<td>${esc(o[c]??'')}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${cols.length}">No records</td></tr>`;
-}
-const pages={};
-pages.overview=()=>`<div class="cards">
-${card('👨‍🎓 Students',`<div class="stat value">${db.students.length}</div>`)}
-${card('📅 Attendance',`<div class="stat value">${db.attendance.length}</div>`)}
-${card('📝 Marks',`<div class="stat value">${db.marks.length}</div>`)}
-${card('🧪 Tests',`<div class="stat value">${db.tests.length}</div>`)}
-</div><div class="grid2"><div class="card"><h3>Quick Actions</h3><div class="toolbar"><button class="btn" onclick="openStudentForm()">+ Student</button><button class="btn" onclick="openTestForm()">+ Test</button><button class="btn" onclick="openHomeworkForm()">+ Homework</button><button class="btn" onclick="openNoticeForm()">+ Notice</button></div></div><div class="card"><h3>☁️ Google Sheets</h3><p>9 tabs sync enabled.</p><button class="btn success" onclick="syncSheets()">Sync Now</button></div></div>`;
-function renderOverviewCharts(){}
-pages.students=()=>`<div class="card"><div class="toolbar"><button class="btn" onclick="openStudentForm()">+ Add Student</button></div><div class="table-wrap"><table class="table"><tr><th>ID</th><th>Name</th><th>Class</th><th>Phone</th><th>Actions</th></tr>${db.students.map((s,i)=>`<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td>${esc(s.className)}</td><td>${esc(s.phone)}</td><td><div class="actions"><button class="btn secondary" onclick="editStudent(${i})">Edit</button><button class="btn danger" onclick="deleteItem('students',${i})">Delete</button></div></td></tr>`).join('')||'<tr><td colspan="5">No students</td></tr>'}</table></div></div>`;
-pages.attendance=()=>{let rows=db.students.map(s=>{let a=db.attendance.find(x=>x.studentId===s.id&&x.date===today());return `<tr><td>${esc(s.name)}</td><td>${esc(s.className)}</td><td><div class="att-buttons"><button class="att-btn present ${a?.status==='Present'?'selected':''}" onclick="markAttendance('${esc(s.id)}','Present')">Present</button><button class="att-btn absent ${a?.status==='Absent'?'selected':''}" onclick="markAttendance('${esc(s.id)}','Absent')">Absent</button></div></td></tr>`}).join('');return `<div class="card"><h3>Today: ${today()}</h3><div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Status</th></tr>${rows||'<tr><td colspan="3">No students</td></tr>'}</table></div></div>`};
-pages.fees=()=>`<div class="card"><div class="toolbar"><button class="btn" onclick="openFeeForm()">+ Fee Entry</button></div><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Student</th><th>Amount</th><th>Month</th><th>Status</th></tr>${db.fees.map(f=>`<tr><td>${esc(f.date)}</td><td>${esc(studentName(f.studentId))}</td><td>${money(f.amount)}</td><td>${esc(f.month)}</td><td>${esc(f.status||'Paid')}</td></tr>`).join('')||'<tr><td colspan="5">No fees</td></tr>'}</table></div></div>`;
-pages.marks=()=>`<div class="card"><div class="toolbar"><button class="btn" onclick="openMarkForm()">+ Mark Entry</button></div><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Student</th><th>Subject</th><th>Marks</th><th>Total</th></tr>${db.marks.map(m=>`<tr><td>${esc(m.date)}</td><td>${esc(studentName(m.studentId))}</td><td>${esc(m.subject)}</td><td>${esc(m.marks)}</td><td>${esc(m.total)}</td></tr>`).join('')||'<tr><td colspan="5">No marks</td></tr>'}</table></div></div>`;
-pages.reports=()=>`<div class="grid2">${card('Total Fees',money(db.fees.reduce((a,b)=>a+Number(b.amount||0),0)))}${card('Students',db.students.length)}${card('Tests',db.tests.length)}${card('Homework',db.homework.length)}</div>`;
-pages.communication=()=>`<div class="card"><h3>📢 Notices</h3><button class="btn" onclick="openNoticeForm()">+ New Notice</button><div class="section">${noticeTable()}</div></div>`;
-pages.homework=()=>`<div class="card"><div class="toolbar"><button class="btn" onclick="openHomeworkForm()">+ Add Homework</button></div>${homeworkTable(true)}</div>`;
-pages.exams=()=>`<div class="card"><h3>Exams</h3><p>Use Test Management for online tests.</p><button class="btn" onclick="showPage('tests')">Open Tests</button></div>`;
-pages.teachers=()=>`<div class="card"><div class="toolbar"><button class="btn" onclick="openTeacherForm()">+ Add Teacher</button></div><table class="table"><tr><th>ID</th><th>Name</th><th>Subject</th><th>Phone</th><th>Action</th></tr>${db.teachers.map((t,i)=>`<tr><td>${esc(t.id)}</td><td>${esc(t.name)}</td><td>${esc(t.subject)}</td><td>${esc(t.phone)}</td><td><button class="btn danger" onclick="deleteItem('teachers',${i})">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">No teachers</td></tr>'}</table></div>`;
-pages.backup=()=>`<div class="card"><h3>Backup</h3><p>Download a local JSON backup.</p><button class="btn" onclick="downloadBackup()">⬇️ Download Backup</button><button class="btn secondary" onclick="document.getElementById('restoreFile').click()">Restore</button><input id="restoreFile" type="file" accept=".json" hidden onchange="restoreBackup(this)"></div>`;
-pages.finance=()=>`<div class="card"><h3>Income & Expense</h3><p>Income: <b>${money(db.fees.reduce((a,b)=>a+Number(b.amount||0),0))}</b></p><p>Expense tracking can be added to the Expenses sheet when needed.</p></div>`;
-pages.tests=()=>`<div class="card"><div class="toolbar"><button class="btn" onclick="openTestForm()">+ Create Test</button></div><div class="table-wrap"><table class="table"><tr><th>Title</th><th>Subject</th><th>Date</th><th>Duration</th><th>Questions</th><th>Action</th></tr>${db.tests.map((t,i)=>`<tr><td>${esc(t.title)}</td><td>${esc(t.subject)}</td><td>${esc(t.date)}</td><td>${esc(t.duration)} min</td><td>${(t.questions||[]).length}</td><td><button class="btn danger" onclick="deleteItem('tests',${i})">Delete</button></td></tr>`).join('')||'<tr><td colspan="6">No tests</td></tr>'}</table></div></div>`;
-pages.calendar=()=>`<div class="card"><h3>🗓️ Calendar</h3><p>${new Date().toLocaleDateString('en-IN',{dateStyle:'full'})}</p><p>Tests: ${db.tests.filter(x=>x.date===today()).length} · Homework: ${db.homework.filter(x=>x.date===today()).length}</p></div>`;
-pages.birthdays=()=>`<div class="card"><h3>🎂 Birthdays</h3><p>Student DOB data can be stored in the Students sheet.</p></div>`;
-pages.settings=()=>`<div class="card"><h3>⚙️ Settings</h3><div class="two"><div><label>Academy</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div><div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div><div><label>Admin ID</label><input id="setAdminId" value="${esc(db.settings.adminId||'admin')}"></div><div><label>Admin Password</label><input id="setAdminPass" value="${esc(db.settings.adminPass||'admin123')}"></div><div><label>Teacher ID</label><input id="setTeacherId" value="${esc(db.settings.teacherId||'teacher')}"></div><div><label>Teacher Password</label><input id="setTeacherPass" value="${esc(db.settings.teacherPass||'1234')}"></div></div><label>Google Apps Script Web App URL</label><input id="setSheetsUrl" value="${esc(db.settings.sheetsUrl)}"><div class="toolbar" style="margin-top:15px"><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn success" onclick="syncSheets()">☁️ Sync Now</button></div><hr><p><b>Required tabs:</b> ${SHEETS.join(', ')}</p></div>`;
-pages.studentHome=()=>studentDashboard();
-pages.studentAttendance=()=>studentAttendancePage();
-pages.studentFees=()=>studentFeesPage();
-pages.studentProfile=()=>`<div class="card"><h3>👤 Profile</h3><div class="two"><p><b>ID:</b> ${esc(currentStudent?.id)}</p><p><b>Name:</b> ${esc(currentStudent?.name)}</p><p><b>Class:</b> ${esc(currentStudent?.className)}</p><p><b>Phone:</b> ${esc(currentStudent?.phone)}</p></div></div>`;
-pages.studentTests=()=>studentTestsPage();
-pages.studentHomework=()=>`<div class="card"><h3>📚 Homework</h3>${homeworkTable(false,true)}</div>`;
-pages.studentNotices=()=>`<div class="card"><h3>📢 Notice</h3>${noticeTable(false,true)}</div>`;
 
-function studentName(id){const s=db.students.find(x=>x.id===id);return s?s.name:id||''}
-function studentDashboard(){const ms=db.marks.filter(x=>x.studentId===currentStudent?.id);return `<div class="cards"><div class="card stat"><div class="label">Marks</div><div class="value">${ms.length}</div></div><div class="card stat"><div class="label">Tests</div><div class="value">${db.tests.length}</div></div><div class="card stat"><div class="label">Homework</div><div class="value">${db.homework.filter(x=>!x.studentId||x.studentId===currentStudent?.id).length}</div></div><div class="card stat"><div class="label">Notices</div><div class="value">${db.notices.length}</div></div></div><div class="grid2"><div class="card"><h3>📝 My Marks</h3>${ms.length?`<table class="table"><tr><th>Subject</th><th>Marks</th><th>Total</th></tr>${ms.map(m=>`<tr><td>${esc(m.subject)}</td><td>${esc(m.marks)}</td><td>${esc(m.total)}</td></tr>`).join('')}</table>`:'No marks yet.'}</div><div class="card"><h3>Quick Access</h3><div class="toolbar"><button class="btn" onclick="showPage('studentTests')">📝 Test</button><button class="btn" onclick="showPage('studentHomework')">📚 Homework</button><button class="btn" onclick="showPage('studentNotices')">📢 Notice</button></div></div></div>`}
-function studentAttendancePage(){const a=db.attendance.filter(x=>x.studentId===currentStudent?.id);return `<div class="card"><h3>📅 My Attendance</h3><table class="table"><tr><th>Date</th><th>Status</th></tr>${a.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${esc(x.status)}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance</td></tr>'}</table></div>`}
-function studentFeesPage(){const f=db.fees.filter(x=>x.studentId===currentStudent?.id);return `<div class="card"><h3>💰 My Fees</h3><table class="table"><tr><th>Date</th><th>Month</th><th>Amount</th><th>Status</th></tr>${f.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.month)}</td><td>${money(x.amount)}</td><td>${esc(x.status||'Paid')}</td></tr>`).join('')||'<tr><td colspan="4">No fees</td></tr>'}</table></div>`}
-function studentTestsPage(){const ts=db.tests;return `<div class="card"><h3>📝 Tests</h3>${ts.map((t,i)=>`<div class="card" style="margin:10px 0"><h3>${esc(t.title)}</h3><p>${esc(t.subject)} · ${esc(t.date)} · ${esc(t.duration)} min</p><button class="btn" onclick="startTest(${i})">Start Test</button></div>`).join('')||'<p>No tests available.</p>'}</div>`}
-function homeworkTable(admin=false,student=false){const arr=db.homework.filter(x=>!student||!x.studentId||x.studentId===currentStudent?.id);return `<table class="table"><tr><th>Title</th><th>Subject</th><th>Due Date</th><th>Description</th>${admin?'<th>Action</th>':''}</tr>${arr.map((h,i)=>`<tr><td>${esc(h.title)}</td><td>${esc(h.subject)}</td><td>${esc(h.dueDate)}</td><td>${esc(h.description)}</td>${admin?`<td><button class="btn danger" onclick="deleteItem('homework',${i})">Delete</button></td>`:''}</tr>`).join('')||`<tr><td colspan="${admin?5:4}">No homework</td></tr>`}</table>`}
-function noticeTable(admin=false,student=false){const arr=db.notices;return `<table class="table"><tr><th>Date</th><th>Title</th><th>Message</th>${admin?'<th>Action</th>':''}</tr>${arr.map((n,i)=>`<tr><td>${esc(n.date)}</td><td>${esc(n.title)}</td><td>${esc(n.message)}</td>${admin?`<td><button class="btn danger" onclick="deleteItem('notices',${i})">Delete</button></td>`:''}</tr>`).join('')||`<tr><td colspan="${admin?4:3}">No notices</td></tr>`}</table>`}
-function openModal(title,body){modalTitle.textContent=title;modalBody.innerHTML=body;modal.classList.remove('hidden')}
-function closeModal(){modal.classList.add('hidden')}
-function studentOptions(){return db.students.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.id)})</option>`).join('')}
-function openStudentForm(idx=-1){
- const s=idx>=0?db.students[idx]:{};
- openModal(idx>=0?'Edit Student':'Add Student',`<label>Student ID</label><input id="fId" value="${esc(s.id||'')}"><label>Name</label><input id="fName" value="${esc(s.name||'')}"><div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.className||'')}"></div><div><label>Phone</label><input id="fPhone" value="${esc(s.phone||'')}"></div></div><label>Password</label><input id="fPass" value="${esc(s.password||'1234')}"><button class="btn" style="margin-top:15px" onclick="saveStudent(${idx})">Save</button>`);
+function renderClassAttendance(){
+const cls=document.getElementById('attClass')?.value;
+const date=document.getElementById('attDate')?.value||today();
+const box=document.getElementById('classAttendanceBox');
+if(!cls){box.innerHTML='<p class="user">முதலில் Class தேர்வு செய்யவும்.</p>';return;}
+const students=db.students.filter(s=>s.class===cls);
+const existing={};
+db.attendance.filter(a=>a.date===date).forEach(a=>existing[a.studentId]=a.status);
+
+box.innerHTML=`
+<div class="toolbar"><strong>Class: ${esc(cls)} — ${students.length} Students</strong></div>
+<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Student</th><th>Attendance</th></tr></thead>
+<tbody>${students.map((s,i)=>{
+const st=existing[s.id]||'';
+return `<tr>
+<td>${i+1}</td>
+<td><b>${esc(s.name)}</b><br><small>${esc(s.id)}</small></td>
+<td>
+<div class="att-buttons" data-student="${esc(s.id)}">
+<button type="button" class="att-btn present ${st==='Present'?'selected':''}" onclick="setAttendanceButton(this,'Present')">✓ Present</button>
+<button type="button" class="att-btn absent ${st==='Absent'?'selected':''}" onclick="setAttendanceButton(this,'Absent')">✕ Absent</button>
+</div>
+</td></tr>`;
+}).join('')||'<tr><td colspan="3">இந்த Class-ல் Students இல்லை.</td></tr>'}</tbody></table></div>`;
 }
-function saveStudent(idx){const o={id:fId.value.trim(),name:fName.value.trim(),className:fClass.value.trim(),phone:fPhone.value.trim(),password:fPass.value};if(!o.id||!o.name)return alert('Student ID and Name required');if(idx>=0)db.students[idx]=o;else db.students.push(o);closeModal();save();showPage('students')}
-function editStudent(i){openStudentForm(i)}
-function openFeeForm(){openModal('Fee Entry',`<label>Student</label><select id="fStudent">${studentOptions()}</select><div class="two"><div><label>Month</label><input id="fMonth" value="${new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})}"></div><div><label>Amount</label><input id="fAmount" type="number" value="${db.settings.fee||1000}"></div></div><label>Status</label><select id="fStatus"><option>Paid</option><option>Pending</option></select><button class="btn" style="margin-top:15px" onclick="saveFee()">Save</button>`)}
-function saveFee(){db.fees.push({id:uid('FEE'),date:today(),studentId:fStudent.value,month:fMonth.value,amount:Number(fAmount.value||0),status:fStatus.value});closeModal();save();showPage('fees')}
-function openMarkForm(){openModal('Mark Entry',`<label>Student</label><select id="fStudent">${studentOptions()}</select><div class="two"><div><label>Subject</label><input id="fSubject"></div><div><label>Marks</label><input id="fMarks" type="number"></div></div><label>Total</label><input id="fTotal" type="number" value="100"><button class="btn" style="margin-top:15px" onclick="saveMark()">Save</button>`)}
-function saveMark(){db.marks.push({id:uid('MARK'),date:today(),studentId:fStudent.value,subject:fSubject.value,marks:Number(fMarks.value||0),total:Number(fTotal.value||100)});closeModal();save();showPage('marks')}
-function openHomeworkForm(){openModal('Homework Management',`<label>Title</label><input id="fTitle"><div class="two"><div><label>Subject</label><input id="fSubject"></div><div><label>Due Date</label><input id="fDue" type="date"></div></div><label>Assign Student (optional)</label><select id="fStudent"><option value="">All Students</option>${studentOptions()}</select><label>Description</label><textarea id="fDesc"></textarea><button class="btn" style="margin-top:15px" onclick="saveHomework()">Publish Homework</button>`)}
-function saveHomework(){db.homework.push({id:uid('HW'),date:today(),title:fTitle.value,subject:fSubject.value,dueDate:fDue.value,studentId:fStudent.value,description:fDesc.value});closeModal();save();showPage('homework')}
-function openNoticeForm(){openModal('Notice Management',`<label>Title</label><input id="fTitle"><label>Message</label><textarea id="fMsg"></textarea><button class="btn" style="margin-top:15px" onclick="saveNotice()">Publish Notice</button>`)}
-function saveNotice(){db.notices.unshift({id:uid('NOTICE'),date:today(),title:fTitle.value,message:fMsg.value});closeModal();save();showPage(role==='admin'?'communication':'studentNotices')}
-function openTestForm(){openModal('Test Management',`<label>Test Title</label><input id="fTitle"><div class="two"><div><label>Subject</label><input id="fSubject"></div><div><label>Date</label><input id="fDate" type="date" value="${today()}"></div></div><label>Duration (minutes)</label><input id="fDuration" type="number" value="30"><label>Questions (one per line: Question | Option A | Option B | Option C | Option D | Answer)</label><textarea id="fQuestions" placeholder="2+2=? | 3 | 4 | 5 | 6 | B"></textarea><button class="btn" style="margin-top:15px" onclick="saveTest()">Create Test</button>`)}
-function saveTest(){const questions=fQuestions.value.split('\\n').map(line=>line.trim()).filter(Boolean).map(line=>{const p=line.split('|').map(x=>x.trim());return {question:p[0]||'',options:p.slice(1,5),answer:p[5]||''}});db.tests.push({id:uid('TEST'),title:fTitle.value,subject:fSubject.value,date:fDate.value,duration:Number(fDuration.value||30),questions});closeModal();save();showPage('tests')}
-function startTest(i){const t=db.tests[i];let html=`<form id="testForm"><h3>${esc(t.title)}</h3>`;t.questions.forEach((q,qi)=>{html+=`<div class="card" style="margin:10px 0"><b>${qi+1}. ${esc(q.question)}</b>${q.options.map((o,j)=>`<label><input type="radio" name="q${qi}" value="${String.fromCharCode(65+j)}"> ${String.fromCharCode(65+j)}. ${esc(o)}</label>`).join('')}</div>`});html+=`<button class="btn" type="button" onclick="submitTest(${i})">Submit Test</button></form>`;openModal('📝 Test',html)}
-function submitTest(i){const t=db.tests[i];let score=0;t.questions.forEach((q,qi)=>{const v=document.querySelector(`input[name="q${qi}"]:checked`);if(v&&v.value.toUpperCase()===String(q.answer).toUpperCase())score++});alert(`Score: ${score}/${t.questions.length}`);closeModal()}
-function openTeacherForm(){openModal('Add Teacher',`<label>Teacher ID</label><input id="fId"><label>Name</label><input id="fName"><label>Subject</label><input id="fSubject"><label>Phone</label><input id="fPhone"><button class="btn" style="margin-top:15px" onclick="saveTeacher()">Save</button>`)}
-function saveTeacher(){db.teachers.push({id:fId.value,name:fName.value,subject:fSubject.value,phone:fPhone.value});closeModal();save();showPage('teachers')}
-function markAttendance(studentId,status){const i=db.attendance.findIndex(x=>x.studentId===studentId&&x.date===today());if(i>=0)db.attendance[i].status=status;else db.attendance.push({id:uid('ATT'),date:today(),studentId,status});save();showPage('attendance')}
-function deleteItem(key,i){if(confirm('Delete this record?')){db[key].splice(i,1);save();showPage(key==='notices'?'communication':key==='homework'?'homework':key==='tests'?'tests':key==='teachers'?'teachers':'students')}}
-function saveSettings(){db.settings.academy=setAcademy.value.trim()||'Arul Siragugal Academy';db.settings.teacher=setTeacher.value.trim()||'Teacher';db.settings.adminId=setAdminId.value.trim()||'admin';db.settings.adminPass=setAdminPass.value||'admin123';db.settings.teacherId=setTeacherId.value.trim()||'teacher';db.settings.teacherPass=setTeacherPass.value||'1234';db.settings.sheetsUrl=setSheetsUrl.value.trim()||DEFAULT_SHEETS_URL;localStorage.setItem(KEY,JSON.stringify(db));applySettings();setSyncStatus('success');syncSheets();alert('Settings saved');}
-function downloadBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ASA-backup-'+today()+'.json';a.click();URL.revokeObjectURL(a.href)}
-function restoreBackup(input){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);localStorage.setItem(KEY,JSON.stringify(db));alert('Backup restored');location.reload()}catch(e){alert('Invalid backup')}};r.readAsText(file)}
-function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark')?'1':'0')}
-if(localStorage.getItem('asa_dark')==='1')document.body.classList.add('dark');
-applySettings();
-setRole('teacher');
-loadFromSheets();
+
+function setAttendanceButton(btn,status){
+const wrap=btn.parentElement;
+wrap.querySelectorAll('.att-btn').forEach(b=>b.classList.remove('selected'));
+btn.classList.add('selected');
+wrap.dataset.status=status;
+}
+
+function saveClassAttendance(){
+const cls=document.getElementById('attClass')?.value;
+const date=document.getElementById('attDate')?.value||today();
+if(!cls)return alert('Class தேர்வு செய்யவும்.');
+const buttons=[...document.querySelectorAll('.att-buttons')];
+if(!buttons.length)return alert('இந்த Class-ல் Students இல்லை.');
+
+let count=0;
+buttons.forEach(wrap=>{
+const studentId=wrap.dataset.student;
+const status=wrap.dataset.status;
+if(status){
+db.attendance=db.attendance.filter(a=>!(a.studentId===studentId&&a.date===date));
+db.attendance.push({studentId,date,status});
+count++;
+}
+});
+save();
+alert(count+' Students attendance Save / Update செய்யப்பட்டது.');
+attendancePage();
+}
+
+function saveAttendance(){if(!attStudent.value)return alert('Student தேர்வு செய்யவும்');db.attendance=db.attendance.filter(a=>!(a.studentId===attStudent.value&&a.date===attDate.value));db.attendance.push({studentId:attStudent.value,date:attDate.value,status:attStatus.value});save();attendancePage()}
+function calcPaid(id,month){return db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount),0)}
+function calcPending(id,month){const s=db.students.find(x=>x.id===id);return Math.max(0,Number(s?.monthlyFee||0)+db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month)&&f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0)-calcPaid(id,month))}
+function feesPage(){
+const month=new Date().toISOString().slice(0,7);
+content.innerHTML=`
+<div class="toolbar">
+<button class="btn" onclick="feeForm()">➕ Record Fee Payment</button>
+<button class="btn secondary" onclick="extraForm()">➕ Extra Fee</button>
+</div>
+<div class="card table-wrap"><table class="table">
+<thead><tr><th>Student</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th><th>Details</th><th>Reminder</th></tr></thead>
+<tbody>
+${db.students.map(s=>{
+const extras=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(month)&&f.type==='Extra');
+const extra=extras.reduce((a,f)=>a+Number(f.extraAmount||0),0);
+const paid=calcPaid(s.id,month);
+const pending=Math.max(0,Number(s.monthlyFee)+extra-paid);
+return `<tr>
+<td><button class="student-link" onclick="showStudentFeeDetails('${s.id}')">${esc(s.name)}</button></td>
+<td>${money(s.monthlyFee)}</td>
+<td>${money(extra)}</td>
+<td>${money(paid)}</td>
+<td><span class="badge ${pending?'pending':'ok'}">${money(pending)}</span></td>
+<td><button class="btn secondary" onclick="showStudentFeeDetails('${s.id}')">👁 View</button></td>
+<td>${s.mobile?`<button class="btn secondary" onclick="callStudent('${s.id}')">📞 Call</button>`:''} ${pending?`<button class="btn secondary" onclick="whatsapp('${s.id}','fee')">💬 WhatsApp</button>`:'Paid'}</td>
+</tr>`;
+}).join('')||'<tr><td colspan="7">Students இல்லை.</td></tr>'}
+</tbody></table></div>`;
+}
+
+function showStudentFeeDetails(id){
+const s=db.students.find(x=>x.id===id);
+if(!s)return;
+const month=new Date().toISOString().slice(0,7);
+const records=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+const extras=records.filter(f=>f.type==='Extra');
+const payments=records.filter(f=>f.type!=='Extra');
+const extraTotal=extras.reduce((a,f)=>a+Number(f.extraAmount||0),0);
+const paidTotal=payments.reduce((a,f)=>a+Number(f.amount||0),0);
+const pending=Math.max(0,Number(s.monthlyFee)+extraTotal-paidTotal);
+
+openModal('Student Fee Details',`
+<div class="paybox">
+<h3>👨‍🎓 ${esc(s.name)}</h3>
+<p>Class: <b>${esc(s.class)}</b> &nbsp; | &nbsp; ID: <b>${esc(s.id)}</b></p>
+<p>Monthly Tuition: <b>${money(s.monthlyFee)}</b></p>
+<p>Extra Fee: <b>${money(extraTotal)}</b></p>
+<p>Paid: <b class="success-text">${money(paidTotal)}</b></p>
+<p>Pending: <b class="${pending?'danger-text':'success-text'}">${money(pending)}</b></p>
+</div>
+<h3 style="margin-top:18px">➕ Extra Fee Details</h3>
+<table class="table">
+<tr><th>Date</th><th>Reason</th><th>Amount</th></tr>
+${extras.map(f=>`<tr><td>${f.date}</td><td>${esc(f.extraType||'Other')}</td><td>${money(f.extraAmount)}</td></tr>`).join('')||'<tr><td colspan="3">Extra Fee இல்லை.</td></tr>'}
+</table>
+<h3 style="margin-top:18px">💳 Payment Details</h3>
+<table class="table">
+<tr><th>Date</th><th>Paid Amount</th></tr>
+${payments.map(f=>`<tr><td>${f.date}</td><td>${money(f.amount)}</td></tr>`).join('')||'<tr><td colspan="2">Payment இல்லை.</td></tr>'}
+</table>
+<div class="actions" style="margin-top:16px">
+${s.mobile?`<button class="btn secondary" onclick="callStudent('${s.id}')">📞 Direct Call</button>`:''}
+<button class="btn" onclick="closeModal();extraForm('${s.id}')">➕ Add Extra Fee</button>
+<button class="btn success" onclick="closeModal();feeForm('${s.id}')">💳 Add Payment</button>
+</div>`);
+}
+
+function feeForm(preselect=''){openModal('Record Paid Amount',`<label>Student</label><select id="feeStudent">${db.students.map(s=>`<option value="${s.id}" ${s.id===preselect?'selected':''}>${esc(s.name)}</option>`).join('')}</select><label>Paid Amount</label><input id="feeAmount" type="number"><label>Date</label><input id="feeDate" type="date" value="${today()}"><br><br><button class="btn success" onclick="saveFee()">Save Payment</button>`)}
+function saveFee(){if(!feeStudent.value||Number(feeAmount.value)<=0)return alert('Student மற்றும் amount சரியாக கொடுக்கவும்');db.fees.push({studentId:feeStudent.value,amount:Number(feeAmount.value),date:feeDate.value,type:'Payment'});save();closeModal();feesPage()}
+function extraForm(preselect=''){openModal('Extra Fee',`<label>Student</label><select id="extraStudent">${db.students.map(s=>`<option value="${s.id}" ${s.id===preselect?'selected':''}>${esc(s.name)}</option>`).join('')}</select><label>Type</label><select id="extraType"><option>Book</option><option>Pen</option><option>Notebook</option><option>Exam</option><option>Other</option></select><label>Amount</label><input id="extraAmount" type="number"><label>Date</label><input id="extraDate" type="date" value="${today()}"><br><br><button class="btn" onclick="saveExtra()">Save Extra Fee</button>`)}
+function saveExtra(){db.fees.push({studentId:extraStudent.value,amount:0,extraAmount:Number(extraAmount.value)||0,date:extraDate.value,type:'Extra',extraType:extraType.value});save();closeModal();feesPage()}
+function marksPage(){content.innerHTML=`<div class="toolbar"><button class="btn" onclick="markForm()">➕ Add / Update Mark</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Student</th><th>Exam</th><th>Mark</th><th>Total</th><th>Action</th></tr></thead><tbody>${db.marks.map((m,i)=>{const s=db.students.find(x=>x.id===m.studentId);return `<tr><td>${esc(s?.name||m.studentId)}</td><td>${esc(m.exam)}</td><td>${m.mark}</td><td>${m.total}</td><td><button class="btn danger" onclick="deleteMark(${i})">Delete</button></td></tr>`}).join('')||'<tr><td colspan="5">Marks இல்லை.</td></tr>'}</tbody></table></div>`}
+function markForm(){openModal('Marks',`<label>Student</label><select id="markStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><label>Exam / Subject</label><input id="markExam"><div class="two"><div><label>Mark</label><input id="markValue" type="number"></div><div><label>Total Mark</label><input id="markTotal" type="number" value="100"></div></div><br><button class="btn" onclick="saveMark()">Save Mark</button>`)}
+function saveMark(){db.marks.push({studentId:markStudent.value,exam:markExam.value,mark:Number(markValue.value),total:Number(markTotal.value)});save();closeModal();marksPage()}
+function deleteMark(i){db.marks.splice(i,1);save();marksPage()}
+function reportsPage(){
+ const months=[];for(let i=0;i<12;i++){const d=new Date();d.setMonth(d.getMonth()-i);months.push(d.toISOString().slice(0,7));}
+ const cls=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
+ content.innerHTML=`<div class="cards">
+ <div class="card stat"><div class="label">Students</div><div class="value">${db.students.length}</div></div>
+ <div class="card stat"><div class="label">Attendance Records</div><div class="value">${db.attendance.length}</div></div>
+ <div class="card stat"><div class="label">Fee Records</div><div class="value">${db.fees.length}</div></div>
+ <div class="card stat"><div class="label">Mark Records</div><div class="value">${db.marks.length}</div></div>
+ </div>
+ <div class="grid2">
+ <div class="card"><h3>👨‍🎓 Individual Student Report</h3>
+ <label>Student</label><select id="reportStudent">${db.students.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select>
+ <label>Month</label><input id="reportMonth" type="month" value="${new Date().toISOString().slice(0,7)}">
+ <br><br><button class="btn" onclick="downloadStudentReport()">⬇️ Download Student Report</button></div>
+ <div class="card"><h3>📅 Monthly Report</h3>
+ <label>Month</label><input id="monthlyReportMonth" type="month" value="${new Date().toISOString().slice(0,7)}">
+ <label>Class (optional)</label><select id="monthlyReportClass"><option value="">All Classes</option>${cls.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+ <br><br><button class="btn success" onclick="downloadMonthlyReport()">⬇️ Download Monthly Report</button></div>
+ </div>
+ <div class="card section"><h3>📊 Monthly Summary</h3><div class="table-wrap"><table class="table"><thead><tr><th>Month</th><th>Collection</th><th>Students</th><th>Present</th><th>Absent</th><th>Pending</th></tr></thead><tbody>${months.map(m=>{
+ const collection=db.fees.filter(f=>f.date?.startsWith(m)).reduce((a,f)=>a+Number(f.amount||0),0);
+ const present=db.attendance.filter(a=>a.date?.startsWith(m)&&a.status==='Present').length;
+ const absent=db.attendance.filter(a=>a.date?.startsWith(m)&&a.status==='Absent').length;
+ const pending=db.students.reduce((a,s)=>a+calcPending(s.id,m),0);
+ return `<tr><td>${m}</td><td>${money(collection)}</td><td>${db.students.length}</td><td>${present}</td><td>${absent}</td><td>${money(pending)}</td></tr>`;
+ }).join('')}</tbody></table></div></div>`;
+}
+function downloadStudentReport(){
+ const id=document.getElementById('reportStudent')?.value,month=document.getElementById('reportMonth')?.value||today().slice(0,7),s=db.students.find(x=>x.id===id);
+ if(!s)return alert('Student இல்லை.');
+ const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
+ const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+ const marks=db.marks.filter(m=>m.studentId===id);
+ const paid=fees.filter(f=>f.type!=='Extra').reduce((a,f)=>a+Number(f.amount||0),0);
+ const extra=fees.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);
+ const pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+ let csv=`Arul Siragugal Academy - Individual Student Report\nMonth,${month}\nStudent ID,${s.id}\nStudent Name,${s.name}\nClass,${s.class}\nMobile,${s.mobile}\nMonthly Fee,${s.monthlyFee}\nPaid,${paid}\nExtra Fee,${extra}\nPending,${pending}\n\nAttendance\nDate,Status\n`;
+ att.forEach(a=>csv+=`${a.date},${a.status}\n`);
+ csv+=`\nMarks\nExam / Subject,Mark,Total\n`;marks.forEach(m=>csv+=`${m.exam},${m.mark},${m.total}\n`);
+ downloadText(csv,`student-report-${s.id}-${month}.csv`);
+}
+function downloadMonthlyReport(){
+ const month=document.getElementById('monthlyReportMonth')?.value||today().slice(0,7),cls=document.getElementById('monthlyReportClass')?.value||'';
+ const students=db.students.filter(s=>!cls||s.class===cls);
+ let csv=`Arul Siragugal Academy - Monthly Report\nMonth,${month}\nClass,${cls||'All'}\n\nStudent ID,Student Name,Class,Monthly Fee,Extra Fee,Paid,Pending,Present,Absent\n`;
+ students.forEach(s=>{
+  const fees=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(month));
+  const extra=fees.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);
+  const paid=fees.filter(f=>f.type!=='Extra').reduce((a,f)=>a+Number(f.amount||0),0);
+  const pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+  const present=db.attendance.filter(a=>a.studentId===s.id&&a.date?.startsWith(month)&&a.status==='Present').length;
+  const absent=db.attendance.filter(a=>a.studentId===s.id&&a.date?.startsWith(month)&&a.status==='Absent').length;
+  csv+=`${s.id},${s.name},${s.class},${s.monthlyFee},${extra},${paid},${pending},${present},${absent}\n`;
+ });
+ downloadText(csv,`monthly-report-${month}${cls?'-'+cls:''}.csv`);
+}
+function downloadText(text,filename){
+ const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function settingsPage(){const m=db.settings.messages;content.innerHTML=`<div class="card"><h3>🏫 Academy Settings</h3><div class="two"><div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div><div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div><div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div><div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div><div><label>Admin ID</label><input id="setAid" value="${esc(db.settings.adminId||'admin')}"></div><div><label>Admin Password</label><input id="setApass" type="password" value="${esc(db.settings.adminPass||'admin123')}"></div><div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div></div><div id="logoPreviewBox" style="margin:10px 0;display:${db.settings.logo?'block':'none'}">
+<img id="logoPrev" src="${db.settings.logo||''}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;display:block">
+</div><label>Google Sheets Apps Script URL</label><input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec"><p class="user">☁️ இந்த app எப்போதும் Online-ல் இயங்குகிறது. ஒவ்வொரு Add/Edit/Delete உடனடியாக Google Sheets-ல் Save ஆகும் — Offline mode கிடையாது.</p><br><h3>🇮🇳 Tamil Reminder Templates</h3><label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea><label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea><p class="user">Automatic placeholders: {student}, {amount}, {date}, {academy}</p><p class="user">☁️ Google Sheets: Web App URL must end with <b>/exec</b>. Sync sends all current data as a <b>payload</b> to Apps Script <b>doPost(e)</b>.</p><p class="user">📥 First time on a NEW device? Enter the same URL above and use "Import from Google Sheets" to pull down existing data — don't use Sync first, or you'll push this device's empty data over what's already saved.</p><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn secondary" style="margin-left:8px" onclick="syncSheets()">☁️ Sync to Google Sheets</button><button class="btn secondary" style="margin-left:8px" onclick="importFromSheets()">📥 Import from Google Sheets</button></div>`}
+let uploadedLogo='';
+function logoPreview(input){
+const f=input.files?.[0];
+if(!f)return;
+if(!f.type.startsWith('image/')){alert('Image file மட்டும் தேர்வு செய்யவும்.');input.value='';return}
+if(f.size>2*1024*1024){alert('Logo image 2 MB-க்கு குறைவாக இருக்க வேண்டும்.');input.value='';return}
+const r=new FileReader();
+r.onload=e=>{
+ uploadedLogo=e.target.result;
+ const box=document.getElementById('logoPreviewBox');
+ const img=document.getElementById('logoPrev');
+ if(box&&img){img.src=uploadedLogo;box.style.display='block'}
+};
+r.readAsDataURL(f);
+}
+function saveSettings(){db.settings={...db.settings,academy:setAcademy.value,teacher:setTeacher.value,mobile:setMobile.value,fee:Number(setFee.value)||0,upi:setUpi.value,teacherId:setTid.value,teacherPass:setTpass.value,adminId:setAid.value,adminPass:setApass.value,sheetsUrl:setSheets.value,autoSync:true,messages:{fee:feeMsg.value,absent:absMsg.value}};if(uploadedLogo)db.settings.logo=uploadedLogo;save();applySettings();alert('Settings saved');}
+function replaceMsg(t,s,amount=''){return t.replaceAll('{student}',s.name).replaceAll('{amount}',money(amount)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
+function whatsapp(id,type){const s=db.students.find(x=>x.id===id);if(!s)return;if(!s.mobile){alert('இந்த student-க்கு mobile number சேமிக்கப்படவில்லை.');return}let amount=calcPending(id,new Date().toISOString().slice(0,7));let text=replaceMsg(type==='fee'?db.settings.messages.fee:db.settings.messages.absent,s,amount);window.open('https://wa.me/'+s.mobile+'?text='+encodeURIComponent(text),'_blank')}
+function callStudent(id){const s=db.students.find(x=>x.id===id);if(s?.mobile)location.href='tel:'+s.mobile}
+function studentMarks(){const s=currentStudent;const rows=db.marks.filter(m=>m.studentId===s.id);content.innerHTML=`<div class="card"><h3>👨‍🎓 ${esc(s.name)}</h3><p>Class: ${esc(s.class)}</p><div class="table-wrap"><table class="table"><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th></tr>${rows.map(m=>`<tr><td>${esc(m.exam)}</td><td>${m.mark}</td><td>${m.total}</td></tr>`).join('')||'<tr><td colspan="3">Marks இல்லை.</td></tr>'}</table></div></div>`}
+function studentAttendance(){const rows=db.attendance.filter(a=>a.studentId===currentStudent.id).slice().reverse();content.innerHTML=`<div class="card"><h3>📅 My Attendance</h3><table class="table"><tr><th>Date</th><th>Status</th></tr>${rows.map(a=>`<tr><td>${a.date}</td><td><span class="badge ${a.status==='Present'?'ok':'pending'}">${a.status}</span></td></tr>`).join('')||'<tr><td colspan="2">Attendance இல்லை.</td></tr>'}</table></div>`}
+function studentFees(){const s=currentStudent,month=new Date().toISOString().slice(0,7),extra=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(month)&&f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0),paid=calcPaid(s.id,month),pending=Math.max(0,Number(s.monthlyFee)+extra-paid);content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Monthly Tuition</div><div class="value">${money(s.monthlyFee)}</div></div><div class="card stat"><div class="label">Extra Fee</div><div class="value">${money(extra)}</div></div><div class="card stat"><div class="label">Paid</div><div class="value success-text">${money(paid)}</div></div><div class="card stat"><div class="label">Pending</div><div class="value danger-text">${money(pending)}</div></div></div><div class="card section"><h3>💳 Pay Fee</h3><p>UPI ID: <b>${esc(db.settings.upi||'Settings-ல் UPI ID சேர்க்கவும்')}</b></p>${pending?`<button class="btn success" onclick="payFeeInfo(${pending})">Pay Fee</button>`:'<span class="badge ok">இந்த மாத கட்டணம் Paid</span>'}</div>`}
+function payFeeInfo(amount){alert('Payable amount: '+money(amount)+'\\nUPI ID: '+(db.settings.upi||'Not configured')+'\\nPayment செய்த பிறகு Teacher payment-ஐ record செய்ய வேண்டும்.')}
+function openModal(t,b){modalTitle.textContent=t;modalBody.innerHTML=b;modal.classList.remove('hidden')}
+function closeModal(){modal.classList.add('hidden')}
+function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
+async function syncSheets(silent){
+silent=!!silent;
+const url=(db.settings.sheetsUrl||'').trim();
+if(!url){if(silent){setSyncStatus('error');return}return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.')}
+if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)){
+  if(silent){setSyncStatus('error');return}
+  return alert('சரியான Google Apps Script Web App URL வேண்டும். URL /exec என்று முடிந்திருக்க வேண்டும்.');
+}
+if(silent)setSyncStatus('syncing');
+const payload={
+ source:'Arul Siragugal Academy',
+ syncedAt:new Date().toISOString(),
+ settings:db.settings,
+ students:db.students||[],
+ attendance:db.attendance||[],
+ fees:db.fees||[],
+ marks:db.marks||[]
+};
+try{
+ const response=await fetch(url,{
+   method:'POST',
+   headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+   body:'payload='+encodeURIComponent(JSON.stringify(payload))
+ });
+ const text=await response.text();
+ let result;
+ try{result=JSON.parse(text)}catch(e){result=null}
+ if(response.ok && result && result.success){
+   if(silent)setSyncStatus('success');else alert('✅ Google Sheets-ல் data save/update ஆகிவிட்டது.');
+ }else if(response.ok){
+   if(silent)setSyncStatus('error');else alert('⚠️ Request சென்றது. Apps Script response: '+text.slice(0,300));
+ }else{
+   if(silent)setSyncStatus('error');else alert('❌ Google Sheets Sync Failed. HTTP '+response.status+'\n'+text.slice(0,300));
+ }
+}catch(err){
+ if(silent)setSyncStatus('error');else alert('❌ Sync failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
+}}
+
+function applyIncomingData(result,url){
+ // Google Sheets auto-detects numeric-looking cells (e.g. a teacher ID or student password of
+ // "1234") and stores them as NUMBERS, not text. Login and matching throughout the app use strict
+ // (===) comparison against text typed into <input> fields, which is always a string — so every
+ // identity/matching field coming back from Sheets must be forced back to a string here, or logins
+ // and lookups silently fail after every import even though the values look identical on screen.
+ db.students=(result.students||[]).map(s=>({
+   ...s,
+   id:String(s.id??''),
+   name:String(s.name??''),
+   class:String(s.class??''),
+   mobile:String(s.mobile??''),
+   password:String(s.password??''),
+   monthlyFee:Number(s.monthlyFee)||0
+ }));
+ db.attendance=(result.attendance||[]).map(a=>({
+   ...a,
+   studentId:String(a.studentId??''),
+   date:String(a.date??''),
+   status:String(a.status??'')
+ }));
+ db.fees=(result.fees||[]).map(f=>({
+   ...f,
+   studentId:String(f.studentId??''),
+   date:String(f.date??''),
+   type:String(f.type??'Payment'),
+   extraType:f.extraType!==undefined&&f.extraType!==''?String(f.extraType):f.extraType,
+   amount:Number(f.amount)||0,
+   extraAmount:f.extraAmount!==undefined&&f.extraAmount!==''?Number(f.extraAmount)||0:undefined
+ }));
+ db.marks=(result.marks||[]).map(m=>({
+   ...m,
+   studentId:String(m.studentId??''),
+   exam:String(m.exam??''),
+   mark:Number(m.mark)||0,
+   total:Number(m.total)||0
+ }));
+ if(result.settings&&Object.keys(result.settings).length){
+   const incoming={...result.settings};
+   if(typeof incoming.messages==='string'){try{incoming.messages=JSON.parse(incoming.messages)}catch(e){delete incoming.messages}}
+   if(incoming.fee!==undefined)incoming.fee=Number(incoming.fee)||0;
+   if(incoming.autoSync!==undefined)incoming.autoSync=(incoming.autoSync===true||incoming.autoSync==='true'||incoming.autoSync==='TRUE');
+   ['academy','teacher','mobile','upi','teacherId','teacherPass'].forEach(k=>{if(incoming[k]!==undefined)incoming[k]=String(incoming[k])});
+   db.settings={...db.settings,...incoming,sheetsUrl:url,logo:db.settings.logo}; // keep this device's logo + confirmed working URL
+ }
+}
+
+async function importFromSheets(){
+const url=(db.settings.sheetsUrl||'').trim();
+if(!url)return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.');
+if(!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)){
+  return alert('சரியான Google Apps Script Web App URL வேண்டும். URL /exec என்று முடிந்திருக்க வேண்டும்.');
+}
+if(!confirm('⚠️ இது இந்த device-ல் உள்ள தற்போதைய data-வை Google Sheets-ல் உள்ள data கொண்டு மாற்றும் (overwrite). Sync செய்யாத local மாற்றங்கள் இருந்தால் அவை இழக்கப்படும்.\n\nதொடரவா?')) return;
+try{
+ const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
+ const text=await response.text();
+ let result;
+ try{result=JSON.parse(text)}catch(e){result=null}
+ if(!response.ok||!result){
+   alert('❌ Import failed. Response: '+text.slice(0,300));
+   return;
+ }
+ suppressAutoSync=true; // data just came FROM the sheet — no need to immediately push it back
+ applyIncomingData(result,url);
+ save();
+ suppressAutoSync=false;
+ setSyncStatus('success');
+ applySettings();
+ alert('✅ Google Sheets-ல் இருந்து data இந்த device-க்கு import ஆகிவிட்டது.\n\nStudents: '+db.students.length+' | Attendance: '+db.attendance.length+' | Fees: '+db.fees.length+' | Marks: '+db.marks.length);
+ showPage(role==='teacher'?'overview':'studentHome');
+}catch(err){
+ suppressAutoSync=false;
+ alert('❌ Import failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம். Apps Script deployment-ஐ "Anyone" access-ஆக வைத்து மீண்டும் Deploy செய்யவும்.');
+}}
+
+// Runs automatically the moment the app is opened on ANY device, before login — so every
+// device shows the same shared data without anyone tapping Import manually.
+// Safety rule: if the sheet comes back completely empty but this device already has real
+// local data, we do NOT wipe the device — that usually means the sheet isn't set up yet,
+// or a network hiccup returned nothing. In that case we push this device's data up instead.
+async function autoImportOnLoad(){
+const url=(db.settings.sheetsUrl||'').trim();
+if(!url||!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url))return;
+setSyncStatus('syncing');
+const loadingEl=document.getElementById('loginLoading');
+const tBtn=document.getElementById('teacherLoginBtn'),sBtn=document.getElementById('studentLoginBtn');
+if(loadingEl)loadingEl.style.display='block';
+if(tBtn)tBtn.disabled=true;
+if(sBtn)sBtn.disabled=true;
+try{
+ const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
+ const text=await response.text();
+ let result;
+ try{result=JSON.parse(text)}catch(e){result=null}
+ if(!response.ok||!result){setSyncStatus('error');return}
+
+ const incomingHasData=(result.students||[]).length>0||(result.attendance||[]).length>0||(result.fees||[]).length>0||(result.marks||[]).length>0;
+ const localHasData=db.students.length>0||db.attendance.length>0||db.fees.length>0||db.marks.length>0;
+
+ if(!incomingHasData&&localHasData){
+   // Sheet looks empty but this device has real data — protect it, push up instead of pulling down.
+   syncNow();
+   return;
+ }
+
+ suppressAutoSync=true;
+ applyIncomingData(result,url);
+ save();
+ suppressAutoSync=false;
+ setSyncStatus('success');
+ applySettings();
+ // Refresh whatever's currently on screen so the pulled-in data actually shows up
+ if(!app.classList.contains('hidden')){
+   const activePage=document.querySelector('.nav button.active')?.dataset.page;
+   if(activePage)showPage(activePage);
+ }
+}catch(err){
+ setSyncStatus('error');
+}finally{
+ if(loadingEl)loadingEl.style.display='none';
+ if(tBtn)tBtn.disabled=false;
+ if(sBtn)sBtn.disabled=false;
+}}
+
+if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');applySettings();
+autoImportOnLoad();
+
+/* ===== Finance / Tests / Calendar / Birthday ===== */
+function financePage(){const month=monthNow(),income=db.fees.filter(f=>f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount||0)+Number(f.extraAmount||0),0),expense=db.expenses.filter(e=>e.date?.startsWith(month)).reduce((a,e)=>a+Number(e.amount||0),0);content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">This Month Income</div><div class="value success-text">${money(income)}</div></div><div class="card stat"><div class="label">This Month Expense</div><div class="value danger-text">${money(expense)}</div></div><div class="card stat"><div class="label">Net</div><div class="value">${money(income-expense)}</div></div></div><div class="toolbar"><button class="btn" onclick="expenseForm()">➕ Add Expense</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Date</th><th>Category</th><th>Note</th><th>Amount</th><th>Action</th></tr></thead><tbody>${db.expenses.slice().reverse().map((e,i)=>`<tr><td>${e.date}</td><td>${esc(e.category)}</td><td>${esc(e.note)}</td><td>${money(e.amount)}</td><td><button class="btn danger" onclick="db.expenses.splice(${db.expenses.length-1-i},1);save();financePage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">Expense இல்லை.</td></tr>'}</tbody></table></div><div class="card section"><h3>📈 Annual Income Summary</h3><div class="table-wrap"><table class="table"><thead><tr><th>Month</th><th>Income</th><th>Expense</th><th>Net</th></tr></thead><tbody>${Array.from({length:12},(_,i)=>{const m=new Date();m.setMonth(i);const key=m.toISOString().slice(0,7);const inc=db.fees.filter(f=>f.date?.startsWith(key)).reduce((a,f)=>a+Number(f.amount||0)+Number(f.extraAmount||0),0);const ex=db.expenses.filter(e=>e.date?.startsWith(key)).reduce((a,e)=>a+Number(e.amount||0),0);return `<tr><td>${key}</td><td>${money(inc)}</td><td>${money(ex)}</td><td>${money(inc-ex)}</td></tr>`}).join('')}</tbody></table></div></div>`}
+function expenseForm(){openModal('Expense',`<label>Category</label><input id="expCat" placeholder="Rent / Salary / Material / Other"><label>Note</label><input id="expNote"><label>Amount</label><input id="expAmount" type="number"><label>Date</label><input id="expDate" type="date" value="${today()}"><br><button class="btn" onclick="db.expenses.push({category:expCat.value,note:expNote.value,amount:Number(expAmount.value)||0,date:expDate.value});save();closeModal();financePage()">Save Expense</button>`)}
+function testsPage(){db.tests=db.tests||[];content.innerHTML=`<div class="toolbar"><button class="btn" onclick="testForm()">➕ Create Test</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Test</th><th>Class</th><th>Subject</th><th>Questions</th><th>Action</th></tr></thead><tbody>${db.tests.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.class)}</td><td>${esc(t.subject)}</td><td>${t.questions?.length||0}</td><td><button class="btn secondary" onclick="viewTest(${i})">View</button> <button class="btn danger" onclick="db.tests.splice(${i},1);save();testsPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">Tests இல்லை.</td></tr>'}</tbody></table></div>`}
+function testForm(){openModal('Create Online Test',`<label>Test Name</label><input id="testName"><div class="two"><div><label>Class</label><input id="testClass"></div><div><label>Subject</label><input id="testSubject"></div></div><label>Question</label><textarea id="testQuestion" placeholder="Question text"></textarea><label>Answer</label><input id="testAnswer"><br><button class="btn" onclick="db.tests.push({name:testName.value,class:testClass.value,subject:testSubject.value,questions:[{q:testQuestion.value,a:testAnswer.value}]});save();closeModal();testsPage()">Create Test</button>`)}
+function viewTest(i){const t=db.tests[i];openModal(t.name,`<p><b>Class:</b> ${esc(t.class)} | <b>Subject:</b> ${esc(t.subject)}</p>${(t.questions||[]).map((q,n)=>`<div class="card"><b>Q${n+1}.</b> ${esc(q.q)}<p>Answer: ${esc(q.a)}</p></div>`).join('')}`)}
+function calendarPage(){const items=[...db.exams.map(x=>({date:x.date,type:'Exam',text:x.name+' - '+x.subject+' - '+x.class})),...db.homework.map(x=>({date:x.date,type:'Homework',text:x.subject+' - '+x.class})),...db.notices.map(x=>({date:x.date,type:'Notice',text:x.title}))].sort((a,b)=>String(a.date).localeCompare(String(b.date)));content.innerHTML=`<div class="card"><h3>🗓️ Academy Calendar</h3><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Details</th></tr></thead><tbody>${items.map(x=>`<tr><td>${x.date}</td><td>${esc(x.type)}</td><td>${esc(x.text)}</td></tr>`).join('')||'<tr><td colspan="3">Calendar events இல்லை.</td></tr>'}</tbody></table></div></div>`}
+function birthdayPage(){const todayMD=new Date().toISOString().slice(5,10);const list=db.students.filter(s=>s.birthday?.slice(5,10)===todayMD);const upcoming=db.students.filter(s=>s.birthday).sort((a,b)=>a.birthday.slice(5).localeCompare(b.birthday.slice(5))).slice(0,20);content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Today Birthdays</div><div class="value">${list.length}</div></div></div><div class="card"><h3>🎂 Today's Birthday</h3>${list.map(s=>`<div class="toolbar"><b>${esc(s.name)}</b><span>${esc(s.class)}</span>${s.mobile?`<a class="btn success" target="_blank" href="${waLink(s.mobile,'🎂 இனிய பிறந்தநாள் வாழ்த்துக்கள் '+s.name+'! - '+db.settings.academy)}">WhatsApp</a>`:''}</div>`).join('')||'<p>இன்று Birthday இல்லை.</p>'}</div><div class="card section"><h3>🎂 Birthday List</h3><div class="table-wrap"><table class="table"><thead><tr><th>Name</th><th>Class</th><th>Birthday</th></tr></thead><tbody>${upcoming.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${s.birthday}</td></tr>`).join('')||'<tr><td colspan="3">Birthday data இல்லை.</td></tr>'}</tbody></table></div></div>`}
+/* ===== Advanced Academy Features ===== */
+function fmtPct(n){return Number(n||0).toFixed(1)+'%'}
+function monthNow(){return new Date().toISOString().slice(0,7)}
+function calcAttendanceStats(id,month){const a=db.attendance.filter(x=>x.studentId===id&&(!month||x.date?.startsWith(month)));const p=a.filter(x=>x.status==='Present').length;const ab=a.filter(x=>x.status==='Absent').length;const l=a.filter(x=>x.status==='Late'||x.status==='Leave').length;return {total:a.length,present:p,absent:ab,other:l,pct:a.length?((p/a.length)*100):0}}
+function waLink(phone,text){let n=String(phone||'').replace(/\\D/g,'');if(n.length===10)n='91'+n;return 'https://wa.me/'+n+'?text='+encodeURIComponent(text)}
+function callLink(phone){return 'tel:'+String(phone||'').replace(/[^+\\d]/g,'')}
+function studentProfilePage(id){const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;const m=monthNow(),a=calcAttendanceStats(s.id,m),pending=calcPending(s.id,m),fees=db.fees.filter(f=>f.studentId===s.id),marks=db.marks.filter(x=>x.studentId===s.id);content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Attendance</div><div class="value">${fmtPct(a.pct)}</div></div><div class="card stat"><div class="label">Present</div><div class="value">${a.present}</div></div><div class="card stat"><div class="label">Absent</div><div class="value danger-text">${a.absent}</div></div><div class="card stat"><div class="label">Pending Fee</div><div class="value danger-text">${money(pending)}</div></div></div><div class="grid2"><div class="card"><h3>👨‍🎓 Student Profile</h3><p><b>ID:</b> ${esc(s.id)}</p><p><b>Name:</b> ${esc(s.name)}</p><p><b>Class:</b> ${esc(s.class)}</p><p><b>Mobile:</b> ${esc(s.mobile)}</p><p><b>Monthly Fee:</b> ${money(s.monthlyFee)}</p><div class="toolbar"><a class="btn" href="${callLink(s.mobile)}">📞 Call</a><a class="btn success" target="_blank" href="${waLink(s.mobile,'வணக்கம் '+s.name+', '+db.settings.academy+' தொடர்பாக தகவல்.')}">💬 WhatsApp</a><button class="btn secondary" onclick="printStudentReport('${esc(s.id)}')">🖨️ Print Report</button></div></div><div class="card"><h3>📝 Performance</h3><div class="table-wrap"><table class="table"><thead><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th><th>%</th></tr></thead><tbody>${marks.map(x=>`<tr><td>${esc(x.exam)}</td><td>${x.mark}</td><td>${x.total}</td><td>${fmtPct(Number(x.total)?Number(x.mark)/Number(x.total)*100:0)}</td></tr>`).join('')||'<tr><td colspan="4">Marks இல்லை.</td></tr>'}</tbody></table></div></div></div><div class="card section"><h3>💰 Fee History</h3><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Amount</th></tr></thead><tbody>${fees.slice().reverse().map(f=>`<tr><td>${f.date||''}</td><td>${f.type||'Monthly'}</td><td>${f.extraType||'Monthly Fee'}</td><td>${money(Number(f.amount||0)+Number(f.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="4">Fee history இல்லை.</td></tr>'}</tbody></table></div></div>`}
+function printStudentReport(id){const s=db.students.find(x=>x.id===id);if(!s)return;const a=calcAttendanceStats(s.id,monthNow());const pending=calcPending(s.id,monthNow());const w=window.open('','_blank');w.document.write(`<html><head><title>Report - ${esc(s.name)}</title><style>body{font-family:Arial;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px}</style><style>#adminNav,#teacherNav{max-height:calc(100vh - 150px);overflow-y:auto}.nav button{margin-bottom:4px}.card .toolbar a{text-decoration:none;display:inline-block}.section{margin-top:16px}@media(max-width:700px){.nav{display:flex!important;flex-direction:column}.sidebar{overflow-y:auto}}</style></head><body><h1>${esc(db.settings.academy)}</h1><h2>Student Report</h2><p>Name: ${esc(s.name)} | Class: ${esc(s.class)} | ID: ${esc(s.id)}</p><p>Attendance: ${fmtPct(a.pct)} | Present: ${a.present} | Absent: ${a.absent} | Pending: ${money(pending)}</p><h3>Marks</h3><table><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th></tr>${db.marks.filter(x=>x.studentId===s.id).map(x=>`<tr><td>${esc(x.exam)}</td><td>${x.mark}</td><td>${x.total}</td></tr>`).join('')}</table></body></html>`);w.document.close()}
+function communicationPage(){const month=monthNow();const pending=db.students.map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);const absent=db.students.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Fee Pending</div><div class="value danger-text">${pending.length}</div></div><div class="card stat"><div class="label">Absent Today</div><div class="value">${absent.length}</div></div></div><div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3>${pending.map(x=>`<div class="toolbar" style="justify-content:space-between"><span>${esc(x.s.name)} — ${money(x.p)}</span><a class="btn success" target="_blank" href="${waLink(x.s.mobile,fillMsg(db.settings.messages.fee,x.s,x.p))}">WhatsApp</a></div>`).join('')||'<p>No pending fees.</p>'}</div><div class="card"><h3>📅 Absent Reminder</h3>${absent.map(s=>`<div class="toolbar" style="justify-content:space-between"><span>${esc(s.name)}</span><a class="btn success" target="_blank" href="${waLink(s.mobile,fillMsg(db.settings.messages.absent,s,0))}">WhatsApp</a></div>`).join('')||'<p>No absent students today.</p>'}</div></div><div class="card section"><h3>📢 Notice Board</h3><button class="btn" onclick="noticeForm()">➕ Add Notice</button>${db.notices.slice().reverse().map((n,i)=>`<div class="card" style="margin-top:10px"><b>${esc(n.title)}</b><p>${esc(n.text)}</p><small>${esc(n.date)}</small> <button class="btn danger" onclick="db.notices.splice(${db.notices.length-1-i},1);save();communicationPage()">Delete</button></div>`).join('')}</div>`}
+function fillMsg(t,s,amount){return String(t||'').replaceAll('{student}',s.name).replaceAll('{amount}',String(amount||0)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
+function noticeForm(){openModal('Add Notice',`<label>Title</label><input id="noticeTitle"><label>Message</label><textarea id="noticeText"></textarea><br><button class="btn" onclick="db.notices.push({title:noticeTitle.value,text:noticeText.value,date:today()});save();closeModal();communicationPage()">Save Notice</button>`)}
+function homeworkPage(){content.innerHTML=`<div class="toolbar"><button class="btn" onclick="homeworkForm()">➕ Add Homework</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Date</th><th>Class</th><th>Subject</th><th>Homework</th><th>Action</th></tr></thead><tbody>${db.homework.slice().reverse().map((h,i)=>`<tr><td>${h.date}</td><td>${esc(h.class)}</td><td>${esc(h.subject)}</td><td>${esc(h.text)}</td><td><button class="btn danger" onclick="db.homework.splice(${db.homework.length-1-i},1);save();homeworkPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">Homework இல்லை.</td></tr>'}</tbody></table></div>`}
+function homeworkForm(){openModal('Homework',`<label>Class</label><input id="hwClass"><label>Subject</label><input id="hwSubject"><label>Homework</label><textarea id="hwText"></textarea><label>Date</label><input id="hwDate" type="date" value="${today()}"><br><button class="btn" onclick="db.homework.push({class:hwClass.value,subject:hwSubject.value,text:hwText.value,date:hwDate.value});save();closeModal();homeworkPage()">Save Homework</button>`)}
+function examsPage(){content.innerHTML=`<div class="toolbar"><button class="btn" onclick="examForm()">➕ Add Exam</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Date</th><th>Class</th><th>Subject</th><th>Exam</th><th>Action</th></tr></thead><tbody>${db.exams.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((e,i)=>`<tr><td>${e.date}</td><td>${esc(e.class)}</td><td>${esc(e.subject)}</td><td>${esc(e.name)}</td><td><button class="btn danger" onclick="db.exams.splice(${i},1);save();examsPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">Exam schedule இல்லை.</td></tr>'}</tbody></table></div>`}
+function examForm(){openModal('Exam Schedule',`<label>Exam Name</label><input id="exName"><div class="two"><div><label>Class</label><input id="exClass"></div><div><label>Subject</label><input id="exSubject"></div></div><label>Date</label><input id="exDate" type="date"><br><button class="btn" onclick="db.exams.push({name:exName.value,class:exClass.value,subject:exSubject.value,date:exDate.value});save();closeModal();examsPage()">Save Exam</button>`)}
+function teachersPage(){content.innerHTML=`<div class="toolbar"><button class="btn" onclick="teacherForm()">➕ Add Teacher</button></div><div class="card table-wrap"><table class="table"><thead><tr><th>Name</th><th>ID</th><th>Mobile</th><th>Attendance</th><th>Fees</th><th>Marks</th><th>Action</th></tr></thead><tbody>${db.teachers.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.id)}</td><td>${esc(t.mobile)}</td><td>${t.att?'✅':'❌'}</td><td>${t.fees?'✅':'❌'}</td><td>${t.marks?'✅':'❌'}</td><td><button class="btn danger" onclick="db.teachers.splice(${i},1);save();teachersPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="7">Additional teachers இல்லை.</td></tr>'}</tbody></table></div>`}
+function teacherForm(){openModal('Teacher',`<label>Name</label><input id="trName"><label>Login ID</label><input id="trId"><label>Password</label><input id="trPass" type="password"><label>Mobile</label><input id="trMobile"><p>Permissions</p><label><input id="trAtt" type="checkbox" checked> Attendance</label><label><input id="trFees" type="checkbox" checked> Fees</label><label><input id="trMarks" type="checkbox" checked> Marks</label><br><button class="btn" onclick="db.teachers.push({name:trName.value,id:trId.value,password:trPass.value,mobile:trMobile.value,att:trAtt.checked,fees:trFees.checked,marks:trMarks.checked});save();closeModal();teachersPage()">Save Teacher</button>`)}
+function backupPage(){content.innerHTML=`<div class="grid2"><div class="card"><h3>💾 Backup</h3><p>All academy data-ஐ JSON backup ஆக download செய்யலாம்.</p><button class="btn" onclick="downloadBackup()">⬇️ Download Backup</button></div><div class="card"><h3>♻️ Restore</h3><input id="restoreFile" type="file" accept="application/json"><br><br><button class="btn" onclick="restoreBackup()">♻️ Restore Backup</button></div></div><div class="card section"><h3>📤 CSV Export</h3><button class="btn" onclick="exportCSV('students')">Students</button> <button class="btn" onclick="exportCSV('attendance')">Attendance</button> <button class="btn" onclick="exportCSV('fees')">Fees</button> <button class="btn" onclick="exportCSV('marks')">Marks</button></div>`}
+function downloadBackup(){downloadText(JSON.stringify(db,null,2),'academy-backup-'+today()+'.json')}
+function restoreBackup(){const f=document.getElementById('restoreFile')?.files?.[0];if(!f)return alert('Backup file தேர்வு செய்யவும்.');const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.students||!x.attendance)throw 0;db=x;db.teachers=db.teachers||[];db.homework=db.homework||[];db.exams=db.exams||[];db.notices=db.notices||[];db.expenses=db.expenses||[];db.receipts=db.receipts||[];save();alert('Backup restored.');backupPage()}catch(e){alert('Invalid backup file.')}};r.readAsText(f)}
+function exportCSV(type){const arr=db[type]||[];if(!arr.length)return alert('Data இல்லை.');const keys=[...new Set(arr.flatMap(x=>Object.keys(x)))];let csv=keys.join(',')+'\
+';arr.forEach(x=>csv+=keys.map(k=>`"${String(x[k]??'').replaceAll('"','""')}"`).join(',')+'\
+');downloadText(csv,type+'-'+today()+'.csv')}
+
+// Enhanced dashboard with class and performance summaries
+const _overview=overview;
+overview=function(){_overview();setTimeout(()=>{const extra=document.createElement('div');extra.className='card section';extra.innerHTML=`<h3>📈 Quick Analytics</h3><div class="table-wrap"><table class="table"><thead><tr><th>Class</th><th>Students</th><th>Present Today</th><th>Attendance %</th><th>Pending Fee</th></tr></thead><tbody>${[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort().map(c=>{const ss=db.students.filter(s=>s.class===c);const p=ss.reduce((n,s)=>n+calcAttendanceStats(s.id,monthNow()).present,0);const tot=ss.reduce((n,s)=>n+calcAttendanceStats(s.id,monthNow()).total,0);const pen=ss.reduce((n,s)=>n+calcPending(s.id,monthNow()),0);return `<tr><td>${esc(c)}</td><td>${ss.length}</td><td>${db.attendance.filter(a=>a.date===today()&&a.status==='Present'&&ss.some(s=>s.id===a.studentId)).length}</td><td>${fmtPct(tot?p/tot*100:0)}</td><td>${money(pen)}</td></tr>`}).join('')||'<tr><td colspan="5">Classes இல்லை.</td></tr>'}</tbody></table></div>`;content.appendChild(extra)},0)};
+
+function downloadReceipt(studentId,feeIndex){const s=db.students.find(x=>x.id===studentId);const f=db.fees[feeIndex];if(!s||!f)return;const w=window.open('','_blank');w.document.write(`<html><head><title>Fee Receipt</title><style>body{font-family:Arial;padding:30px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:10px}</style><style>#adminNav,#teacherNav{max-height:calc(100vh - 150px);overflow-y:auto}.nav button{margin-bottom:4px}.card .toolbar a{text-decoration:none;display:inline-block}.section{margin-top:16px}@media(max-width:700px){.nav{display:flex!important;flex-direction:column}.sidebar{overflow-y:auto}}</style></head><body><h1>${esc(db.settings.academy)}</h1><h2>Fee Receipt</h2><p>Receipt No: ${esc(f.receiptNo||('RCPT-'+Date.now()))}</p><table><tr><th>Student</th><td>${esc(s.name)}</td></tr><tr><th>Class</th><td>${esc(s.class)}</td></tr><tr><th>Date</th><td>${esc(f.date)}</td></tr><tr><th>Type</th><td>${esc(f.type||'Monthly')}</td></tr><tr><th>Purpose</th><td>${esc(f.extraType||'Monthly Fee')}</td></tr><tr><th>Amount</th><td>${money(Number(f.amount||0)+Number(f.extraAmount||0))}</td></tr></table></body></html>`);w.document.close()}
 </script>
+</body>
+</html>
