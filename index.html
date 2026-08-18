@@ -199,6 +199,7 @@ db.notices=db.notices||[];
 db.expenses=db.expenses||[];
 db.receipts=db.receipts||[];
 db.tests=db.tests||[];
+db.onlineMarks=db.onlineMarks||[]; // Student entered online test marks
 
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false;
@@ -293,14 +294,14 @@ function showHubMenu(){
         <div class="hub-card" onclick="showPage('students')"><div class="hub-icon">👨‍🎓</div><div class="hub-title">Students</div><div class="hub-desc">Manage Profiles & Fees</div></div>
         <div class="hub-card" onclick="showPage('attendance')"><div class="hub-icon">📅</div><div class="hub-title">Attendance</div><div class="hub-desc">Daily Entry & History</div></div>
         <div class="hub-card" onclick="showPage('fees')"><div class="hub-icon">💰</div><div class="hub-title">Fees & Extra</div><div class="hub-desc">Payments & Pending list</div></div>
-        <div class="hub-card" onclick="showPage('marks')"><div class="hub-icon">📝</div><div class="hub-title">Marks</div><div class="hub-desc">Test & Exam Marks</div></div>
+        <div class="hub-card" onclick="showPage('marks')"><div class="hub-icon">📝</div><div class="hub-title">Marks (Regular & Online)</div><div class="hub-desc">All Marks & Test Logs</div></div>
+        <div class="hub-card" onclick="showPage('tests')"><div class="hub-icon">🧪</div><div class="hub-title">Online Tests / Links</div><div class="hub-desc">Manage Test Links</div></div>
         <div class="hub-card" onclick="showPage('reports')"><div class="hub-icon">📊</div><div class="hub-title">Reports</div><div class="hub-desc">Summary & CSV Downloads</div></div>
         <div class="hub-card" onclick="showPage('history')"><div class="hub-icon">🗂️</div><div class="hub-title">All History</div><div class="hub-desc">Period Filter & Logs</div></div>
         <div class="hub-card" onclick="showPage('communication')"><div class="hub-icon">📢</div><div class="hub-title">Communication</div><div class="hub-desc">WhatsApp Reminders & Notices</div></div>
         <div class="hub-card" onclick="showPage('homework')"><div class="hub-icon">📚</div><div class="hub-title">Homework</div><div class="hub-desc">Daily Tasks by Class</div></div>
         <div class="hub-card" onclick="showPage('exams')"><div class="hub-icon">🗓️</div><div class="hub-title">Exams</div><div class="hub-desc">Exam Schedule List</div></div>
         <div class="hub-card" onclick="showPage('finance')"><div class="hub-icon">💵</div><div class="hub-title">Income & Expense</div><div class="hub-desc">Financial Summary</div></div>
-        <div class="hub-card" onclick="showPage('tests')"><div class="hub-icon">🧪</div><div class="hub-title">Online Tests</div><div class="hub-desc">Question Papers & Tests</div></div>
         <div class="hub-card" onclick="showPage('calendar')"><div class="hub-icon">🗓️</div><div class="hub-title">Calendar</div><div class="hub-desc">Events & Holidays</div></div>
         <div class="hub-card" onclick="showPage('birthdays')"><div class="hub-icon">🎂</div><div class="hub-title">Birthdays</div><div class="hub-desc">Student Reminders</div></div>
         <div class="hub-card" onclick="showPage('teachers')"><div class="hub-icon">👨‍🏫</div><div class="hub-title">Teachers</div><div class="hub-desc">Staff Accounts</div></div>
@@ -313,18 +314,20 @@ function showHubMenu(){
       <div class="hub-grid">
         <div class="hub-card" onclick="showPage('attendance')"><div class="hub-icon">📅</div><div class="hub-title">Attendance</div><div class="hub-desc">Take Class Attendance</div></div>
         <div class="hub-card" onclick="showPage('fees')"><div class="hub-icon">💰</div><div class="hub-title">Fees Collection</div><div class="hub-desc">Record Payments</div></div>
-        <div class="hub-card" onclick="showPage('marks')"><div class="hub-icon">📝</div><div class="hub-title">Mark Entry</div><div class="hub-desc">Record Test Marks</div></div>
+        <div class="hub-card" onclick="showPage('marks')"><div class="hub-icon">📝</div><div class="hub-title">Mark Entry & Records</div><div class="hub-desc">Regular & Student Online Marks</div></div>
+        <div class="hub-card" onclick="showPage('tests')"><div class="hub-icon">🧪</div><div class="hub-title">Post Test Links</div><div class="hub-desc">Share Online Test Link</div></div>
+        <div class="hub-card" onclick="showPage('homework')"><div class="hub-icon">📚</div><div class="hub-title">Homework</div><div class="hub-desc">Add Homework Tasks</div></div>
       </div>
     `;
   } else if(role==='student'){
     c.innerHTML=`
       <div class="hub-grid">
-        <div class="hub-card" onclick="showPage('studentHome')"><div class="hub-icon">📊</div><div class="hub-title">My Marks</div><div class="hub-desc">Exam Performance</div></div>
+        <div class="hub-card" onclick="showPage('studentHome')"><div class="hub-icon">📊</div><div class="hub-title">My Marks</div><div class="hub-desc">Offline & Online Test Marks</div></div>
+        <div class="hub-card" onclick="showPage('studentTests')"><div class="hub-icon">🧪</div><div class="hub-title">Online Tests & Exams</div><div class="hub-desc">Attend Test & Enter Mark</div></div>
         <div class="hub-card" onclick="showPage('studentAttendance')"><div class="hub-icon">📅</div><div class="hub-title">My Attendance</div><div class="hub-desc">Monthly Records</div></div>
         <div class="hub-card" onclick="showPage('studentFees')"><div class="hub-icon">💰</div><div class="hub-title">My Fees</div><div class="hub-desc">Paid & Pending Status</div></div>
         <div class="hub-card" onclick="showPage('studentHomework')"><div class="hub-icon">📚</div><div class="hub-title">Homework</div><div class="hub-desc">My Class Homework</div></div>
         <div class="hub-card" onclick="showPage('studentNotices')"><div class="hub-icon">📢</div><div class="hub-title">Notices</div><div class="hub-desc">Academy Announcements</div></div>
-        <div class="hub-card" onclick="showPage('studentTests')"><div class="hub-icon">🧪</div><div class="hub-title">Online Tests & Exams</div><div class="hub-desc">Tests & Schedule</div></div>
         <div class="hub-card" onclick="showPage('studentProfile')"><div class="hub-icon">👤</div><div class="hub-title">My Profile</div><div class="hub-desc">Personal Information</div></div>
       </div>
     `;
@@ -333,7 +336,7 @@ function showHubMenu(){
 
 function showPage(p){
   document.getElementById('hubBackBtn').classList.remove('hidden');
-  const titles={overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile',studentHomework:'My Homework',studentNotices:'Notice Board',studentTests:'Online Tests & Exams'};
+  const titles={overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks & Performance',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests & Links',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile',studentHomework:'My Homework',studentNotices:'Notice Board',studentTests:'Online Tests & Exams'};
   document.getElementById('pageTitle').textContent=titles[p]||'';
 
   if(p==='overview')overview();
@@ -364,7 +367,7 @@ function showPage(p){
 }
 
 /* ========================================================
-   SUB-PAGE IMPLEMENTATIONS
+   STUDENTS, ATTENDANCE & FEES
    ======================================================== */
 function studentsPage(){
   document.getElementById('content').innerHTML=`
@@ -452,16 +455,16 @@ function attendancePage(){
     <div class="card">
       <h3>📅 Class-wise Attendance</h3>
       <div class="toolbar">
-        <div style="min-width:160px"><label>Date</label><input id="attDate" type="date" value="${today()}" onchange="renderClassAttendance()"></div>
-        <div style="min-width:180px"><label>Class</label>
-        <select id="attClass" onchange="renderClassAttendance()"><option value="">Select Class</option>
+        <div style="min-width:150px"><label>Date</label><input id="attDate" type="date" value="${today()}" onchange="renderClassAttendance()"></div>
+        <div style="min-width:180px"><label>Class Filter</label>
+        <select id="attClass" onchange="renderClassAttendance()"><option value="">-- All Classes (அனைத்து மாணவர்கள்) --</option>
         ${classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
-        <button class="btn success" style="align-self:flex-end" onclick="saveClassAttendance()">💾 Save Class Attendance</button>
+        <button class="btn success" style="align-self:flex-end" onclick="saveClassAttendance()">💾 Save Attendance</button>
       </div>
-      <div id="classAttendanceBox"><p style="color:var(--muted)">முதலில் மேலே உள்ள Class-ஐ தேர்வு செய்யவும்.</p></div>
+      <div id="classAttendanceBox" style="margin-top:16px"></div>
     </div>
     <div class="card">
-      <h3>📋 Attendance History</h3>
+      <h3>📋 Recent Attendance History</h3>
       <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Class</th><th>Student</th><th>Status</th><th>Reminder</th></tr></thead>
       <tbody>${db.attendance.slice().reverse().slice(0,50).map(a=>{
         const s=db.students.find(x=>x.id===a.studentId);
@@ -471,32 +474,41 @@ function attendancePage(){
       }).join('')||'<tr><td colspan="5" style="text-align:center">Attendance இல்லை.</td></tr>'}</tbody></table></div>
     </div>
     ${role==='admin' ? periodToolbar('Attendance') : ''}`;
+
+  renderClassAttendance();
 }
 
 function renderClassAttendance(){
   const cls=document.getElementById('attClass')?.value;
   const date=document.getElementById('attDate')?.value||today();
   const box=document.getElementById('classAttendanceBox');
-  if(!cls){box.innerHTML='<p style="color:var(--muted)">முதலில் மேலே உள்ள Class-ஐ தேர்வு செய்யவும்.</p>';return;}
-  const students=db.students.filter(s=>s.class===cls);
+  if(!box) return;
+
+  const students = cls ? db.students.filter(s=>s.class===cls) : db.students;
+  if(!students || students.length===0){
+    box.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)">⚠️ மாணவர்கள் யாரும் இல்லை. முதலில் <b>Students</b> பக்கத்தில் சேர்க்கவும்.</div>`;
+    return;
+  }
+
   const existing={};
   db.attendance.filter(a=>a.date===date).forEach(a=>existing[a.studentId]=a.status);
 
   box.innerHTML=`
-    <div class="toolbar" style="margin-top:14px"><strong>Class: ${esc(cls)} (${students.length} Students)</strong></div>
-    <div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Student</th><th>Attendance</th></tr></thead>
+    <div class="toolbar"><strong>${cls ? 'Class: ' + esc(cls) : 'All Students'} — (${students.length} Students)</strong></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Student Name & ID</th><th>Class</th><th>Attendance Status</th></tr></thead>
     <tbody>${students.map((s,i)=>{
       const st=existing[s.id]||'';
       return `<tr>
-      <td>${i+1}</td>
-      <td><b>${esc(s.name)}</b><br><small style="color:var(--muted)">${esc(s.id)}</small></td>
-      <td>
-        <div class="att-buttons" data-student="${esc(s.id)}">
-          <button type="button" class="att-btn present ${st==='Present'?'selected':''}" onclick="setAttendanceButton(this,'Present')">✓ Present</button>
-          <button type="button" class="att-btn absent ${st==='Absent'?'selected':''}" onclick="setAttendanceButton(this,'Absent')">✕ Absent</button>
-        </div>
-      </td></tr>`;
-    }).join('')||'<tr><td colspan="3">இந்த Class-ல் Students இல்லை.</td></tr>'}</tbody></table></div>`;
+        <td>${i+1}</td>
+        <td><b>${esc(s.name)}</b><br><small style="color:var(--muted)">ID: ${esc(s.id)}</small></td>
+        <td><span class="badge info">${esc(s.class||'No Class')}</span></td>
+        <td>
+          <div class="att-buttons" data-student="${esc(s.id)}">
+            <button type="button" class="att-btn present ${st==='Present'?'selected':''}" onclick="setAttendanceButton(this,'Present')">✓ Present</button>
+            <button type="button" class="att-btn absent ${st==='Absent'?'selected':''}" onclick="setAttendanceButton(this,'Absent')">✕ Absent</button>
+          </div>
+        </td></tr>`;
+    }).join('')}</tbody></table></div>`;
 }
 
 function setAttendanceButton(btn,status){
@@ -507,11 +519,9 @@ function setAttendanceButton(btn,status){
 }
 
 function saveClassAttendance(){
-  const cls=document.getElementById('attClass')?.value;
   const date=document.getElementById('attDate')?.value||today();
-  if(!cls)return alert('Class தேர்வு செய்யவும்.');
   const buttons=[...document.querySelectorAll('.att-buttons')];
-  if(!buttons.length)return alert('இந்த Class-ல் Students இல்லை.');
+  if(!buttons.length)return alert('Students யாரும் இல்லை.');
 
   let count=0;
   buttons.forEach(wrap=>{
@@ -610,7 +620,6 @@ function feeForm(preselect=''){
     <br><br><button class="btn success" style="width:100%" onclick="saveFee()">Save Payment</button>
   `);
 }
-
 function saveFee(){
   const sId=document.getElementById('feeStudent').value;
   const amt=Number(document.getElementById('feeAmount').value);
@@ -629,7 +638,6 @@ function extraForm(preselect=''){
     <br><br><button class="btn" style="width:100%" onclick="saveExtra()">Save Extra Fee</button>
   `);
 }
-
 function saveExtra(){
   const sId=document.getElementById('extraStudent').value;
   const amt=Number(document.getElementById('extraAmount').value)||0;
@@ -639,34 +647,348 @@ function saveExtra(){
   save();closeModal();feesPage();
 }
 
+/* ========================================================
+   MARKS MANAGEMENT (SEPARATE REGULAR & ONLINE TEST MARKS)
+   ======================================================== */
 function marksPage(){
   document.getElementById('content').innerHTML=`
-    <div class="toolbar"><button class="btn" onclick="markForm()">➕ Add / Update Mark</button></div>
-    <div class="card table-wrap"><table class="table"><thead><tr><th>Student</th><th>Exam</th><th>Mark</th><th>Total</th><th>Action</th></tr></thead>
-    <tbody>${db.marks.map((m,i)=>{
-      const s=db.students.find(x=>x.id===m.studentId);
-      return `<tr><td>${esc(s?.name||m.studentId)}</td><td>${esc(m.exam)}</td><td>${m.mark}</td><td>${m.total}</td><td><button class="btn danger" onclick="deleteMark(${i})">Delete</button></td></tr>`;
-    }).join('')||'<tr><td colspan="5" style="text-align:center">Marks இல்லை.</td></tr>'}</tbody></table></div>`;
+    <div class="toolbar">
+      <button class="btn" onclick="markForm()">➕ Add Regular Mark</button>
+      <button class="btn secondary" onclick="showPage('tests')">🧪 Manage Test Links</button>
+    </div>
+
+    <div class="card table-wrap">
+      <h3>📝 Regular / Offline Marks (Teacher Entered)</h3>
+      <table class="table">
+        <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Exam / Subject</th><th>Mark</th><th>Total</th><th>%</th><th>Action</th></tr></thead>
+        <tbody>${db.marks.slice().reverse().map((m,i)=>{
+          const s=db.students.find(x=>x.id===m.studentId);
+          const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
+          return `<tr>
+            <td>${m.date||'-'}</td>
+            <td><b>${esc(s?.name||m.studentId)}</b></td>
+            <td>${esc(s?.class||'-')}</td>
+            <td>${esc(m.exam)}</td>
+            <td><b>${m.mark}</b></td>
+            <td>${m.total}</td>
+            <td><span class="badge info">${pct}</span></td>
+            <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="deleteMark(${db.marks.length-1-i})">Delete</button></td>
+          </tr>`;
+        }).join('')||'<tr><td colspan="8" style="text-align:center">Regular Marks இல்லை.</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <div class="card table-wrap">
+      <h3 style="color:var(--primary)">🧪 Student Submitted Online Test Marks</h3>
+      <table class="table">
+        <thead><tr><th>Date</th><th>Student</th><th>Class</th><th>Test Name</th><th>Subject</th><th>Mark Scored</th><th>Total</th><th>%</th><th>Action</th></tr></thead>
+        <tbody>${(db.onlineMarks||[]).slice().reverse().map((m,i)=>{
+          const s=db.students.find(x=>x.id===m.studentId);
+          const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
+          return `<tr>
+            <td>${m.date||'-'}</td>
+            <td><b>${esc(s?.name||m.studentName||m.studentId)}</b></td>
+            <td>${esc(s?.class||m.class||'-')}</td>
+            <td>${esc(m.testName)}</td>
+            <td>${esc(m.subject||'-')}</td>
+            <td><b class="success-text" style="font-size:16px">${m.mark}</b></td>
+            <td>${m.total}</td>
+            <td><span class="badge ok">${pct}</span></td>
+            <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="deleteOnlineMark(${db.onlineMarks.length-1-i})">Delete</button></td>
+          </tr>`;
+        }).join('')||'<tr><td colspan="9" style="text-align:center">Online Test Marks எதுவும் பதிவு செய்யப்படவில்லை.</td></tr>'}</tbody>
+      </table>
+    </div>`;
 }
 
 function markForm(){
-  openModal('Marks Entry',`
-    <label>Student</label><select id="markStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
-    <label>Exam / Subject</label><input id="markExam" placeholder="e.g. Monthly Test / Science">
+  openModal('Regular Marks Entry',`
+    <label>Student</label><select id="markStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)} (${esc(s.class)})</option>`).join('')}</select>
+    <label>Exam / Subject</label><input id="markExam" placeholder="e.g. Monthly Unit Test / Science">
     <div class="two">
       <div><label>Mark</label><input id="markValue" type="number"></div>
       <div><label>Total Mark</label><input id="markTotal" type="number" value="100"></div>
     </div>
-    <br><button class="btn" style="width:100%" onclick="saveMark()">Save Mark</button>
+    <label>Date</label><input id="markDate" type="date" value="${today()}">
+    <br><br><button class="btn" style="width:100%" onclick="saveMark()">Save Regular Mark</button>
   `);
 }
-
 function saveMark(){
-  db.marks.push({studentId:document.getElementById('markStudent').value,exam:document.getElementById('markExam').value,mark:Number(document.getElementById('markValue').value),total:Number(document.getElementById('markTotal').value),date:today()});
+  db.marks.push({
+    studentId:document.getElementById('markStudent').value,
+    exam:document.getElementById('markExam').value,
+    mark:Number(document.getElementById('markValue').value),
+    total:Number(document.getElementById('markTotal').value),
+    date:document.getElementById('markDate').value||today()
+  });
   save();closeModal();marksPage();
 }
 function deleteMark(i){db.marks.splice(i,1);save();marksPage()}
+function deleteOnlineMark(i){db.onlineMarks.splice(i,1);save();marksPage()}
 
+/* ========================================================
+   ONLINE TEST LINKS (ADMIN / TEACHER POSTING)
+   ======================================================== */
+function testsPage(){
+  db.tests=db.tests||[];
+  const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
+
+  document.getElementById('content').innerHTML=`
+    <div class="toolbar">
+      <button class="btn" onclick="testLinkForm()">➕ Post New Online Test Link</button>
+      <button class="btn secondary" onclick="showPage('marks')">📊 View Submitted Marks</button>
+    </div>
+    <div class="card table-wrap">
+      <h3>🔗 Active Online Test Links</h3>
+      <table class="table">
+        <thead><tr><th>Date</th><th>Test Name</th><th>Class</th><th>Subject</th><th>Total Mark</th><th>Link</th><th>Action</th></tr></thead>
+        <tbody>${db.tests.slice().reverse().map((t,i)=>{
+          return `<tr>
+            <td>${t.date||today()}</td>
+            <td><b>${esc(t.name)}</b></td>
+            <td><span class="badge info">${esc(t.class||'All')}</span></td>
+            <td>${esc(t.subject||'-')}</td>
+            <td>${t.total||100}</td>
+            <td><a href="${esc(t.link)}" target="_blank" class="btn secondary" style="padding:4px 10px;font-size:12px">🔗 Open Link</a></td>
+            <td><button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="db.tests.splice(${db.tests.length-1-i},1);save();testsPage()">Delete</button></td>
+          </tr>`;
+        }).join('')||'<tr><td colspan="7" style="text-align:center">Test Links எதுவும் சேர்க்கப்படவில்லை.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function testLinkForm(){
+  const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
+  openModal('Post Online Test Link',`
+    <label>Test Title / Name</label><input id="tName" placeholder="e.g. Science Chapter 1 Test">
+    <div class="two">
+      <div>
+        <label>Class Target</label>
+        <select id="tClass">
+          <option value="">All Classes</option>
+          ${classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+        </select>
+      </div>
+      <div><label>Subject</label><input id="tSubject" placeholder="e.g. Maths / Science"></div>
+    </div>
+    <label>Online Test Link (Google Forms / Testmoz / Website URL)</label>
+    <input id="tLink" placeholder="https://forms.google.com/...">
+    <div class="two">
+      <div><label>Total Mark</label><input id="tTotal" type="number" value="100"></div>
+      <div><label>Date</label><input id="tDate" type="date" value="${today()}"></div>
+    </div>
+    <br><button class="btn success" style="width:100%" onclick="saveTestLink()">Post Test Link</button>
+  `);
+}
+
+function saveTestLink(){
+  const name=document.getElementById('tName').value.trim();
+  const link=document.getElementById('tLink').value.trim();
+  if(!name||!link) return alert('Test Name மற்றும் Link கட்டாயம் தேவை.');
+  
+  db.tests.push({
+    name,
+    class:document.getElementById('tClass').value,
+    subject:document.getElementById('tSubject').value.trim(),
+    link,
+    total:Number(document.getElementById('tTotal').value)||100,
+    date:document.getElementById('tDate').value||today()
+  });
+  save();closeModal();testsPage();
+}
+
+/* ========================================================
+   STUDENT LOGGED-IN SPECIFIC VIEWS (TESTS, MARKS & SUBMISSIONS)
+   ======================================================== */
+function studentTestsPage(){
+  const tests=(db.tests||[]).filter(t=>!t.class || t.class===currentStudent.class);
+  const mySubmittedMarks=db.onlineMarks.filter(m=>m.studentId===currentStudent.id);
+
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3 style="color:var(--primary)">🧪 Online Tests to Attend</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Test Name</th><th>Subject</th><th>Total</th><th>1. Attend Test</th><th>2. Enter Mark</th></tr></thead>
+          <tbody>${tests.map((t,i)=>{
+            const submitted=mySubmittedMarks.find(m=>m.testName===t.name);
+            return `<tr>
+              <td><b>${esc(t.name)}</b></td>
+              <td>${esc(t.subject||'-')}</td>
+              <td>${t.total||100}</td>
+              <td><a href="${esc(t.link)}" target="_blank" class="btn" style="padding:6px 12px;font-size:12px">🔗 Open & Attend Test</a></td>
+              <td>
+                ${submitted 
+                  ? `<span class="badge ok">Submitted: ${submitted.mark}/${submitted.total}</span>`
+                  : `<button class="btn success" style="padding:6px 12px;font-size:12px" onclick="studentMarkEntryForm('${esc(t.name)}','${esc(t.subject||'')}',${t.total||100})">📝 Submit My Mark</button>`}
+              </td>
+            </tr>`;
+          }).join('')||'<tr><td colspan="5" style="text-align:center">தற்போது Online Tests எதுவும் இல்லை.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card table-wrap">
+      <h3>📊 My Submitted Online Test Scores</h3>
+      <table class="table">
+        <thead><tr><th>Date</th><th>Test Name</th><th>Subject</th><th>My Score</th><th>Total</th><th>%</th></tr></thead>
+        <tbody>${mySubmittedMarks.slice().reverse().map(m=>{
+          const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
+          return `<tr>
+            <td>${m.date}</td>
+            <td><b>${esc(m.testName)}</b></td>
+            <td>${esc(m.subject||'-')}</td>
+            <td><b class="success-text" style="font-size:16px">${m.mark}</b></td>
+            <td>${m.total}</td>
+            <td><span class="badge ok">${pct}</span></td>
+          </tr>`;
+        }).join('')||'<tr><td colspan="6" style="text-align:center">ஆன்லைன் மதிப்பெண்கள் எதுவும் சமர்ப்பிக்கப்படவில்லை.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function studentMarkEntryForm(testName, subject, total){
+  openModal('Submit Online Test Mark',`
+    <p>Test: <b>${esc(testName)}</b></p>
+    <p>Subject: <b>${esc(subject||'-')}</b> &nbsp;|&nbsp; Max Mark: <b>${total}</b></p>
+    <label>நீங்கள் பெற்ற மதிப்பெண் (Mark Scored):</label>
+    <input id="stdMarkVal" type="number" max="${total}" min="0" placeholder="Enter mark scored">
+    <br><br>
+    <button class="btn success" style="width:100%" onclick="saveStudentOnlineMark('${esc(testName)}','${esc(subject)}',${total})">Submit Mark to Teacher</button>
+  `);
+}
+
+function saveStudentOnlineMark(testName, subject, total){
+  const markVal=document.getElementById('stdMarkVal').value;
+  if(markVal===''||isNaN(markVal)) return alert('மதிப்பெண்ணை சரியாக உள்ளிடவும்.');
+  const num=Number(markVal);
+  if(num<0 || num>total) return alert(`மதிப்பெண் 0 முதல் ${total}-க்குள் இருக்க வேண்டும்.`);
+
+  // Remove existing if resubmitting
+  db.onlineMarks=db.onlineMarks.filter(m=>!(m.studentId===currentStudent.id && m.testName===testName));
+  
+  db.onlineMarks.push({
+    studentId:currentStudent.id,
+    studentName:currentStudent.name,
+    class:currentStudent.class,
+    testName,
+    subject,
+    mark:num,
+    total,
+    date:today()
+  });
+
+  save();
+  closeModal();
+  alert('✅ உங்கள் மதிப்பெண் வெற்றிகரமாக Teacher & Admin-க்கு சமர்ப்பிக்கப்பட்டது.');
+  studentTestsPage();
+}
+
+function studentMarks(){
+  const regularRows=db.marks.filter(m=>m.studentId===currentStudent.id);
+  const onlineRows=db.onlineMarks.filter(m=>m.studentId===currentStudent.id);
+
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>📝 Regular / Offline Marks (Teacher Entered)</h3>
+      <div class="table-wrap"><table class="table"><tr><th>Date</th><th>Exam / Subject</th><th>Mark Scored</th><th>Total</th><th>%</th></tr>
+      ${regularRows.slice().reverse().map(m=>{
+        const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
+        return `<tr><td>${m.date||'-'}</td><td><b>${esc(m.exam)}</b></td><td><b>${m.mark}</b></td><td>${m.total}</td><td><span class="badge info">${pct}</span></td></tr>`;
+      }).join('')||'<tr><td colspan="5" style="text-align:center">Regular Marks இல்லை.</td></tr>'}</table></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3 style="color:var(--primary)">🧪 Online Test Marks (Self Submitted)</h3>
+      <div class="table-wrap"><table class="table"><tr><th>Date</th><th>Test Name</th><th>Subject</th><th>Mark Scored</th><th>Total</th><th>%</th></tr>
+      ${onlineRows.slice().reverse().map(m=>{
+        const pct=m.total ? ((m.mark/m.total)*100).toFixed(1)+'%' : '-';
+        return `<tr><td>${m.date}</td><td><b>${esc(m.testName)}</b></td><td>${esc(m.subject||'-')}</td><td><b class="success-text">${m.mark}</b></td><td>${m.total}</td><td><span class="badge ok">${pct}</span></td></tr>`;
+      }).join('')||'<tr><td colspan="6" style="text-align:center">Online Test Marks இல்லை.</td></tr>'}</table></div>
+    </div>`;
+}
+
+function studentAttendance(){
+  const rows=db.attendance.filter(a=>a.studentId===currentStudent.id).slice().reverse();
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>📅 My Attendance</h3>
+      <table class="table"><tr><th>Date</th><th>Status</th></tr>
+      ${rows.map(a=>`<tr><td>${a.date}</td><td><span class="badge ${a.status==='Present'?'ok':'pending'}">${a.status}</span></td></tr>`).join('')||'<tr><td colspan="2">Attendance இல்லை.</td></tr>'}</table>
+    </div>`;
+}
+
+function studentFees(){
+  const month=new Date().toISOString().slice(0,7);
+  const extra=db.fees.filter(f=>f.studentId===currentStudent.id&&f.date?.startsWith(month)&&f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);
+  const paid=calcPaid(currentStudent.id,month);
+  const pending=Math.max(0,Number(currentStudent.monthlyFee)+extra-paid);
+  document.getElementById('content').innerHTML=`
+    <div class="cards">
+      <div class="card stat"><div class="label">Monthly Tuition</div><div class="value">${money(currentStudent.monthlyFee)}</div></div>
+      <div class="card stat"><div class="label">Extra Fee</div><div class="value">${money(extra)}</div></div>
+      <div class="card stat"><div class="label">Paid</div><div class="value success-text">${money(paid)}</div></div>
+      <div class="card stat"><div class="label">Pending</div><div class="value danger-text">${money(pending)}</div></div>
+    </div>
+    <div class="card">
+      <h3>💳 Pay Online</h3>
+      <p>UPI ID: <b>${esc(db.settings.upi||'UPI ID சேர்க்கப்படவில்லை')}</b></p>
+    </div>`;
+}
+
+function studentHomeworkPage(){
+  const list=(db.homework||[]).filter(h=>!h.class || h.class===currentStudent.class).slice().reverse();
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>📚 My Class Homework (${esc(currentStudent.class)})</h3>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Subject</th><th>Homework Task</th></tr></thead>
+      <tbody>${list.map(h=>`<tr><td>${h.date}</td><td><b>${esc(h.subject)}</b></td><td>${esc(h.text)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center">தற்போது Homework எதுவும் இல்லை.</td></tr>'}</tbody></table></div>
+    </div>`;
+}
+
+function studentNoticesPage(){
+  const list=(db.notices||[]).slice().reverse();
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>📢 Academy Announcements & Notices</h3>
+      ${list.map(n=>`
+        <div class="card" style="margin-top:10px;background:#f8fafc;border-left:4px solid var(--primary)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b>${esc(n.title)}</b>
+            <small style="color:var(--muted)">${esc(n.date)}</small>
+          </div>
+          <p style="margin:8px 0 0;color:var(--text)">${esc(n.text)}</p>
+        </div>
+      `).join('')||'<p style="color:var(--muted)">அறிவிப்புகள் எதுவும் இல்லை.</p>'}
+    </div>`;
+}
+
+function studentProfilePage(id){
+  const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;
+  const m=monthNow(),a=calcAttendanceStats(s.id,m),pending=calcPending(s.id,m);
+  document.getElementById('content').innerHTML=`
+    <div class="cards">
+      <div class="card stat"><div class="label">Attendance</div><div class="value">${fmtPct(a.pct)}</div></div>
+      <div class="card stat"><div class="label">Present Days</div><div class="value">${a.present}</div></div>
+      <div class="card stat"><div class="label">Absent Days</div><div class="value danger-text">${a.absent}</div></div>
+      <div class="card stat"><div class="label">Pending Fee</div><div class="value danger-text">${money(pending)}</div></div>
+    </div>
+    <div class="card">
+      <h3>👨‍🎓 Student Profile</h3>
+      <p><b>ID:</b> ${esc(s.id)}</p>
+      <p><b>Name:</b> ${esc(s.name)}</p>
+      <p><b>Class:</b> ${esc(s.class)}</p>
+      <p><b>Mobile:</b> ${esc(s.mobile)}</p>
+      <p><b>Monthly Fee:</b> ${money(s.monthlyFee)}</p>
+      <div class="toolbar" style="margin-top:14px">
+        ${s.mobile?`<a class="btn" href="${callLink(s.mobile)}">📞 Call</a><a class="btn success" target="_blank" href="${waLink(s.mobile,'வணக்கம் '+s.name+', '+db.settings.academy+' தொடர்பாக.')}">💬 WhatsApp</a>`:''}
+      </div>
+    </div>`;
+}
+
+/* ========================================================
+   REPORTS, COMMUNICATION, HOMEWORK, EXAMS & ADMIN UTILITIES
+   ======================================================== */
 function reportsPage(){
   const months=[];for(let i=0;i<12;i++){const d=new Date();d.setMonth(d.getMonth()-i);months.push(d.toISOString().slice(0,7));}
   const cls=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
@@ -684,17 +1006,6 @@ function reportsPage(){
         <label>Class (optional)</label><select id="monthlyReportClass"><option value="">All Classes</option>${cls.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
         <br><br><button class="btn success" onclick="downloadMonthlyReport()">⬇️ Download Monthly CSV</button>
       </div>
-    </div>
-    <div class="card">
-      <h3>📊 Monthly Summary</h3>
-      <div class="table-wrap"><table class="table"><thead><tr><th>Month</th><th>Collection</th><th>Students</th><th>Present</th><th>Absent</th><th>Pending</th></tr></thead>
-      <tbody>${months.map(m=>{
-        const collection=db.fees.filter(f=>f.date?.startsWith(m)).reduce((a,f)=>a+Number(f.amount||0),0);
-        const present=db.attendance.filter(a=>a.date?.startsWith(m)&&a.status==='Present').length;
-        const absent=db.attendance.filter(a=>a.date?.startsWith(m)&&a.status==='Absent').length;
-        const pending=db.students.reduce((a,s)=>a+calcPending(s.id,m),0);
-        return `<tr><td>${m}</td><td>${money(collection)}</td><td>${db.students.length}</td><td>${present}</td><td>${absent}</td><td>${money(pending)}</td></tr>`;
-      }).join('')}</tbody></table></div>
     </div>`;
 }
 
@@ -758,6 +1069,7 @@ function clearPeriodData(type, from, to){
     db.attendance=db.attendance.filter(x=>!inPeriod(x.date,from,to));
     db.fees=db.fees.filter(x=>!inPeriod(x.date,from,to));
     db.marks=db.marks.filter(x=>!inPeriod(x.date||'',from,to));
+    db.onlineMarks=db.onlineMarks.filter(x=>!inPeriod(x.date||'',from,to));
     db.homework=db.homework.filter(x=>!inPeriod(x.date,from,to));
     db.exams=db.exams.filter(x=>!inPeriod(x.date,from,to));
     db.notices=db.notices.filter(x=>!inPeriod(x.date,from,to));
@@ -815,7 +1127,8 @@ function exportAllHistoryCSV(from,to){
   const rows=[
     ...db.attendance.filter(x=>inPeriod(x.date,from,to)).map(x=>({module:'Attendance',date:x.date,student:x.studentId,details:x.status,amount:''})),
     ...db.fees.filter(x=>inPeriod(x.date,from,to)).map(x=>({module:'Fees',date:x.date,student:x.studentId,details:x.type||'Payment',amount:Number(x.amount||0)+Number(x.extraAmount||0)})),
-    ...db.marks.filter(x=>inPeriod(x.date||'',from,to)).map(x=>({module:'Marks',date:x.date||'',student:x.studentId,details:x.exam,amount:x.mark+'/'+x.total}))
+    ...db.marks.filter(x=>inPeriod(x.date||'',from,to)).map(x=>({module:'Marks',date:x.date||'',student:x.studentId,details:x.exam,amount:x.mark+'/'+x.total})),
+    ...db.onlineMarks.filter(x=>inPeriod(x.date||'',from,to)).map(x=>({module:'OnlineMark',date:x.date||'',student:x.studentId,details:x.testName,amount:x.mark+'/'+x.total}))
   ];
   if(!rows.length)return alert('இந்த period-ல் history இல்லை.');
   let csv='Module,Date,Student,Details,Amount\n';
@@ -823,179 +1136,6 @@ function exportAllHistoryCSV(from,to){
   downloadText(csv,'all-history-'+(from||'all')+'-to-'+(to||'all')+'.csv');
 }
 
-function settingsPage(){
-  const m=db.settings.messages;
-  document.getElementById('content').innerHTML=`
-    <div class="card">
-      <h3>🏫 Academy Settings</h3>
-      <div class="two">
-        <div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div>
-        <div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div>
-        <div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div>
-        <div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div>
-        <div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div>
-        <div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div>
-        <div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div>
-        <div><label>Admin ID</label><input id="setAid" value="${esc(db.settings.adminId||'admin')}"></div>
-        <div><label>Admin Password</label><input id="setApass" type="password" value="${esc(db.settings.adminPass||'admin123')}"></div>
-        <div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div>
-      </div>
-      <div id="logoPreviewBox" style="margin:10px 0;display:${db.settings.logo?'block':'none'}">
-        <img id="logoPrev" src="${db.settings.logo||''}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;display:block">
-      </div>
-      <label>Google Sheets Apps Script URL</label>
-      <input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec">
-      <br><br>
-      <h3>🇮🇳 Tamil Reminder Templates</h3>
-      <label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea>
-      <label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea>
-      <div class="toolbar" style="margin-top:16px">
-        <button class="btn" onclick="saveSettings()">Save Settings</button>
-        <button class="btn secondary" onclick="syncSheets()">☁️ Sync to Sheets</button>
-        <button class="btn secondary" onclick="importFromSheets()">📥 Import from Sheets</button>
-      </div>
-    </div>`;
-}
-
-let uploadedLogo='';
-function logoPreview(input){
-  const f=input.files?.[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=e=>{
-    uploadedLogo=e.target.result;
-    document.getElementById('logoPrev').src=uploadedLogo;
-    document.getElementById('logoPreviewBox').style.display='block';
-  };
-  r.readAsDataURL(f);
-}
-
-function saveSettings(){
-  db.settings={
-    ...db.settings,
-    academy:document.getElementById('setAcademy').value,
-    teacher:document.getElementById('setTeacher').value,
-    mobile:document.getElementById('setMobile').value,
-    fee:Number(document.getElementById('setFee').value)||0,
-    upi:document.getElementById('setUpi').value,
-    teacherId:document.getElementById('setTid').value,
-    teacherPass:document.getElementById('setTpass').value,
-    adminId:document.getElementById('setAid').value,
-    adminPass:document.getElementById('setApass').value,
-    sheetsUrl:document.getElementById('setSheets').value,
-    messages:{fee:document.getElementById('feeMsg').value,absent:document.getElementById('absMsg').value}
-  };
-  if(uploadedLogo)db.settings.logo=uploadedLogo;
-  save();applySettings();alert('Settings saved');
-}
-
-/* ========================================================
-   STUDENT LOGGED-IN SPECIFIC VIEWS
-   ======================================================== */
-function studentMarks(){
-  const rows=db.marks.filter(m=>m.studentId===currentStudent.id);
-  document.getElementById('content').innerHTML=`
-    <div class="card">
-      <h3>👨‍🎓 ${esc(currentStudent.name)} - Exam Marks</h3>
-      <div class="table-wrap"><table class="table"><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th></tr>
-      ${rows.map(m=>`<tr><td>${esc(m.exam)}</td><td>${m.mark}</td><td>${m.total}</td></tr>`).join('')||'<tr><td colspan="3">Marks இல்லை.</td></tr>'}</table></div>
-    </div>`;
-}
-
-function studentAttendance(){
-  const rows=db.attendance.filter(a=>a.studentId===currentStudent.id).slice().reverse();
-  document.getElementById('content').innerHTML=`
-    <div class="card">
-      <h3>📅 My Attendance</h3>
-      <table class="table"><tr><th>Date</th><th>Status</th></tr>
-      ${rows.map(a=>`<tr><td>${a.date}</td><td><span class="badge ${a.status==='Present'?'ok':'pending'}">${a.status}</span></td></tr>`).join('')||'<tr><td colspan="2">Attendance இல்லை.</td></tr>'}</table>
-    </div>`;
-}
-
-function studentFees(){
-  const month=new Date().toISOString().slice(0,7);
-  const extra=db.fees.filter(f=>f.studentId===currentStudent.id&&f.date?.startsWith(month)&&f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);
-  const paid=calcPaid(currentStudent.id,month);
-  const pending=Math.max(0,Number(currentStudent.monthlyFee)+extra-paid);
-  document.getElementById('content').innerHTML=`
-    <div class="cards">
-      <div class="card stat"><div class="label">Monthly Tuition</div><div class="value">${money(currentStudent.monthlyFee)}</div></div>
-      <div class="card stat"><div class="label">Extra Fee</div><div class="value">${money(extra)}</div></div>
-      <div class="card stat"><div class="label">Paid</div><div class="value success-text">${money(paid)}</div></div>
-      <div class="card stat"><div class="label">Pending</div><div class="value danger-text">${money(pending)}</div></div>
-    </div>
-    <div class="card">
-      <h3>💳 Pay Online</h3>
-      <p>UPI ID: <b>${esc(db.settings.upi||'UPI ID சேர்க்கப்படவில்லை')}</b></p>
-    </div>`;
-}
-
-function studentHomeworkPage(){
-  const list=(db.homework||[]).filter(h=>!h.class || h.class===currentStudent.class).slice().reverse();
-  document.getElementById('content').innerHTML=`
-    <div class="card">
-      <h3>📚 My Class Homework (${esc(currentStudent.class)})</h3>
-      <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Subject</th><th>Homework Task</th></tr></thead>
-      <tbody>${list.map(h=>`<tr><td>${h.date}</td><td><b>${esc(h.subject)}</b></td><td>${esc(h.text)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center">தற்போது Homework எதுவும் இல்லை.</td></tr>'}</tbody></table></div>
-    </div>`;
-}
-
-function studentNoticesPage(){
-  const list=(db.notices||[]).slice().reverse();
-  document.getElementById('content').innerHTML=`
-    <div class="card">
-      <h3>📢 Academy Announcements & Notices</h3>
-      ${list.map(n=>`
-        <div class="card" style="margin-top:10px;background:#f8fafc;border-left:4px solid var(--primary)">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <b>${esc(n.title)}</b>
-            <small style="color:var(--muted)">${esc(n.date)}</small>
-          </div>
-          <p style="margin:8px 0 0;color:var(--text)">${esc(n.text)}</p>
-        </div>
-      `).join('')||'<p style="color:var(--muted)">அறிவிப்புகள் எதுவும் இல்லை.</p>'}
-    </div>`;
-}
-
-function studentTestsPage(){
-  const tests=(db.tests||[]).filter(t=>!t.class || t.class===currentStudent.class);
-  const exams=(db.exams||[]).filter(e=>!e.class || e.class===currentStudent.class).slice().sort((a,b)=>a.date.localeCompare(b.date));
-  document.getElementById('content').innerHTML=`
-    <div class="card">
-      <h3>🧪 Available Online Tests</h3>
-      <div class="table-wrap"><table class="table"><thead><tr><th>Test Name</th><th>Subject</th><th>Questions</th><th>Action</th></tr></thead>
-      <tbody>${tests.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.subject)}</td><td>${t.questions?.length||0}</td><td><button class="btn" onclick="viewTest(${i})">Start / View Test</button></td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center">Online Tests எதுவும் இல்லை.</td></tr>'}</tbody></table></div>
-    </div>
-    <div class="card">
-      <h3>🗓️ Upcoming Exam Schedule</h3>
-      <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Exam</th><th>Subject</th></tr></thead>
-      <tbody>${exams.map(e=>`<tr><td>${e.date}</td><td><b>${esc(e.name)}</b></td><td>${esc(e.subject)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center">Exams எதுவும் இல்லை.</td></tr>'}</tbody></table></div>
-    </div>`;
-}
-
-function studentProfilePage(id){
-  const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;
-  const m=monthNow(),a=calcAttendanceStats(s.id,m),pending=calcPending(s.id,m);
-  document.getElementById('content').innerHTML=`
-    <div class="cards">
-      <div class="card stat"><div class="label">Attendance</div><div class="value">${fmtPct(a.pct)}</div></div>
-      <div class="card stat"><div class="label">Present Days</div><div class="value">${a.present}</div></div>
-      <div class="card stat"><div class="label">Absent Days</div><div class="value danger-text">${a.absent}</div></div>
-      <div class="card stat"><div class="label">Pending Fee</div><div class="value danger-text">${money(pending)}</div></div>
-    </div>
-    <div class="card">
-      <h3>👨‍🎓 Student Profile</h3>
-      <p><b>ID:</b> ${esc(s.id)}</p>
-      <p><b>Name:</b> ${esc(s.name)}</p>
-      <p><b>Class:</b> ${esc(s.class)}</p>
-      <p><b>Mobile:</b> ${esc(s.mobile)}</p>
-      <p><b>Monthly Fee:</b> ${money(s.monthlyFee)}</p>
-      <div class="toolbar" style="margin-top:14px">
-        ${s.mobile?`<a class="btn" href="${callLink(s.mobile)}">📞 Call</a><a class="btn success" target="_blank" href="${waLink(s.mobile,'வணக்கம் '+s.name+', '+db.settings.academy+' தொடர்பாக.')}">💬 WhatsApp</a>`:''}
-      </div>
-    </div>`;
-}
-
-/* Helper Features (Communication, Finance, Tests, Calendar, etc.) */
 function communicationPage(){
   const month=monthNow();
   const pending=db.students.map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
@@ -1097,31 +1237,6 @@ function expenseForm(){
   `);
 }
 
-function testsPage(){
-  db.tests=db.tests||[];
-  document.getElementById('content').innerHTML=`
-    <div class="toolbar"><button class="btn" onclick="testForm()">➕ Create Test</button></div>
-    <div class="card table-wrap"><table class="table"><thead><tr><th>Test</th><th>Class</th><th>Subject</th><th>Action</th></tr></thead>
-    <tbody>${db.tests.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.class)}</td><td>${esc(t.subject)}</td><td><button class="btn secondary" onclick="viewTest(${i})">View</button> <button class="btn danger" onclick="db.tests.splice(${i},1);save();testsPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="4">Tests இல்லை.</td></tr>'}</tbody></table></div>`;
-}
-function testForm(){
-  openModal('Create Test',`
-    <label>Test Name</label><input id="testName">
-    <div class="two"><div><label>Class</label><input id="testClass"></div><div><label>Subject</label><input id="testSubject"></div></div>
-    <label>Question</label><textarea id="testQuestion"></textarea>
-    <label>Answer</label><input id="testAnswer">
-    <br><button class="btn" style="width:100%" onclick="db.tests.push({name:document.getElementById('testName').value,class:document.getElementById('testClass').value,subject:document.getElementById('testSubject').value,questions:[{q:document.getElementById('testQuestion').value,a:document.getElementById('testAnswer').value}]});save();closeModal();testsPage()">Save Test</button>
-  `);
-}
-function viewTest(i){
-  const t=db.tests[i];
-  if(!t)return;
-  openModal(t.name,`
-    <p><b>Class:</b> ${esc(t.class)} | <b>Subject:</b> ${esc(t.subject)}</p>
-    ${(t.questions||[]).map((q,n)=>`<div class="card" style="margin-top:10px;background:#f8fafc"><b>Q${n+1}.</b> ${esc(q.q)}<p style="margin:6px 0 0;color:var(--success)"><b>Answer:</b> ${esc(q.a)}</p></div>`).join('')}
-  `);
-}
-
 function calendarPage(){
   const items=[...db.exams.map(x=>({date:x.date,type:'Exam',text:x.name+' - '+x.subject+' - '+x.class})),...db.homework.map(x=>({date:x.date,type:'Homework',text:x.subject+' - '+x.class})),...db.notices.map(x=>({date:x.date,type:'Notice',text:x.title}))].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   document.getElementById('content').innerHTML=`
@@ -1177,6 +1292,71 @@ function restoreBackup(){
   r.readAsText(f);
 }
 
+function settingsPage(){
+  const m=db.settings.messages;
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>🏫 Academy Settings</h3>
+      <div class="two">
+        <div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div>
+        <div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div>
+        <div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div>
+        <div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div>
+        <div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div>
+        <div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div>
+        <div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div>
+        <div><label>Admin ID</label><input id="setAid" value="${esc(db.settings.adminId||'admin')}"></div>
+        <div><label>Admin Password</label><input id="setApass" type="password" value="${esc(db.settings.adminPass||'admin123')}"></div>
+        <div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div>
+      </div>
+      <div id="logoPreviewBox" style="margin:10px 0;display:${db.settings.logo?'block':'none'}">
+        <img id="logoPrev" src="${db.settings.logo||''}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;display:block">
+      </div>
+      <label>Google Sheets Apps Script URL</label>
+      <input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec">
+      <br><br>
+      <h3>🇮🇳 Tamil Reminder Templates</h3>
+      <label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea>
+      <label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea>
+      <div class="toolbar" style="margin-top:16px">
+        <button class="btn" onclick="saveSettings()">Save Settings</button>
+        <button class="btn secondary" onclick="syncSheets()">☁️ Sync to Sheets</button>
+        <button class="btn secondary" onclick="importFromSheets()">📥 Import from Sheets</button>
+      </div>
+    </div>`;
+}
+
+let uploadedLogo='';
+function logoPreview(input){
+  const f=input.files?.[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    uploadedLogo=e.target.result;
+    document.getElementById('logoPrev').src=uploadedLogo;
+    document.getElementById('logoPreviewBox').style.display='block';
+  };
+  r.readAsDataURL(f);
+}
+
+function saveSettings(){
+  db.settings={
+    ...db.settings,
+    academy:document.getElementById('setAcademy').value,
+    teacher:document.getElementById('setTeacher').value,
+    mobile:document.getElementById('setMobile').value,
+    fee:Number(document.getElementById('setFee').value)||0,
+    upi:document.getElementById('setUpi').value,
+    teacherId:document.getElementById('setTid').value,
+    teacherPass:document.getElementById('setTpass').value,
+    adminId:document.getElementById('setAid').value,
+    adminPass:document.getElementById('setApass').value,
+    sheetsUrl:document.getElementById('setSheets').value,
+    messages:{fee:document.getElementById('feeMsg').value,absent:document.getElementById('absMsg').value}
+  };
+  if(uploadedLogo)db.settings.logo=uploadedLogo;
+  save();applySettings();alert('Settings saved');
+}
+
 /* Utilities */
 function fmtPct(n){return Number(n||0).toFixed(1)+'%'}
 function monthNow(){return new Date().toISOString().slice(0,7)}
@@ -1195,7 +1375,7 @@ function toggleDark(){document.body.classList.toggle('dark');localStorage.setIte
 function downloadText(text,filename){const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
 /* ========================================================
-   FULL COMPLETE GOOGLE SHEETS SYNC (ALL MODULES SAVED)
+   FULL COMPLETE GOOGLE SHEETS SYNC (WITH ONLINE MARKS & TEST LINKS)
    ======================================================== */
 async function syncSheets(silent){
   silent=!!silent;
@@ -1203,7 +1383,6 @@ async function syncSheets(silent){
   if(!url){if(silent){setSyncStatus('error');return}return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.')}
   if(silent)setSyncStatus('syncing');
   
-  // Entire app database state passed to Google Sheets
   const payload={
     source:'Arul Siragugal Academy',
     syncedAt:new Date().toISOString(),
@@ -1212,6 +1391,7 @@ async function syncSheets(silent){
     attendance:db.attendance||[],
     fees:db.fees||[],
     marks:db.marks||[],
+    onlineMarks:db.onlineMarks||[],
     homework:db.homework||[],
     notices:db.notices||[],
     exams:db.exams||[],
@@ -1250,6 +1430,7 @@ async function importFromSheets(){
     db.attendance=result.attendance||[];
     db.fees=result.fees||[];
     db.marks=result.marks||[];
+    db.onlineMarks=result.onlineMarks||[];
     db.homework=result.homework||[];
     db.notices=result.notices||[];
     db.exams=result.exams||[];
@@ -1276,6 +1457,7 @@ async function autoImportOnLoad(){
       db.attendance=result.attendance||[];
       db.fees=result.fees||[];
       db.marks=result.marks||[];
+      db.onlineMarks=result.onlineMarks||[];
       db.homework=result.homework||[];
       db.notices=result.notices||[];
       db.exams=result.exams||[];
