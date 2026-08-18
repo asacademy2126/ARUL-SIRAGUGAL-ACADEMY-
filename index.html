@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arul Siragugal Academy - Hub UI</title>
+<title>Arul Siragugal Academy - Management</title>
 <style>
 :root{
   --primary:#4f46e5;
@@ -53,7 +53,7 @@ textarea{min-height:90px;resize:vertical}
 .back-btn:hover{background:#dfe4ff}
 
 /* Hub Grid Menu */
-.hub-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:16px;margin-top:16px}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));gap:16px;margin-top:16px}
 .hub-card{background:var(--card);border:1px solid var(--border);border-radius:var(--card-radius);padding:22px 18px;text-align:center;box-shadow:var(--card-shadow);cursor:pointer;transition:transform 0.18s ease, box-shadow 0.18s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px}
 .hub-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(15,23,42,0.12);border-color:#c7d2fe}
 .hub-icon{font-size:36px;margin-bottom:10px;line-height:1}
@@ -78,10 +78,6 @@ textarea{min-height:90px;resize:vertical}
 .badge.ok{background:#dcfce7;color:#166534}
 .badge.pending{background:#fee2e2;color:#991b1b}
 .badge.info{background:#e0e7ff;color:#3730a3}
-.bar-chart{display:flex;align-items:flex-end;gap:12px;height:200px;padding:20px 8px}
-.bar{flex:1;min-width:25px;background:var(--primary);border-radius:8px 8px 0 0;position:relative}
-.bar span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:11px;margin-bottom:4px}
-.bar small{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:5px;color:var(--muted)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999}
 .modal-box{width:100%;max-width:650px;max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:24px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -202,6 +198,7 @@ db.exams=db.exams||[];
 db.notices=db.notices||[];
 db.expenses=db.expenses||[];
 db.receipts=db.receipts||[];
+db.tests=db.tests||[];
 
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false;
@@ -325,6 +322,9 @@ function showHubMenu(){
         <div class="hub-card" onclick="showPage('studentHome')"><div class="hub-icon">📊</div><div class="hub-title">My Marks</div><div class="hub-desc">Exam Performance</div></div>
         <div class="hub-card" onclick="showPage('studentAttendance')"><div class="hub-icon">📅</div><div class="hub-title">My Attendance</div><div class="hub-desc">Monthly Records</div></div>
         <div class="hub-card" onclick="showPage('studentFees')"><div class="hub-icon">💰</div><div class="hub-title">My Fees</div><div class="hub-desc">Paid & Pending Status</div></div>
+        <div class="hub-card" onclick="showPage('studentHomework')"><div class="hub-icon">📚</div><div class="hub-title">Homework</div><div class="hub-desc">My Class Homework</div></div>
+        <div class="hub-card" onclick="showPage('studentNotices')"><div class="hub-icon">📢</div><div class="hub-title">Notices</div><div class="hub-desc">Academy Announcements</div></div>
+        <div class="hub-card" onclick="showPage('studentTests')"><div class="hub-icon">🧪</div><div class="hub-title">Online Tests & Exams</div><div class="hub-desc">Tests & Schedule</div></div>
         <div class="hub-card" onclick="showPage('studentProfile')"><div class="hub-icon">👤</div><div class="hub-title">My Profile</div><div class="hub-desc">Personal Information</div></div>
       </div>
     `;
@@ -333,7 +333,7 @@ function showHubMenu(){
 
 function showPage(p){
   document.getElementById('hubBackBtn').classList.remove('hidden');
-  const titles={overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile'};
+  const titles={overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile',studentHomework:'My Homework',studentNotices:'Notice Board',studentTests:'Online Tests & Exams'};
   document.getElementById('pageTitle').textContent=titles[p]||'';
 
   if(p==='overview')overview();
@@ -357,6 +357,9 @@ function showPage(p){
   if(p==='studentAttendance')studentAttendance();
   if(p==='studentFees')studentFees();
   if(p==='studentProfile')studentProfilePage();
+  if(p==='studentHomework')studentHomeworkPage();
+  if(p==='studentNotices')studentNoticesPage();
+  if(p==='studentTests')studentTestsPage();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -467,7 +470,7 @@ function attendancePage(){
         <td>${s?`<button class="btn secondary" onclick="callStudent('${s.id}')">📞 Call</button> ${a.status==='Absent'?`<button class="btn secondary" onclick="whatsapp('${s.id}','absent')">💬 WhatsApp</button>`:''}`:''}</td></tr>`;
       }).join('')||'<tr><td colspan="5" style="text-align:center">Attendance இல்லை.</td></tr>'}</tbody></table></div>
     </div>
-    ${periodToolbar('Attendance')}`;
+    ${role==='admin' ? periodToolbar('Attendance') : ''}`;
 }
 
 function renderClassAttendance(){
@@ -560,7 +563,7 @@ function feesPage(){
         </tbody>
       </table>
     </div>
-    ${periodToolbar('Fees')}`;
+    ${role==='admin' ? periodToolbar('Fees') : ''}`;
 }
 
 function showStudentFeeDetails(id){
@@ -659,7 +662,7 @@ function markForm(){
 }
 
 function saveMark(){
-  db.marks.push({studentId:document.getElementById('markStudent').value,exam:document.getElementById('markExam').value,mark:Number(document.getElementById('markValue').value),total:Number(document.getElementById('markTotal').value)});
+  db.marks.push({studentId:document.getElementById('markStudent').value,exam:document.getElementById('markExam').value,mark:Number(document.getElementById('markValue').value),total:Number(document.getElementById('markTotal').value),date:today()});
   save();closeModal();marksPage();
 }
 function deleteMark(i){db.marks.splice(i,1);save();marksPage()}
@@ -746,6 +749,7 @@ function defaultFromDate(){const d=new Date(); d.setDate(d.getDate()-30); return
 function refreshPeriodPage(type){if(type==='Attendance')attendancePage();if(type==='Fees')feesPage();if(type==='All History')historyPage()}
 
 function clearPeriodData(type, from, to){
+  if(role!=='admin') return alert('Access Denied: Admin மட்டுமே records clear செய்ய முடியும்.');
   if(!from && !to) return alert('From / To date தேர்வு செய்யவும்.');
   if(!confirm(`⚠️ ${from} → ${to} period-ல் உள்ள ${type} records delete செய்யப்படலாமா?`)) return;
   if(type==='Attendance') db.attendance=db.attendance.filter(x=>!inPeriod(x.date,from,to));
@@ -794,7 +798,7 @@ function historyPage(){
         <div><label>To Date</label><input id="historyTo" type="date" value="${to}"></div>
         <button class="btn secondary" onclick="historyPage()">🔎 Filter</button>
         <button class="btn secondary" onclick="exportAllHistoryCSV(periodValue('historyFrom'),periodValue('historyTo'))">⬇️ Export CSV</button>
-        <button class="btn danger" onclick="clearPeriodData('All History',periodValue('historyFrom'),periodValue('historyTo'));historyPage()">🗑️ Clear Period</button>
+        ${role==='admin' ? `<button class="btn danger" onclick="clearPeriodData('All History',periodValue('historyFrom'),periodValue('historyTo'));historyPage()">🗑️ Clear Period</button>` : ''}
       </div>
     </div>
     <div class="grid2">
@@ -884,11 +888,14 @@ function saveSettings(){
   save();applySettings();alert('Settings saved');
 }
 
+/* ========================================================
+   STUDENT LOGGED-IN SPECIFIC VIEWS
+   ======================================================== */
 function studentMarks(){
   const rows=db.marks.filter(m=>m.studentId===currentStudent.id);
   document.getElementById('content').innerHTML=`
     <div class="card">
-      <h3>👨‍🎓 ${esc(currentStudent.name)}</h3>
+      <h3>👨‍🎓 ${esc(currentStudent.name)} - Exam Marks</h3>
       <div class="table-wrap"><table class="table"><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th></tr>
       ${rows.map(m=>`<tr><td>${esc(m.exam)}</td><td>${m.mark}</td><td>${m.total}</td></tr>`).join('')||'<tr><td colspan="3">Marks இல்லை.</td></tr>'}</table></div>
     </div>`;
@@ -919,6 +926,49 @@ function studentFees(){
     <div class="card">
       <h3>💳 Pay Online</h3>
       <p>UPI ID: <b>${esc(db.settings.upi||'UPI ID சேர்க்கப்படவில்லை')}</b></p>
+    </div>`;
+}
+
+function studentHomeworkPage(){
+  const list=(db.homework||[]).filter(h=>!h.class || h.class===currentStudent.class).slice().reverse();
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>📚 My Class Homework (${esc(currentStudent.class)})</h3>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Subject</th><th>Homework Task</th></tr></thead>
+      <tbody>${list.map(h=>`<tr><td>${h.date}</td><td><b>${esc(h.subject)}</b></td><td>${esc(h.text)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center">தற்போது Homework எதுவும் இல்லை.</td></tr>'}</tbody></table></div>
+    </div>`;
+}
+
+function studentNoticesPage(){
+  const list=(db.notices||[]).slice().reverse();
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>📢 Academy Announcements & Notices</h3>
+      ${list.map(n=>`
+        <div class="card" style="margin-top:10px;background:#f8fafc;border-left:4px solid var(--primary)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b>${esc(n.title)}</b>
+            <small style="color:var(--muted)">${esc(n.date)}</small>
+          </div>
+          <p style="margin:8px 0 0;color:var(--text)">${esc(n.text)}</p>
+        </div>
+      `).join('')||'<p style="color:var(--muted)">அறிவிப்புகள் எதுவும் இல்லை.</p>'}
+    </div>`;
+}
+
+function studentTestsPage(){
+  const tests=(db.tests||[]).filter(t=>!t.class || t.class===currentStudent.class);
+  const exams=(db.exams||[]).filter(e=>!e.class || e.class===currentStudent.class).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('content').innerHTML=`
+    <div class="card">
+      <h3>🧪 Available Online Tests</h3>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Test Name</th><th>Subject</th><th>Questions</th><th>Action</th></tr></thead>
+      <tbody>${tests.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.subject)}</td><td>${t.questions?.length||0}</td><td><button class="btn" onclick="viewTest(${i})">Start / View Test</button></td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center">Online Tests எதுவும் இல்லை.</td></tr>'}</tbody></table></div>
+    </div>
+    <div class="card">
+      <h3>🗓️ Upcoming Exam Schedule</h3>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Exam</th><th>Subject</th></tr></thead>
+      <tbody>${exams.map(e=>`<tr><td>${e.date}</td><td><b>${esc(e.name)}</b></td><td>${esc(e.subject)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center">Exams எதுவும் இல்லை.</td></tr>'}</tbody></table></div>
     </div>`;
 }
 
@@ -1019,7 +1069,7 @@ function teacherForm(){
     <label>Login ID</label><input id="trId">
     <label>Password</label><input id="trPass" type="password">
     <label>Mobile</label><input id="trMobile">
-    <br><button class="btn" style="width:100%" onclick="db.teachers.push({name:document.getElementById('trName').value,id:document.getElementById('trId').value,password:document.getElementById('trPass').value,mobile:document.getElementById('trMobile').value});save();closeModal();teachersPage()">Save Teacher</button>
+    <br><button class="btn" style="width:100%" onclick="db.teachers.push({name:document.getElementById('trName').value,id:document.getElementById('trId').value,password:document.getElementById('trPass').value,mobile:document.getElementById('trMobile').value,att:true,fees:true,marks:true});save();closeModal();teachersPage()">Save Teacher</button>
   `);
 }
 
@@ -1052,7 +1102,7 @@ function testsPage(){
   document.getElementById('content').innerHTML=`
     <div class="toolbar"><button class="btn" onclick="testForm()">➕ Create Test</button></div>
     <div class="card table-wrap"><table class="table"><thead><tr><th>Test</th><th>Class</th><th>Subject</th><th>Action</th></tr></thead>
-    <tbody>${db.tests.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.class)}</td><td>${esc(t.subject)}</td><td><button class="btn danger" onclick="db.tests.splice(${i},1);save();testsPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="4">Tests இல்லை.</td></tr>'}</tbody></table></div>`;
+    <tbody>${db.tests.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.class)}</td><td>${esc(t.subject)}</td><td><button class="btn secondary" onclick="viewTest(${i})">View</button> <button class="btn danger" onclick="db.tests.splice(${i},1);save();testsPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="4">Tests இல்லை.</td></tr>'}</tbody></table></div>`;
 }
 function testForm(){
   openModal('Create Test',`
@@ -1061,6 +1111,14 @@ function testForm(){
     <label>Question</label><textarea id="testQuestion"></textarea>
     <label>Answer</label><input id="testAnswer">
     <br><button class="btn" style="width:100%" onclick="db.tests.push({name:document.getElementById('testName').value,class:document.getElementById('testClass').value,subject:document.getElementById('testSubject').value,questions:[{q:document.getElementById('testQuestion').value,a:document.getElementById('testAnswer').value}]});save();closeModal();testsPage()">Save Test</button>
+  `);
+}
+function viewTest(i){
+  const t=db.tests[i];
+  if(!t)return;
+  openModal(t.name,`
+    <p><b>Class:</b> ${esc(t.class)} | <b>Subject:</b> ${esc(t.subject)}</p>
+    ${(t.questions||[]).map((q,n)=>`<div class="card" style="margin-top:10px;background:#f8fafc"><b>Q${n+1}.</b> ${esc(q.q)}<p style="margin:6px 0 0;color:var(--success)"><b>Answer:</b> ${esc(q.a)}</p></div>`).join('')}
   `);
 }
 
@@ -1136,24 +1194,47 @@ function closeModal(){document.getElementById('modal').classList.add('hidden')}
 function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
 function downloadText(text,filename){const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
-/* Google Sheets Sync */
+/* ========================================================
+   FULL COMPLETE GOOGLE SHEETS SYNC (ALL MODULES SAVED)
+   ======================================================== */
 async function syncSheets(silent){
   silent=!!silent;
   const url=(db.settings.sheetsUrl||'').trim();
   if(!url){if(silent){setSyncStatus('error');return}return alert('Settings → Google Sheets Apps Script URL சேர்க்கவும்.')}
   if(silent)setSyncStatus('syncing');
-  const payload={source:'Arul Siragugal Academy',syncedAt:new Date().toISOString(),settings:db.settings,students:db.students||[],attendance:db.attendance||[],fees:db.fees||[],marks:db.marks||[]};
+  
+  // Entire app database state passed to Google Sheets
+  const payload={
+    source:'Arul Siragugal Academy',
+    syncedAt:new Date().toISOString(),
+    settings:db.settings,
+    students:db.students||[],
+    attendance:db.attendance||[],
+    fees:db.fees||[],
+    marks:db.marks||[],
+    homework:db.homework||[],
+    notices:db.notices||[],
+    exams:db.exams||[],
+    tests:db.tests||[],
+    expenses:db.expenses||[],
+    teachers:db.teachers||[]
+  };
+  
   try{
-    const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'payload='+encodeURIComponent(JSON.stringify(payload))});
+    const response=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+      body:'payload='+encodeURIComponent(JSON.stringify(payload))
+    });
     const text=await response.text();
     let result;try{result=JSON.parse(text)}catch(e){result=null}
     if(response.ok && result && result.success){
-      if(silent)setSyncStatus('success');else alert('✅ Google Sheets-ல் data சேமிக்கப்பட்டது.');
+      if(silent)setSyncStatus('success');else alert('✅ அனைத்து டேட்டாக்களும் Google Sheets-ல் Auto-Sync ஆகிவிட்டது.');
     }else{
-      if(silent)setSyncStatus('error');else alert('⚠️ Response: '+text.slice(0,200));
+      if(silent)setSyncStatus('error');else alert('⚠️ Google Sheets Sync Error: '+text.slice(0,200));
     }
   }catch(err){
-    if(silent)setSyncStatus('error');else alert('❌ Sync failed. Please check network/CORS.');
+    if(silent)setSyncStatus('error');else alert('❌ Sync failed. Please check network.');
   }
 }
 
@@ -1169,6 +1250,12 @@ async function importFromSheets(){
     db.attendance=result.attendance||[];
     db.fees=result.fees||[];
     db.marks=result.marks||[];
+    db.homework=result.homework||[];
+    db.notices=result.notices||[];
+    db.exams=result.exams||[];
+    db.tests=result.tests||[];
+    db.expenses=result.expenses||[];
+    db.teachers=result.teachers||[];
     save();
     suppressAutoSync=false;
     setSyncStatus('success');
@@ -1189,6 +1276,12 @@ async function autoImportOnLoad(){
       db.attendance=result.attendance||[];
       db.fees=result.fees||[];
       db.marks=result.marks||[];
+      db.homework=result.homework||[];
+      db.notices=result.notices||[];
+      db.exams=result.exams||[];
+      db.tests=result.tests||[];
+      db.expenses=result.expenses||[];
+      db.teachers=result.teachers||[];
       save();
       suppressAutoSync=false;
       setSyncStatus('success');
