@@ -133,7 +133,7 @@ textarea{min-height:90px;resize:vertical}
     <div id="adminLogin" class="hidden">
       <label>Admin ID</label><input id="adminId" placeholder="Admin ID">
       <label>Password</label><input id="adminPass" type="password" placeholder="Password">
-      <button class="btn" style="width:100%;margin-top:16px" onclick="loginAdmin()">Login</button>
+      <button class="btn" id="adminLoginBtn" style="width:100%;margin-top:16px" onclick="loginAdmin()">Login</button>
     </div>
     <div id="teacherLogin">
       <label>Teacher ID</label><input id="teacherId" placeholder="Teacher ID">
@@ -180,20 +180,9 @@ textarea{min-height:90px;resize:vertical}
 
 <script>
 const KEY='asa_management_v1';
-const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbw4mPoDj-Wksmc9bL8pgeaIqRZcx5Kp7IvfXP4j23ijYjIP85vuLwtYb-fFTWLCleOo/exec';
-
-// Google Sheets is the ONLY database.
-// No application data is read from or written to browser localStorage.
-let db={
-  settings:{
-    academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',
-    teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',
-    sheetsUrl:DEFAULT_SHEETS_URL,autoSync:true,
-    messages:{
-      fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',
-      absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'
-    }
-  },
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
+  settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
+  messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
   students:[],attendance:[],fees:[],marks:[]
 };
 
@@ -201,6 +190,7 @@ if(!db.settings.adminId) db.settings.adminId='admin';
 if(!db.settings.adminPass) db.settings.adminPass='admin123';
 if(!db.settings.teacherId) db.settings.teacherId='teacher';
 if(!db.settings.teacherPass) db.settings.teacherPass='1234';
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
 if(!(db.settings.sheetsUrl||'').trim()) db.settings.sheetsUrl=DEFAULT_SHEETS_URL;
 db.teachers=db.teachers||[];
 db.homework=db.homework||[];
@@ -214,10 +204,7 @@ db.onlineMarks=db.onlineMarks||[]; // Student entered online test marks
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false;
 
-function save(){
-  // No local database. Every change is sent directly to Google Sheets.
-  if(!suppressAutoSync) syncNow();
-}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));if(!suppressAutoSync)syncNow()}
 function syncNow(){if(!(db.settings.sheetsUrl||'').trim())return;setSyncStatus('syncing');syncSheets(true)}
 function setSyncStatus(state){
   const el=document.getElementById('syncStatus');if(!el)return;
@@ -1391,9 +1378,17 @@ function calcAttendanceStats(id,month){
 function waLink(phone,text){let n=String(phone||'').replace(/\D/g,'');if(n.length===10)n='91'+n;return 'https://wa.me/'+n+'?text='+encodeURIComponent(text)}
 function callLink(phone){return 'tel:'+String(phone||'').replace(/[^+\d]/g,'')}
 function fillMsg(t,s,amount){return String(t||'').replaceAll('{student}',s.name).replaceAll('{amount}',String(amount||0)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
+function callStudent(id){const s=db.students.find(x=>x.id===id);if(!s||!s.mobile)return alert('இந்த student-க்கு mobile number சேமிக்கப்படவில்லை.');window.open(callLink(s.mobile),'_self')}
+function whatsapp(id,type){
+  const s=db.students.find(x=>x.id===id);if(!s)return;
+  if(!s.mobile)return alert('இந்த student-க்கு mobile number சேமிக்கப்படவில்லை.');
+  const amount=type==='fee'?calcPending(id,monthNow()):0;
+  const template=type==='fee'?db.settings.messages.fee:db.settings.messages.absent;
+  window.open(waLink(s.mobile,fillMsg(template,s,amount)),'_blank');
+}
 function openModal(t,b){document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=b;document.getElementById('modal').classList.remove('hidden')}
 function closeModal(){document.getElementById('modal').classList.add('hidden')}
-function toggleDark(){document.body.classList.toggle('dark')}
+function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
 function downloadText(text,filename){const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
 /* ========================================================
@@ -1446,70 +1441,106 @@ async function importFromSheets(){
   if(!confirm('Google Sheets-ல் இருந்து data-வை overwrite செய்யவா?')) return;
   try{
     const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
-    const result=await response.json();
+    const text=await response.text();
+    let result;try{result=JSON.parse(text)}catch(e){result=null}
+    if(!result){alert('❌ Import failed. Response: '+text.slice(0,300));return}
     suppressAutoSync=true;
-    if(result.settings) db.settings={...db.settings,...result.settings,sheetsUrl:db.settings.sheetsUrl||DEFAULT_SHEETS_URL};
-    db.students=result.students||[];
-    db.attendance=result.attendance||[];
-    db.fees=result.fees||[];
-    db.marks=result.marks||[];
-    db.onlineMarks=result.onlineMarks||[];
-    db.homework=result.homework||[];
-    db.notices=result.notices||[];
-    db.exams=result.exams||[];
-    db.tests=result.tests||[];
-    db.expenses=result.expenses||[];
-    db.teachers=result.teachers||[];
+    applyIncomingData(result,url);
     save();
     suppressAutoSync=false;
     setSyncStatus('success');
+    applySettings();
     alert('✅ Import நிறைவடைந்தது.');
     showHubMenu();
-  }catch(e){alert('❌ Import failed.')}
+  }catch(e){alert('❌ Import failed.\n\nBrowser-ல் direct fetch/CORS block ஆகலாம்.')}
 }
 
-async function autoImportOnLoad(){
-  const url=(db.settings.sheetsUrl||DEFAULT_SHEETS_URL).trim();
-  db.settings.sheetsUrl=url;
+// Google Sheets auto-detects numeric-looking cells (an ID, password, or class like "10") and stores
+// them as NUMBERS, not text. Every part of this app compares those fields with strict (===) equality
+// against text typed into <input> fields — so every identity/reference field coming back from Sheets
+// must be forced back to a string here, or logins, class filters, and student lookups silently break
+// after every import even though the values look identical on screen.
+function applyIncomingData(result,url){
+  const str=(v,fallback)=>v===undefined||v===null?(fallback!==undefined?fallback:''):String(v);
+  const num=(v)=>Number(v)||0;
 
-  const loading=document.getElementById('loginLoading');
-  if(loading) loading.style.display='block';
+  db.students=(result.students||[]).map(s=>({
+    ...s,
+    id:str(s.id),name:str(s.name),class:str(s.class),mobile:str(s.mobile),
+    parent:str(s.parent,''),birthday:str(s.birthday,''),address:str(s.address,''),
+    password:str(s.password,'1234'),monthlyFee:num(s.monthlyFee)
+  }));
+  db.attendance=(result.attendance||[]).map(a=>({...a,studentId:str(a.studentId),date:str(a.date),status:str(a.status)}));
+  db.fees=(result.fees||[]).map(f=>({
+    ...f,studentId:str(f.studentId),date:str(f.date),type:str(f.type,'Payment'),
+    extraType:f.extraType!==undefined&&f.extraType!==''?str(f.extraType):f.extraType,
+    amount:num(f.amount),extraAmount:f.extraAmount!==undefined&&f.extraAmount!==''?num(f.extraAmount):undefined
+  }));
+  db.marks=(result.marks||[]).map(m=>({...m,studentId:str(m.studentId),exam:str(m.exam),date:str(m.date),mark:num(m.mark),total:num(m.total),enteredBy:str(m.enteredBy,'')}));
+  db.onlineMarks=(result.onlineMarks||[]).map(m=>({...m,studentId:str(m.studentId),studentName:str(m.studentName,''),class:str(m.class,''),testName:str(m.testName),subject:str(m.subject,''),date:str(m.date),mark:num(m.mark),total:num(m.total),enteredBy:str(m.enteredBy,'')}));
+  db.homework=(result.homework||[]).map(h=>({...h,class:str(h.class),subject:str(h.subject),text:str(h.text),date:str(h.date)}));
+  db.notices=(result.notices||[]).map(n=>({...n,title:str(n.title),text:str(n.text),date:str(n.date)}));
+  db.exams=(result.exams||[]).map(x=>({...x,name:str(x.name),class:str(x.class),subject:str(x.subject),date:str(x.date)}));
+  db.tests=(result.tests||[]).map(t=>({...t,name:str(t.name),class:str(t.class,''),subject:str(t.subject,''),link:str(t.link),date:str(t.date),total:num(t.total)||100,postedBy:str(t.postedBy,'')}));
+  db.expenses=(result.expenses||[]).map(e=>({...e,category:str(e.category),note:str(e.note,''),amount:num(e.amount),date:str(e.date)}));
+  db.teachers=(result.teachers||[]).map(t=>({...t,id:str(t.id),name:str(t.name),password:str(t.password,''),mobile:str(t.mobile,'')}));
 
-  try{
-    const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get',{cache:'no-store'});
-    if(!response.ok) throw new Error('HTTP '+response.status);
-    const result=await response.json();
-
-    suppressAutoSync=true;
-    if(result && result.settings){
-      db.settings={...db.settings,...result.settings,sheetsUrl:url};
-    }
-    db.students=result?.students||[];
-    db.attendance=result?.attendance||[];
-    db.fees=result?.fees||[];
-    db.marks=result?.marks||[];
-    db.onlineMarks=result?.onlineMarks||[];
-    db.homework=result?.homework||[];
-    db.notices=result?.notices||[];
-    db.exams=result?.exams||[];
-    db.tests=result?.tests||[];
-    db.expenses=result?.expenses||[];
-    db.teachers=result?.teachers||[];
-    suppressAutoSync=false;
-
-    setSyncStatus('success');
-  }catch(e){
-    suppressAutoSync=false;
-    setSyncStatus('error');
-    console.error('Google Sheets database load failed:',e);
-  }finally{
-    if(loading) loading.style.display='none';
+  if(result.settings&&Object.keys(result.settings).length){
+    const incoming={...result.settings};
+    if(typeof incoming.messages==='string'){try{incoming.messages=JSON.parse(incoming.messages)}catch(e){delete incoming.messages}}
+    if(incoming.fee!==undefined)incoming.fee=num(incoming.fee);
+    if(incoming.autoSync!==undefined)incoming.autoSync=(incoming.autoSync===true||incoming.autoSync==='true'||incoming.autoSync==='TRUE');
+    ['academy','teacher','mobile','upi','teacherId','teacherPass','adminId','adminPass'].forEach(k=>{if(incoming[k]!==undefined)incoming[k]=str(incoming[k])});
+    db.settings={...db.settings,...incoming,sheetsUrl:url,logo:db.settings.logo}; // keep this device's logo + confirmed working URL
   }
 }
 
-// No localStorage: theme is session-only; all application data is stored in Google Sheets.
+// Runs automatically the moment the app is opened on ANY device, before login — so every device
+// shows the same shared data without anyone tapping Import manually. Login buttons are disabled
+// while this runs, since (especially for students) the login check depends on data that doesn't
+// exist locally yet on a device opening the app for the first time.
+// Safety rule: if the sheet comes back completely empty but this device already has real local
+// data, we do NOT wipe the device — that usually means the sheet isn't set up yet, or a network
+// hiccup returned nothing. In that case we push this device's data up instead.
+async function autoImportOnLoad(){
+  const url=(db.settings.sheetsUrl||'').trim();
+  if(!url)return;
+  setSyncStatus('syncing');
+  const loadingEl=document.getElementById('loginLoading');
+  const btns=['teacherLoginBtn','studentLoginBtn','adminLoginBtn'].map(id=>document.getElementById(id)).filter(Boolean);
+  if(loadingEl)loadingEl.style.display='block';
+  btns.forEach(b=>b.disabled=true);
+  try{
+    const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
+    const text=await response.text();
+    let result;try{result=JSON.parse(text)}catch(e){result=null}
+    if(!result){setSyncStatus('error');return}
+
+    const incomingHasData=(result.students||[]).length>0||(result.attendance||[]).length>0||(result.fees||[]).length>0||(result.marks||[]).length>0;
+    const localHasData=db.students.length>0||db.attendance.length>0||db.fees.length>0||db.marks.length>0;
+
+    if(!incomingHasData&&localHasData){
+      syncNow(); // sheet looks empty but this device has real data — protect it, push up instead of pulling down
+      return;
+    }
+
+    suppressAutoSync=true;
+    applyIncomingData(result,url);
+    save();
+    suppressAutoSync=false;
+    setSyncStatus('success');
+    applySettings();
+    if(!document.getElementById('app').classList.contains('hidden'))showHubMenu();
+  }catch(e){
+    setSyncStatus('error');
+  }finally{
+    if(loadingEl)loadingEl.style.display='none';
+    btns.forEach(b=>b.disabled=false);
+  }
+}
+
+if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');
 applySettings();
-setSyncStatus('syncing');
 autoImportOnLoad();
 </script>
 </body>
