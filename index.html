@@ -56,8 +56,6 @@ textarea{min-height:90px;resize:vertical}
 .hub-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));gap:16px;margin-top:16px}
 .hub-card{background:var(--card);border:1px solid var(--border);border-radius:var(--card-radius);padding:22px 18px;text-align:center;box-shadow:var(--card-shadow);cursor:pointer;transition:transform 0.18s ease, box-shadow 0.18s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px}
 .hub-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(15,23,42,0.12);border-color:#c7d2fe}
-.hub-card{touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
-.hub-card:active{transform:scale(.98)}
 .hub-icon{font-size:36px;margin-bottom:10px;line-height:1}
 .hub-title{font-size:16px;font-weight:bold;color:var(--text)}
 .hub-desc{font-size:12px;color:var(--muted);margin-top:4px}
@@ -81,12 +79,12 @@ textarea{min-height:90px;resize:vertical}
 .badge.pending{background:#fee2e2;color:#991b1b}
 .badge.info{background:#e0e7ff;color:#3730a3}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999}
-.modal-box{width:100%;max-width:650px;max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:24px;-webkit-overflow-scrolling:touch}
+.modal-box{width:100%;max-width:650px;max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:24px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .paybox{background:#eefbf2;border:1px solid #bbf7d0;padding:16px;border-radius:14px}
 .danger-text{color:var(--danger)}.success-text{color:var(--success)}
 .att-buttons{display:flex;gap:8px;flex-wrap:wrap}
-.att-btn{min-height:44px;padding:8px 14px;border-radius:10px;touch-action:manipulation;border:2px solid #d1d5db;background:#f8fafc;color:#374151;font-weight:bold}
+.att-btn{padding:8px 14px;border-radius:10px;border:2px solid #d1d5db;background:#f8fafc;color:#374151;font-weight:bold}
 .att-btn.present.selected{background:#16a34a;color:#fff;border-color:#16a34a}
 .att-btn.absent.selected{background:#dc2626;color:#fff;border-color:#dc2626}
 .student-link{background:none;border:0;padding:0;color:var(--primary);font-weight:bold;text-decoration:underline;cursor:pointer}
@@ -102,48 +100,20 @@ textarea{min-height:90px;resize:vertical}
 
 /* Responsive Rules */
 @media(max-width:768px){
-  .app{padding:10px;width:100%;max-width:none}
-  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .hub-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .hub-card{
-    padding:16px 10px;
-    min-height:118px;
-    width:100%;
-    -webkit-tap-highlight-color:transparent;
-    touch-action:manipulation;
-    user-select:none;
-  }
-  .hub-card:active{transform:scale(.98)}
-  .hub-icon{font-size:29px}
-  .hub-title{font-size:13px;line-height:1.25}
-  .hub-desc{font-size:11px;line-height:1.25}
+  .app{padding:12px}
+  .cards{grid-template-columns:repeat(2,1fr);gap:10px}
+  .hub-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .hub-card{padding:16px 12px;min-height:120px}
+  .hub-icon{font-size:30px}
+  .hub-title{font-size:14px}
   .grid2{grid-template-columns:1fr}
   .two{grid-template-columns:1fr}
   .period-tools{grid-template-columns:1fr 1fr}
-  .table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .table{min-width:620px}
-  .toolbar{gap:8px}
-  .toolbar .btn{min-height:44px}
-  .modal{padding:10px;align-items:flex-end}
-  .modal-box{
-    width:100%;
-    max-width:100%;
-    max-height:92vh;
-    border-radius:18px 18px 0 0;
-    padding:16px;
-    -webkit-overflow-scrolling:touch;
-  }
-  .modal-box input,.modal-box select,.modal-box textarea{font-size:16px;min-height:44px}
 }
 @media(max-width:480px){
   .role-tabs{grid-template-columns:1fr}
-  .topbar{padding:10px}
-  .topbar h2{font-size:17px}
-  .topbar-left{width:100%}
-  .topbar>div:last-child{width:100%;justify-content:flex-end}
+  .topbar{padding:12px}
   .period-tools{grid-template-columns:1fr}
-  .cards .card.stat{min-height:90px;padding:14px}
-  .stat .value{font-size:20px}
 }
 </style>
 </head>
@@ -198,7 +168,7 @@ textarea{min-height:90px;resize:vertical}
   <main id="content"></main>
 </div>
 
-<div id="modal" class="modal hidden" onclick="if(event.target===this)closeModal()">
+<div id="modal" class="modal hidden">
   <div class="modal-box">
     <div class="topbar" style="margin-bottom:14px;box-shadow:none;border-bottom:1px solid var(--border);padding:0 0 10px">
       <h3 id="modalTitle" style="margin:0">Form</h3>
@@ -209,35 +179,18 @@ textarea{min-height:90px;resize:vertical}
 </div>
 
 <script>
-const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
-
-let db={
-  settings:{
-    academy:'Arul Siragugal Academy',
-    teacher:'Teacher',
-    mobile:'',
-    fee:1000,
-    logo:'',
-    upi:'',
-    teacherId:'teacher',
-    teacherPass:'1234',
-    adminId:'admin',
-    adminPass:'admin123',
-    sheetsUrl:DEFAULT_SHEETS_URL,
-    autoSync:true,
-    messages:{
-      fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',
-      absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'
-    }
-  },
-  students:[],attendance:[],fees:[],marks:[],teachers:[],homework:[],
-  exams:[],notices:[],expenses:[],receipts:[],tests:[],onlineMarks:[]
+const KEY='asa_management_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
+  settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
+  messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
+  students:[],attendance:[],fees:[],marks:[]
 };
 
 if(!db.settings.adminId) db.settings.adminId='admin';
 if(!db.settings.adminPass) db.settings.adminPass='admin123';
 if(!db.settings.teacherId) db.settings.teacherId='teacher';
 if(!db.settings.teacherPass) db.settings.teacherPass='1234';
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
 if(!(db.settings.sheetsUrl||'').trim()) db.settings.sheetsUrl=DEFAULT_SHEETS_URL;
 db.teachers=db.teachers||[];
 db.homework=db.homework||[];
@@ -247,41 +200,17 @@ db.expenses=db.expenses||[];
 db.receipts=db.receipts||[];
 db.tests=db.tests||[];
 db.onlineMarks=db.onlineMarks||[]; // Student entered online test marks
-db.students=db.students||[];
-db.attendance=db.attendance||[];
-db.fees=db.fees||[];
-db.marks=db.marks||[];
-db.teachers=db.teachers||[];
-db.homework=db.homework||[];
-db.exams=db.exams||[];
-db.notices=db.notices||[];
-db.expenses=db.expenses||[];
-db.receipts=db.receipts||[];
-db.tests=db.tests||[];
-db.onlineMarks=db.onlineMarks||[];
-db.settings=db.settings||{};
-db.settings.messages=db.settings.messages||{
-  fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',
-  absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'
-};
+
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false;
 
-function save(){
-  // MEMORY ONLY: application data is never saved to localStorage.
-  // Every mutation is sent directly to Google Sheets.
-  if(!suppressAutoSync) syncNow();
-}
-function syncNow(){
-  if(!(db.settings.sheetsUrl||'').trim())return;
-  setSyncStatus('syncing');
-  syncSheets(true);
-}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));if(!suppressAutoSync)syncNow()}
+function syncNow(){if(!(db.settings.sheetsUrl||'').trim())return;setSyncStatus('syncing');syncSheets(true)}
 function setSyncStatus(state){
   const el=document.getElementById('syncStatus');if(!el)return;
   if(state==='syncing')el.innerHTML='⏳ Saving…';
   else if(state==='success')el.innerHTML='✅ Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  else if(state==='error')el.innerHTML='⚠️ Google Sheets Sync Error <button class="btn secondary" style="padding:2px 6px;font-size:11px" onclick="syncSheets()">Retry</button>';
+  else if(state==='error')el.innerHTML='⚠️ Sync Error <button class="btn secondary" style="padding:2px 6px;font-size:11px" onclick="syncSheets()">Retry</button>';
   else el.innerHTML='';
 }
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
@@ -404,17 +333,6 @@ function showHubMenu(){
     `;
   }
 }
-
-function mobileCardFallback(e){
-  const card=e.target.closest?.('.hub-card');
-  if(!card || e.defaultPrevented) return;
-  const match=(card.getAttribute('onclick')||'').match(/showPage\(['"]([^'"]+)['"]\)/);
-  if(match && typeof showPage==='function'){
-    e.preventDefault();
-    showPage(match[1]);
-  }
-}
-document.addEventListener('pointerup',mobileCardFallback,{passive:false});
 
 function showPage(p){
   document.getElementById('hubBackBtn').classList.remove('hidden');
@@ -1453,7 +1371,7 @@ function callLink(phone){return 'tel:'+String(phone||'').replace(/[^+\d]/g,'')}
 function fillMsg(t,s,amount){return String(t||'').replaceAll('{student}',s.name).replaceAll('{amount}',String(amount||0)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
 function openModal(t,b){document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=b;document.getElementById('modal').classList.remove('hidden')}
 function closeModal(){document.getElementById('modal').classList.add('hidden')}
-function toggleDark(){document.body.classList.toggle('dark')}
+function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
 function downloadText(text,filename){const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
 /* ========================================================
@@ -1546,15 +1464,15 @@ async function autoImportOnLoad(){
       db.tests=result.tests||[];
       db.expenses=result.expenses||[];
       db.teachers=result.teachers||[];
-      // Google Sheets is the source of truth; do not write imported data to browser storage.
+      save();
       suppressAutoSync=false;
       setSyncStatus('success');
     }
   }catch(e){}
 }
 
+if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');
 applySettings();
-setSyncStatus('syncing');
 autoImportOnLoad();
 </script>
 </body>
