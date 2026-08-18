@@ -179,8 +179,19 @@ function loginAdmin(){
  if(id===savedId&&pass===savedPass){enterApp('admin')}
  else loginMsg.textContent='Admin ID / Password தவறாக உள்ளது.';
 }
-function loginTeacher(){if(teacherId.value===db.settings.teacherId&&teacherPass.value===db.settings.teacherPass){enterApp('teacher')}else loginMsg.textContent='Teacher ID / Password தவறாக உள்ளது.'}
-function loginStudent(){const s=db.students.find(x=>x.id===studentId.value&&x.password===studentPass.value);if(s){currentStudent=s;enterApp('student')}else loginMsg.textContent='Student ID / Password தவறாக உள்ளது.'}
+function loginTeacher(){
+  const id=String(document.getElementById('teacherId')?.value||'').trim();
+  const pass=String(document.getElementById('teacherPass')?.value||'');
+  if(id===String(db.settings.teacherId??'').trim() && pass===String(db.settings.teacherPass??'')){enterApp('teacher')}
+  else loginMsg.textContent='Teacher ID / Password தவறாக உள்ளது.';
+}
+function loginStudent(){
+  const id=String(document.getElementById('studentId')?.value||'').trim();
+  const pass=String(document.getElementById('studentPass')?.value||'');
+  const s=(db.students||[]).find(x=>String(x.id??'').trim()===id && String(x.password??'')===pass);
+  if(s){currentStudent=s;enterApp('student')}
+  else{loginMsg.textContent='Student ID / Password தவறாக உள்ளது.'}
+}
 function enterApp(r){
  role=r;loginPage.classList.add('hidden');app.classList.remove('hidden');
  adminNav.classList.toggle('hidden',r!=='admin');
