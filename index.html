@@ -50,135 +50,7 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
   .topbar .top-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .period-tools>div{min-width:130px}
 }
-</style>
-<style id="smart-mobile-responsive">
-/* ===== SMART COMPACT MOBILE UI ===== */
-@media (max-width: 768px){
-  html,body{width:100%;max-width:100%;overflow-x:hidden}
-  body{font-size:14px}
-  .app,.main,.content,.page,.container{max-width:100%;width:100%;box-sizing:border-box}
-  .main{padding:0!important}
-  .topbar{
-    position:sticky!important;top:0;z-index:900;
-    min-height:58px!important;padding:8px 10px!important;
-    gap:7px!important;box-sizing:border-box;
-    backdrop-filter:blur(12px)
-  }
-  .topbar h2,#pageTitle{font-size:17px!important;margin:0!important}
-  .topbar .user{font-size:11px!important;max-width:105px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .topbar>div:last-child{gap:5px!important}
-  .topbar .btn{padding:7px 9px!important;font-size:12px!important}
-
-  /* Drawer menu */
-  .mobile-menu-btn{
-    width:40px!important;height:40px!important;min-width:40px;
-    border:0!important;border-radius:11px!important;
-    font-size:21px!important;cursor:pointer
-  }
-  .mobile-drawer{
-    width:min(84vw,300px)!important;padding:14px!important
-  }
-  .mobile-drawer .nav button{
-    min-height:44px!important;margin:2px 0!important;
-    border-radius:10px!important
-  }
-
-  /* Cards become compact single-column / two-column where useful */
-  .cards{
-    display:grid!important;
-    grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    gap:8px!important;padding:8px!important
-  }
-  .card{border-radius:12px!important;padding:11px!important;max-width:100%;box-sizing:border-box}
-  .card.stat{min-height:82px!important}
-  .card.stat .label{font-size:11px!important}
-  .card.stat .value{font-size:21px!important}
-  .grid2,.grid3,.two{
-    grid-template-columns:1fr!important;
-    gap:9px!important
-  }
-
-  /* Forms */
-  input,select,textarea{
-    width:100%!important;max-width:100%!important;
-    min-height:42px!important;box-sizing:border-box!important;
-    font-size:16px!important
-  }
-  textarea{min-height:90px!important}
-  label{font-size:12px!important;margin-top:7px!important}
-  .toolbar{
-    display:flex!important;flex-wrap:wrap!important;
-    gap:7px!important;align-items:center!important
-  }
-  .toolbar .btn,.btn{
-    min-height:40px!important;
-    padding:9px 11px!important;
-    font-size:12px!important;
-    border-radius:9px!important
-  }
-
-  /* Tables: never break the page; scroll only the table */
-  .table-wrap{
-    width:100%!important;
-    max-width:100%!important;
-    overflow-x:auto!important;
-    -webkit-overflow-scrolling:touch!important;
-    border-radius:10px
-  }
-  .table-wrap table{
-    min-width:620px!important;
-    font-size:12px!important
-  }
-  .table th,.table td{
-    padding:8px 7px!important;
-    white-space:nowrap
-  }
-
-  /* Period/date tools */
-  .period-tools{
-    display:grid!important;
-    grid-template-columns:1fr 1fr!important;
-    gap:7px!important
-  }
-  .period-tools>div{min-width:0!important;width:100%!important}
-  .period-tools .btn{
-    width:100%!important
-  }
-  .period-tools .btn:nth-last-child(1){grid-column:span 2}
-  .period-tools input{font-size:15px!important}
-
-  /* Modals */
-  .modal,.modal-box,.modal-content{
-    max-width:calc(100vw - 20px)!important;
-    width:calc(100vw - 20px)!important;
-    max-height:90vh!important;
-    overflow-y:auto!important;
-    box-sizing:border-box
-  }
-
-  /* Hide desktop sidebar; mobile drawer is the navigation */
-  .sidebar{display:none!important}
-
-  /* Keep action buttons usable */
-  .card .toolbar a.btn{display:inline-flex!important;align-items:center;justify-content:center}
-  .section{margin-top:10px!important}
-}
-
-/* Very small phones */
-@media (max-width:420px){
-  .cards{grid-template-columns:1fr 1fr!important;gap:6px!important}
-  .card{padding:9px!important}
-  .card.stat .value{font-size:18px!important}
-  .card.stat .label{font-size:10px!important}
-  .topbar h2,#pageTitle{font-size:15px!important}
-  .topbar .user{display:none!important}
-  .period-tools{grid-template-columns:1fr!important}
-  .period-tools .btn:nth-last-child(1){grid-column:auto}
-  .period-tools .btn{width:100%!important}
-}
-</style>
-
-</head>
+</style></head>
 <body>
 <div id="loginPage" class="login">
 <div class="login-card">
@@ -322,9 +194,9 @@ function logout(){currentStudent=null;app.classList.add('hidden');loginPage.clas
 function applySettings(){document.title=db.settings.academy+' - Management';loginAcademy.textContent=db.settings.academy;sideAcademy.textContent=db.settings.academy;loginLogo.src=db.settings.logo||'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#4f46e5"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="35">AS</text></svg>')}
 function showPage(p){
  if(role==='teacher'&&!['attendance','fees','marks'].includes(p))return;
- if(role==='student'&&!['studentHome','studentAttendance','studentFees','studentProfile'].includes(p))return;
+ if(role==='student'&&!['studentHome','studentAttendance','studentFees','studentProfile','studentTests','studentHomework','studentNotices'].includes(p))return;
  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
- const titles={overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile'};
+ const titles={overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile',studentTests:'My Tests',studentHomework:'My Homework',studentNotices:'Notices'};
  pageTitle.textContent=titles[p]||'';
  if(p==='overview')overview();if(p==='history')historyPage();if(p==='students')studentsPage();if(p==='attendance')attendancePage();if(p==='fees')feesPage();if(p==='marks')marksPage();if(p==='reports')reportsPage();if(p==='communication')communicationPage();if(p==='homework')homeworkPage();if(p==='exams')examsPage();if(p==='teachers')teachersPage();if(p==='backup')backupPage();if(p==='finance')financePage();if(p==='tests')testsPage();if(p==='calendar')calendarPage();if(p==='birthdays')birthdayPage();if(p==='settings')settingsPage();if(p==='studentHome')studentMarks();if(p==='studentAttendance')studentAttendance();if(p==='studentFees')studentFees();if(p==='studentProfile')studentProfilePage();
 }
@@ -904,47 +776,142 @@ function waLink(phone,text){let n=String(phone||'').replace(/\\D/g,'');if(n.leng
 function callLink(phone){return 'tel:'+String(phone||'').replace(/[^+\\d]/g,'')}
 function studentProfilePage(id){const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;const m=monthNow(),a=calcAttendanceStats(s.id,m),pending=calcPending(s.id,m),fees=db.fees.filter(f=>f.studentId===s.id),marks=db.marks.filter(x=>x.studentId===s.id);content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Attendance</div><div class="value">${fmtPct(a.pct)}</div></div><div class="card stat"><div class="label">Present</div><div class="value">${a.present}</div></div><div class="card stat"><div class="label">Absent</div><div class="value danger-text">${a.absent}</div></div><div class="card stat"><div class="label">Pending Fee</div><div class="value danger-text">${money(pending)}</div></div></div><div class="grid2"><div class="card"><h3>👨‍🎓 Student Profile</h3><p><b>ID:</b> ${esc(s.id)}</p><p><b>Name:</b> ${esc(s.name)}</p><p><b>Class:</b> ${esc(s.class)}</p><p><b>Mobile:</b> ${esc(s.mobile)}</p><p><b>Monthly Fee:</b> ${money(s.monthlyFee)}</p><div class="toolbar"><a class="btn" href="${callLink(s.mobile)}">📞 Call</a><a class="btn success" target="_blank" href="${waLink(s.mobile,'வணக்கம் '+s.name+', '+db.settings.academy+' தொடர்பாக தகவல்.')}">💬 WhatsApp</a><button class="btn secondary" onclick="printStudentReport('${esc(s.id)}')">🖨️ Print Report</button></div></div><div class="card"><h3>📝 Performance</h3><div class="table-wrap"><table class="table"><thead><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th><th>%</th></tr></thead><tbody>${marks.map(x=>`<tr><td>${esc(x.exam)}</td><td>${x.mark}</td><td>${x.total}</td><td>${fmtPct(Number(x.total)?Number(x.mark)/Number(x.total)*100:0)}</td></tr>`).join('')||'<tr><td colspan="4">Marks இல்லை.</td></tr>'}</tbody></table></div></div></div><div class="card section"><h3>💰 Fee History</h3><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Amount</th></tr></thead><tbody>${fees.slice().reverse().map(f=>`<tr><td>${f.date||''}</td><td>${f.type||'Monthly'}</td><td>${f.extraType||'Monthly Fee'}</td><td>${money(Number(f.amount||0)+Number(f.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="4">Fee history இல்லை.</td></tr>'}</tbody></table></div></div>`}
 function printStudentReport(id){const s=db.students.find(x=>x.id===id);if(!s)return;const a=calcAttendanceStats(s.id,monthNow());const pending=calcPending(s.id,monthNow());const w=window.open('','_blank');w.document.write(`<html><head><title>Report - ${esc(s.name)}</title><style>body{font-family:Arial;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px}</style><style>#adminNav,#teacherNav{max-height:calc(100vh - 150px);overflow-y:auto}.nav button{margin-bottom:4px}.card .toolbar a{text-decoration:none;display:inline-block}.section{margin-top:16px}@media(max-width:700px){.nav{display:flex!important;flex-direction:column}.sidebar{overflow-y:auto}}</style></head><body><h1>${esc(db.settings.academy)}</h1><h2>Student Report</h2><p>Name: ${esc(s.name)} | Class: ${esc(s.class)} | ID: ${esc(s.id)}</p><p>Attendance: ${fmtPct(a.pct)} | Present: ${a.present} | Absent: ${a.absent} | Pending: ${money(pending)}</p><h3>Marks</h3><table><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th></tr>${db.marks.filter(x=>x.studentId===s.id).map(x=>`<tr><td>${esc(x.exam)}</td><td>${x.mark}</td><td>${x.total}</td></tr>`).join('')}</table>
-<script id="smart-mobile-behaviour">
-/* ===== SMART MOBILE BEHAVIOUR ===== */
+<script id="student-learning-addon">
+/* ===== STUDENT: TEST + HOMEWORK + NOTICE ===== */
 (function(){
-  function isMobile(){return window.matchMedia('(max-width:768px)').matches}
-  function closeDesktopSidebar(){
-    if(!isMobile()) return;
-    document.querySelectorAll('.sidebar').forEach(function(el){
-      el.style.display='none';
-    });
-  }
-  function bindMobileNav(){
-    const drawer=document.getElementById('mobileDrawer');
-    const target=document.getElementById('mobileDrawerNav');
-    if(!drawer||!target)return;
-    const nav=document.querySelector(
-      role==='admin' ? '#adminNav' :
-      role==='teacher' ? '#teacherNav' : '#studentNav'
-    );
-    if(!nav)return;
-    target.innerHTML=nav.innerHTML;
-    target.querySelectorAll('button').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        const page=this.dataset.page;
-        closeMobileMenu();
-        if(page) showPage(page);
-      });
-    });
-  }
-  window.addEventListener('resize',function(){
-    closeDesktopSidebar();
-    if(isMobile()) bindMobileNav();
-  });
-  document.addEventListener('DOMContentLoaded',function(){
-    closeDesktopSidebar();
-    setTimeout(bindMobileNav,300);
-  });
+  function esc2(v){return typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  window.studentTests=function(){
+    const s=currentStudent;
+    const rows=(db.tests||[]).filter(t=>!t.class||t.class===s.class);
+    content.innerHTML=`<div class="card"><h3>🧪 My Tests</h3>
+      <p class="user">Class: <b>${esc2(s.class)}</b></p>
+      ${rows.map((t,i)=>`<div class="card" style="margin-top:10px">
+        <h3>${esc2(t.name)}</h3>
+        <p><b>Subject:</b> ${esc2(t.subject)} &nbsp; <b>Class:</b> ${esc2(t.class)}</p>
+        ${(t.questions||[]).map((q,n)=>`<div style="padding:9px;border:1px solid var(--border);border-radius:9px;margin:6px 0">
+          <b>Q${n+1}.</b> ${esc2(q.q)}
+        </div>`).join('')}
+        <button class="btn" onclick="studentOpenTest(${i})">📖 View Test</button>
+      </div>`).join('')||'<p>இப்போது உங்கள் class-க்கு Test இல்லை.</p>'}
+    </div>`;
+  };
+  window.studentOpenTest=function(i){
+    const rows=(db.tests||[]).filter(t=>!t.class||t.class===currentStudent.class);
+    const t=rows[i]; if(!t)return;
+    openModal('🧪 '+t.name,`<p><b>Class:</b> ${esc2(t.class)} | <b>Subject:</b> ${esc2(t.subject)}</p>
+      ${(t.questions||[]).map((q,n)=>`<div class="card"><b>Q${n+1}.</b><p>${esc2(q.q)}</p></div>`).join('')}`);
+  };
+  window.studentHomework=function(){
+    const s=currentStudent;
+    const rows=(db.homework||[]).filter(h=>!h.class||h.class===s.class).slice().reverse();
+    content.innerHTML=`<div class="card"><h3>📚 My Homework</h3>
+      <p class="user">Class: <b>${esc2(s.class)}</b></p>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Subject</th><th>Homework</th></tr></thead><tbody>
+      ${rows.map(h=>`<tr><td>${esc2(h.date)}</td><td>${esc2(h.subject)}</td><td style="white-space:normal;min-width:260px">${esc2(h.text)}</td></tr>`).join('')||'<tr><td colspan="3">Homework இல்லை.</td></tr>'}
+      </tbody></table></div></div>`;
+  };
+  window.studentNotices=function(){
+    const rows=(db.notices||[]).slice().reverse();
+    content.innerHTML=`<div class="card"><h3>📢 Notices</h3>
+      ${rows.map(n=>`<div class="card" style="margin-top:9px">
+        <h3>${esc2(n.title)}</h3><p>${esc2(n.text)}</p><small>${esc2(n.date)}</small>
+      </div>`).join('')||'<p>Notice இல்லை.</p>'}</div>`;
+  };
 
-  /* Close drawer with Escape */
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape' && isMobile()) closeMobileMenu();
-  });
+  /* Student-only menu items */
+  function addStudentMenu(){
+    const nav=document.getElementById('studentNav');
+    if(!nav)return;
+    if(!nav.querySelector('[data-page="studentTests"]'))
+      nav.insertAdjacentHTML('beforeend','<button onclick="showPage(\'studentTests\')" data-page="studentTests">🧪 Tests</button>');
+    if(!nav.querySelector('[data-page="studentHomework"]'))
+      nav.insertAdjacentHTML('beforeend','<button onclick="showPage(\'studentHomework\')" data-page="studentHomework">📚 Homework</button>');
+    if(!nav.querySelector('[data-page="studentNotices"]'))
+      nav.insertAdjacentHTML('beforeend','<button onclick="showPage(\'studentNotices\')" data-page="studentNotices">📢 Notice</button>');
+  }
+  const oldShowPage=window.showPage;
+  window.showPage=function(p){
+    if(role==='student' && ['studentTests','studentHomework','studentNotices'].includes(p)){
+      document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+      const titles={studentTests:'My Tests',studentHomework:'My Homework',studentNotices:'Notices'};
+      pageTitle.textContent=titles[p];
+      if(p==='studentTests')studentTests();
+      if(p==='studentHomework')studentHomework();
+      if(p==='studentNotices')studentNotices();
+      setTimeout(()=>{if(typeof syncStudentMenu==='function')syncStudentMenu()},0);
+      return;
+    }
+    return oldShowPage(p);
+  };
+  window.syncStudentMenu=function(){
+    addStudentMenu();
+    const target=document.getElementById('mobileDrawerNav');
+    const nav=document.getElementById('studentNav');
+    if(role==='student'&&target&&nav){
+      target.innerHTML=nav.innerHTML;
+      target.querySelectorAll('button').forEach(b=>b.onclick=function(){
+        const p=b.dataset.page; closeMobileMenu(); if(p)showPage(p);
+      });
+    }
+  };
+  const oldOpenMobileMenu=window.openMobileMenu;
+  window.openMobileMenu=function(){
+    addStudentMenu();
+    if(role==='student')syncStudentMenu();
+    return oldOpenMobileMenu();
+  };
+  setTimeout(addStudentMenu,200);
+})();
+
+/* ===== GOOGLE SHEETS: TESTS / HOMEWORK / NOTICES AUTO SYNC ===== */
+(function(){
+  const oldSyncSheets=window.syncSheets;
+  /* We add the extra collections to the existing payload by wrapping fetch only
+     during sync. Existing Students/Attendance/Fees/Marks sync remains untouched. */
+  const oldFetch=window.fetch;
+  window.fetch=async function(input,init){
+    try{
+      if(typeof input==='string' && input.includes('/macros/s/') && init && init.body && String(init.body).startsWith('payload=')){
+        const raw=decodeURIComponent(String(init.body).slice(8));
+        const p=JSON.parse(raw);
+        p.tests=db.tests||[];
+        p.homework=db.homework||[];
+        p.notices=db.notices||[];
+        init={...init,body:'payload='+encodeURIComponent(JSON.stringify(p))};
+      }
+    }catch(e){}
+    return oldFetch(input,init);
+  };
+})();
+</script>
+
+
+<script id="student-sheet-import-addon">
+(function(){
+  const oldApply=window.applyIncomingData;
+  window.applyIncomingData=function(result,url){
+    if(typeof oldApply==='function') oldApply(result,url);
+    db.tests=(result.tests||[]).map(t=>({
+      ...t,
+      name:String(t.name??''),
+      class:String(t.class??''),
+      subject:String(t.subject??''),
+      questions:(()=>{
+        if(Array.isArray(t.questions)) return t.questions;
+        try{return t.questionsJson?JSON.parse(t.questionsJson):[]}catch(e){return[]}
+      })()
+    }));
+    db.homework=(result.homework||[]).map(h=>({
+      ...h,class:String(h.class??''),subject:String(h.subject??''),
+      text:String(h.text??''),date:String(h.date??'')
+    }));
+    db.notices=(result.notices||[]).map(n=>({
+      ...n,title:String(n.title??''),text:String(n.text??''),date:String(n.date??'')
+    }));
+    db.exams=result.exams||db.exams||[];
+    db.expenses=result.expenses||db.expenses||[];
+    localStorage.setItem(KEY,JSON.stringify(db));
+  };
 })();
 </script>
 
