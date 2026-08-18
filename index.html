@@ -84,7 +84,7 @@ textarea{min-height:90px;resize:vertical}
 .paybox{background:#eefbf2;border:1px solid #bbf7d0;padding:16px;border-radius:14px}
 .danger-text{color:var(--danger)}.success-text{color:var(--success)}
 .att-buttons{display:flex;gap:8px;flex-wrap:wrap}
-.att-btn{padding:8px 14px;border-radius:10px;border:2px solid #d1d5db;background:#f8fafc;color:#374151;font-weight:bold}
+.att-btn{min-height:44px;padding:8px 14px;border-radius:10px;touch-action:manipulation;border:2px solid #d1d5db;background:#f8fafc;color:#374151;font-weight:bold}
 .att-btn.present.selected{background:#16a34a;color:#fff;border-color:#16a34a}
 .att-btn.absent.selected{background:#dc2626;color:#fff;border-color:#dc2626}
 .student-link{background:none;border:0;padding:0;color:var(--primary);font-weight:bold;text-decoration:underline;cursor:pointer}
@@ -100,26 +100,53 @@ textarea{min-height:90px;resize:vertical}
 
 /* Responsive Rules */
 @media(max-width:768px){
-  .app{padding:12px}
-  .cards{grid-template-columns:repeat(2,1fr);gap:10px}
-  .hub-grid{grid-template-columns:repeat(2,1fr);gap:12px}
-  .hub-card{padding:16px 12px;min-height:120px}
-  .hub-icon{font-size:30px}
-  .hub-title{font-size:14px}
+  .app{padding:10px;width:100%;max-width:none}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .hub-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .hub-card{
+    padding:16px 10px;
+    min-height:118px;
+    width:100%;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    user-select:none;
+  }
+  .hub-card:active{transform:scale(.98)}
+  .hub-icon{font-size:29px}
+  .hub-title{font-size:13px;line-height:1.25}
+  .hub-desc{font-size:11px;line-height:1.25}
   .grid2{grid-template-columns:1fr}
   .two{grid-template-columns:1fr}
   .period-tools{grid-template-columns:1fr 1fr}
+  .table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table{min-width:620px}
+  .toolbar{gap:8px}
+  .toolbar .btn{min-height:44px}
+  .modal{padding:10px;align-items:flex-end}
+  .modal-box{
+    width:100%;
+    max-width:100%;
+    max-height:92vh;
+    border-radius:18px 18px 0 0;
+    padding:16px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .modal-box input,.modal-box select,.modal-box textarea{font-size:16px;min-height:44px}
 }
 @media(max-width:480px){
   .role-tabs{grid-template-columns:1fr}
-  .topbar{padding:12px}
+  .topbar{padding:10px}
+  .topbar h2{font-size:17px}
+  .topbar-left{width:100%}
+  .topbar>div:last-child{width:100%;justify-content:flex-end}
   .period-tools{grid-template-columns:1fr}
+  .cards .card.stat{min-height:90px;padding:14px}
+  .stat .value{font-size:20px}
 }
 </style>
 </head>
 <body>
 
-<!-- Login Screen -->
 <div id="loginPage" class="login">
   <div class="login-card">
     <img id="loginLogo" class="logo" alt="Logo">
@@ -150,7 +177,6 @@ textarea{min-height:90px;resize:vertical}
   </div>
 </div>
 
-<!-- Main App Shell -->
 <div id="app" class="app hidden">
   <header class="topbar">
     <div class="topbar-left">
@@ -170,8 +196,7 @@ textarea{min-height:90px;resize:vertical}
   <main id="content"></main>
 </div>
 
-<!-- Modal Container -->
-<div id="modal" class="modal hidden">
+<div id="modal" class="modal hidden" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="topbar" style="margin-bottom:14px;box-shadow:none;border-bottom:1px solid var(--border);padding:0 0 10px">
       <h3 id="modalTitle" style="margin:0">Form</h3>
@@ -182,59 +207,83 @@ textarea{min-height:90px;resize:vertical}
 </div>
 
 <script>
-const KEY='asa_management_v1';
-const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbyB0pDNY9abyG5QzxDe7Qh9LnwrT7N-VZThWyi6lbLqDSh8-vvIJNK2H8VlaYIR0fTf/exec';
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
 
-let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
+let db={
   settings:{
-    academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',
-    teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',
-    sheetsUrl:DEFAULT_SHEETS_URL, autoSync:true,
+    academy:'Arul Siragugal Academy',
+    teacher:'Teacher',
+    mobile:'',
+    fee:1000,
+    logo:'',
+    upi:'',
+    teacherId:'teacher',
+    teacherPass:'1234',
+    adminId:'admin',
+    adminPass:'admin123',
+    sheetsUrl:DEFAULT_SHEETS_URL,
+    autoSync:true,
     messages:{
       fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',
       absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'
     }
   },
-  students:[],attendance:[],fees:[],marks:[],onlineMarks:[],homework:[],notices:[],exams:[],tests:[],expenses:[],teachers:[]
+  students:[],attendance:[],fees:[],marks:[],teachers:[],homework:[],
+  exams:[],notices:[],expenses:[],receipts:[],tests:[],onlineMarks:[]
 };
 
-// Ensure configuration is always mapped
-db.settings.sheetsUrl = DEFAULT_SHEETS_URL;
 if(!db.settings.adminId) db.settings.adminId='admin';
 if(!db.settings.adminPass) db.settings.adminPass='admin123';
 if(!db.settings.teacherId) db.settings.teacherId='teacher';
 if(!db.settings.teacherPass) db.settings.teacherPass='1234';
-
+if(!(db.settings.sheetsUrl||'').trim()) db.settings.sheetsUrl=DEFAULT_SHEETS_URL;
 db.teachers=db.teachers||[];
 db.homework=db.homework||[];
 db.exams=db.exams||[];
 db.notices=db.notices||[];
 db.expenses=db.expenses||[];
+db.receipts=db.receipts||[];
+db.tests=db.tests||[];
+db.onlineMarks=db.onlineMarks||[]; // Student entered online test marks
+db.students=db.students||[];
+db.attendance=db.attendance||[];
+db.fees=db.fees||[];
+db.marks=db.marks||[];
+db.teachers=db.teachers||[];
+db.homework=db.homework||[];
+db.exams=db.exams||[];
+db.notices=db.notices||[];
+db.expenses=db.expenses||[];
+db.receipts=db.receipts||[];
 db.tests=db.tests||[];
 db.onlineMarks=db.onlineMarks||[];
+db.settings=db.settings||{};
+db.settings.messages=db.settings.messages||{
+  fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',
+  absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'
+};
+localStorage.setItem(KEY,JSON.stringify(db));
 
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false;
 
 function save(){
-  localStorage.setItem(KEY,JSON.stringify(db));
+  // MEMORY ONLY: application data is never saved to localStorage.
+  // Every mutation is sent directly to Google Sheets.
   if(!suppressAutoSync) syncNow();
 }
-
 function syncNow(){
-  if(!(db.settings.sheetsUrl||'').trim()) return;
+  if(!(db.settings.sheetsUrl||'').trim())return;
   setSyncStatus('syncing');
   syncSheets(true);
 }
-
 function setSyncStatus(state){
   const el=document.getElementById('syncStatus');if(!el)return;
-  if(state==='syncing') el.innerHTML='⏳ Saving…';
-  else if(state==='success') el.innerHTML='✅ Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  else if(state==='error') el.innerHTML='⚠️ Sync Error <button class="btn secondary" style="padding:2px 6px;font-size:11px" onclick="syncSheets()">Retry</button>';
+  if(state==='syncing')el.innerHTML='⏳ Saving…';
+  else if(state==='success')el.innerHTML='✅ Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  else if(state==='error')el.innerHTML='⚠️ Google Sheets Sync Error <button class="btn secondary" style="padding:2px 6px;font-size:11px" onclick="syncSheets()">Retry</button>';
   else el.innerHTML='';
 }
-
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
 function today(){return new Date().toISOString().slice(0,10)}
 function dateText(){return new Date().toLocaleDateString('ta-IN')}
@@ -257,12 +306,10 @@ function loginAdmin(){
   if(id===(db.settings.adminId||'admin') && pass===(db.settings.adminPass||'admin123')){enterApp('admin')}
   else document.getElementById('loginMsg').textContent='Admin ID / Password தவறாக உள்ளது.';
 }
-
 function loginTeacher(){
   if(document.getElementById('teacherId').value===db.settings.teacherId && document.getElementById('teacherPass').value===db.settings.teacherPass){enterApp('teacher')}
   else document.getElementById('loginMsg').textContent='Teacher ID / Password தவறாக உள்ளது.';
 }
-
 function loginStudent(){
   const s=db.students.find(x=>x.id===document.getElementById('studentId').value && x.password===document.getElementById('studentPass').value);
   if(s){currentStudent=s;enterApp('student')}
@@ -292,7 +339,9 @@ function applySettings(){
   document.getElementById('loginLogo').src=db.settings.logo||'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#4f46e5"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="35">AS</text></svg>');
 }
 
-/* Central Card Hub Menu */
+/* ========================================================
+   HUB MENU (CENTRAL CARD NAVIGATION)
+   ======================================================== */
 function showHubMenu(){
   document.getElementById('hubBackBtn').classList.add('hidden');
   document.getElementById('pageTitle').textContent='Home Menu';
@@ -356,16 +405,20 @@ function showHubMenu(){
   }
 }
 
+function mobileCardFallback(e){
+  const card=e.target.closest?.('.hub-card');
+  if(!card || e.defaultPrevented) return;
+  const match=(card.getAttribute('onclick')||'').match(/showPage\(['"]([^'"]+)['"]\)/);
+  if(match && typeof showPage==='function'){
+    e.preventDefault();
+    showPage(match[1]);
+  }
+}
+document.addEventListener('pointerup',mobileCardFallback,{passive:false});
+
 function showPage(p){
   document.getElementById('hubBackBtn').classList.remove('hidden');
-  const titles={
-    overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',
-    marks:'Marks & Performance',reports:'Reports',communication:'Communication',homework:'Homework',
-    exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',
-    tests:'Online Tests & Links',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',
-    studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile',
-    studentHomework:'My Homework',studentNotices:'Notice Board',studentTests:'Online Tests & Exams'
-  };
+  const titles={overview:'Dashboard',history:'All History',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks & Performance',reports:'Reports',communication:'Communication',homework:'Homework',exams:'Exam Schedule',teachers:'Teacher Management',backup:'Backup & Restore',finance:'Income & Expense',tests:'Online Tests & Links',calendar:'Academy Calendar',birthdays:'Birthday Reminder',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees',studentProfile:'My Profile',studentHomework:'My Homework',studentNotices:'Notice Board',studentTests:'Online Tests & Exams'};
   document.getElementById('pageTitle').textContent=titles[p]||'';
 
   if(p==='overview')overview();
@@ -395,7 +448,9 @@ function showPage(p){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* Students */
+/* ========================================================
+   STUDENTS, ATTENDANCE & FEES
+   ======================================================== */
 function studentsPage(){
   document.getElementById('content').innerHTML=`
     <div class="toolbar">
@@ -476,7 +531,6 @@ function deleteStudent(id){
   }
 }
 
-/* Attendance */
 function attendancePage(){
   const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   document.getElementById('content').innerHTML=`
@@ -566,7 +620,6 @@ function saveClassAttendance(){
   attendancePage();
 }
 
-/* Fees */
 function calcPaid(id,month){return db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount),0)}
 function calcPending(id,month){
   const s=db.students.find(x=>x.id===id);
@@ -676,7 +729,9 @@ function saveExtra(){
   save();closeModal();feesPage();
 }
 
-/* Marks */
+/* ========================================================
+   MARKS MANAGEMENT (SEPARATE REGULAR & ONLINE TEST MARKS)
+   ======================================================== */
 function marksPage(){
   document.getElementById('content').innerHTML=`
     <div class="toolbar">
@@ -753,7 +808,9 @@ function saveMark(){
 function deleteMark(i){db.marks.splice(i,1);save();marksPage()}
 function deleteOnlineMark(i){db.onlineMarks.splice(i,1);save();marksPage()}
 
-/* Online Test Links */
+/* ========================================================
+   ONLINE TEST LINKS (ADMIN / TEACHER POSTING)
+   ======================================================== */
 function testsPage(){
   db.tests=db.tests||[];
   const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
@@ -822,7 +879,9 @@ function saveTestLink(){
   save();closeModal();testsPage();
 }
 
-/* Student Views */
+/* ========================================================
+   STUDENT LOGGED-IN SPECIFIC VIEWS (TESTS, MARKS & SUBMISSIONS)
+   ======================================================== */
 function studentTestsPage(){
   const tests=(db.tests||[]).filter(t=>!t.class || t.class===currentStudent.class);
   const mySubmittedMarks=db.onlineMarks.filter(m=>m.studentId===currentStudent.id);
@@ -887,7 +946,9 @@ function saveStudentOnlineMark(testName, subject, total){
   const num=Number(markVal);
   if(num<0 || num>total) return alert(`மதிப்பெண் 0 முதல் ${total}-க்குள் இருக்க வேண்டும்.`);
 
+  // Remove existing if resubmitting
   db.onlineMarks=db.onlineMarks.filter(m=>!(m.studentId===currentStudent.id && m.testName===testName));
+  
   db.onlineMarks.push({
     studentId:currentStudent.id,
     studentName:currentStudent.name,
@@ -1007,7 +1068,9 @@ function studentProfilePage(id){
     </div>`;
 }
 
-/* Reports & Periodic Logs */
+/* ========================================================
+   REPORTS, COMMUNICATION, HOMEWORK, EXAMS & ADMIN UTILITIES
+   ======================================================== */
 function reportsPage(){
   const months=[];for(let i=0;i<12;i++){const d=new Date();d.setMonth(d.getMonth()-i);months.push(d.toISOString().slice(0,7));}
   const cls=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
@@ -1155,7 +1218,6 @@ function exportAllHistoryCSV(from,to){
   downloadText(csv,'all-history-'+(from||'all')+'-to-'+(to||'all')+'.csv');
 }
 
-/* Communication, Homework, Exams, Teachers, Finance, Calendar, Birthdays, Backup, Settings */
 function communicationPage(){
   const month=monthNow();
   const pending=db.students.map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
@@ -1391,10 +1453,12 @@ function callLink(phone){return 'tel:'+String(phone||'').replace(/[^+\d]/g,'')}
 function fillMsg(t,s,amount){return String(t||'').replaceAll('{student}',s.name).replaceAll('{amount}',String(amount||0)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
 function openModal(t,b){document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=b;document.getElementById('modal').classList.remove('hidden')}
 function closeModal(){document.getElementById('modal').classList.add('hidden')}
-function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
+function toggleDark(){document.body.classList.toggle('dark')}
 function downloadText(text,filename){const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
-/* Google Sheets Auto Sync */
+/* ========================================================
+   FULL COMPLETE GOOGLE SHEETS SYNC (WITH ONLINE MARKS & TEST LINKS)
+   ======================================================== */
 async function syncSheets(silent){
   silent=!!silent;
   const url=(db.settings.sheetsUrl||'').trim();
@@ -1465,30 +1529,11 @@ async function importFromSheets(){
 
 async function autoImportOnLoad(){
   const url=(db.settings.sheetsUrl||'').trim();
-  const tBtn=document.getElementById('teacherLoginBtn');
-  const sBtn=document.getElementById('studentLoginBtn');
-  const loadingEl=document.getElementById('loginLoading');
-  
-  if(!url || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(url)){
-    if(tBtn) tBtn.disabled=false;
-    if(sBtn) sBtn.disabled=false;
-    return;
-  }
-  
-  setSyncStatus('syncing');
-  if(loadingEl) loadingEl.style.display='block';
-
+  if(!url)return;
   try{
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    const response = await fetch(url + (url.includes('?') ? '&' : '?') + 'action=get', {
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    
-    const result = await response.json();
-    if(result && (result.students?.length || result.attendance?.length || result.tests?.length)){
+    const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
+    const result=await response.json();
+    if(result && (result.students?.length || result.attendance?.length)){
       suppressAutoSync=true;
       db.students=result.students||[];
       db.attendance=result.attendance||[];
@@ -1501,23 +1546,15 @@ async function autoImportOnLoad(){
       db.tests=result.tests||[];
       db.expenses=result.expenses||[];
       db.teachers=result.teachers||[];
-      save();
+      // Google Sheets is the source of truth; do not write imported data to browser storage.
       suppressAutoSync=false;
       setSyncStatus('success');
-      applySettings();
     }
-  }catch(e){
-    setSyncStatus('error');
-    console.log('Mobile Network Sync Bypass:', e);
-  }finally{
-    if(loadingEl) loadingEl.style.display='none';
-    if(tBtn) tBtn.disabled=false;
-    if(sBtn) sBtn.disabled=false;
-  }
+  }catch(e){}
 }
 
-if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');
 applySettings();
+setSyncStatus('syncing');
 autoImportOnLoad();
 </script>
 </body>
