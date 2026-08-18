@@ -181,7 +181,7 @@ textarea{min-height:90px;resize:vertical}
 <script>
 const KEY='asa_management_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
-  settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
+  settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:'https://script.google.com/macros/s/AKfycbzMAFuKPsGXWJonYqIyqxvNvjLTXG-bUjcbVXEAdulKyh6iuxX7czDZ7CgyE3eybE8/exec',autoSync:true,
   messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
   students:[],attendance:[],fees:[],marks:[]
 };
@@ -190,7 +190,7 @@ if(!db.settings.adminId) db.settings.adminId='admin';
 if(!db.settings.adminPass) db.settings.adminPass='admin123';
 if(!db.settings.teacherId) db.settings.teacherId='teacher';
 if(!db.settings.teacherPass) db.settings.teacherPass='1234';
-const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbzMAFuKPsGXWJonYqIyqxvNvjLTXG-bUjcbVXEAdulKyh6iuxX7czDZ7CgyE3eybE8/exec';
 if(!(db.settings.sheetsUrl||'').trim()) db.settings.sheetsUrl=DEFAULT_SHEETS_URL;
 db.teachers=db.teachers||[];
 db.homework=db.homework||[];
