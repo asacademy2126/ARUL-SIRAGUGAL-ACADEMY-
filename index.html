@@ -12,7 +12,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.hidden
 .login-card{width:100%;max-width:430px;background:white;border-radius:22px;padding:28px;box-shadow:0 20px 50px #0003}
 .logo{width:76px;height:76px;border-radius:20px;object-fit:cover;background:#eee;display:block;margin:0 auto 12px}
 h1,h2,h3{margin-top:0}.login-card h1{text-align:center;font-size:24px}.login-card p{text-align:center;color:var(--muted)}
-.role-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:20px 0}.role-tabs button{padding:12px;border-radius:10px;background:#eef0ff;color:var(--primary);font-weight:bold}.role-tabs .active{background:var(--primary);color:#fff}
+.role-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:20px 0}.role-tabs button{padding:12px;border-radius:10px;background:#eef0ff;color:var(--primary);font-weight:bold}.role-tabs .active{background:var(--primary);color:#fff}
 label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,select,textarea{width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}textarea{min-height:90px;resize:vertical}.btn{padding:11px 15px;border-radius:10px;background:var(--primary);color:white;font-weight:bold}.btn.secondary{background:#e9ecf7;color:#25304a}.btn.danger{background:var(--danger)}.btn.success{background:var(--success)}.msg{text-align:center;margin-top:12px;font-size:14px;color:var(--danger)}
 .app{min-height:100vh;display:flex}.sidebar{width:245px;background:#111827;color:white;padding:20px;position:fixed;left:0;top:0;bottom:0;overflow:auto}.brand{font-size:20px;font-weight:bold;margin-bottom:24px}.nav button{width:100%;text-align:left;padding:12px;margin:4px 0;border-radius:10px;background:transparent;color:#dbe3f0}.nav button.active,.nav button:hover{background:#374151;color:#fff}.main{margin-left:245px;width:calc(100% - 245px);padding:22px}.topbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px}.topbar .user{color:var(--muted);font-size:14px}
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 4px 14px #00000008}.stat .label{color:var(--muted);font-size:13px}.stat .value{font-size:26px;font-weight:bold;margin-top:8px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.section{margin-top:18px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:14px}.table th{background:#f8fafc}.badge{display:inline-block;padding:5px 8px;border-radius:999px;font-size:12px;font-weight:bold}.badge.ok{background:#dcfce7;color:#166534}.badge.pending{background:#fee2e2;color:#991b1b}.badge.info{background:#e0e7ff;color:#3730a3}.bar-chart{display:flex;align-items:flex-end;gap:12px;height:220px;padding:20px 8px}.bar{flex:1;min-width:25px;background:var(--primary);border-radius:8px 8px 0 0;position:relative}.bar span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:11px;margin-bottom:4px}.bar small{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:5px;color:var(--muted)}
@@ -25,7 +25,7 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 .student-link{background:none;border:0;padding:0;color:var(--primary);font-weight:bold;text-decoration:underline;cursor:pointer}
 
 @media(max-width:900px){.sidebar{width:72px;padding:10px}.brand{font-size:0}.brand:after{content:"ASA";font-size:18px}.nav button{font-size:0;text-align:center}.nav button:first-letter{font-size:20px}.main{margin-left:72px;width:calc(100% - 72px)}.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
-@media(max-width:600px){.main{padding:12px}.cards{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.topbar{align-items:flex-start}.topbar h2{font-size:19px}}
+@media(max-width:600px){.role-tabs{grid-template-columns:1fr}.main{padding:12px}.cards{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}.topbar{align-items:flex-start}.topbar h2{font-size:19px}}
 .dark{--bg:#0b1220;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--border:#273449}.dark input,.dark select,.dark textarea{background:#0f172a;color:#e5e7eb}.dark .table th{background:#172033}
 
 @media (max-width:768px){body{padding-bottom:82px}.app{display:block}.sidebar{left:0;right:0;top:auto;bottom:0;width:100%;height:72px;padding:4px 2px;display:flex;align-items:center;z-index:9999;overflow-x:auto;overflow-y:hidden;border-top:1px solid #374151}.brand{display:none}.nav{display:flex;width:100%;height:100%;align-items:center;justify-content:space-around;gap:2px}.nav button{flex:1 0 64px;width:auto;margin:0;padding:6px 3px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;min-height:60px}.main{margin-left:0;width:100%;padding:14px}.topbar{margin-bottom:14px}.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.table th,.table td{font-size:13px;padding:8px}}
@@ -39,8 +39,8 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <h1 id="loginAcademy">Arul Siragugal Academy</h1>
 <p>Tuition Management System</p>
 <div id="loginLoading" style="display:none;text-align:center;color:var(--muted);font-size:13px;margin:6px 0">⏳ Shared data ஏற்றப்படுகிறது...</div>
-<div class="role-tabs"><button id="teacherRole" class="active" onclick="setRole('teacher')">👨‍🏫 Teacher Login</button><button id="studentRole" onclick="setRole('student')">👨‍🎓 Student Login</button></div>
-<div id="teacherLogin">
+<div class="role-tabs"><button id="adminRole" onclick="setRole('admin')">👑 Admin Login</button><button id="teacherRole" class="active" onclick="setRole('teacher')">👨‍🏫 Teacher Login</button><button id="studentRole" onclick="setRole('student')">👨‍🎓 Student Login</button></div>
+<div id="adminLogin" class="hidden"><label>Admin ID</label><input id="adminId" placeholder="Admin ID"><label>Password</label><input id="adminPass" type="password" placeholder="Password"><button class="btn" style="width:100%;margin-top:16px" onclick="loginAdmin()">Login</button></div><div id="teacherLogin">
 <label>Teacher ID</label><input id="teacherId" placeholder="Teacher ID">
 <label>Password</label><input id="teacherPass" type="password" placeholder="Password">
 <button class="btn" id="teacherLoginBtn" style="width:100%;margin-top:16px" onclick="loginTeacher()">Login</button>
@@ -81,10 +81,15 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
 <script>
 const KEY='asa_management_v1';
 let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
-settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
+settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
 messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
 students:[],attendance:[],fees:[],marks:[]
 };
+if(db.settings.adminId===undefined||db.settings.adminId==='')db.settings.adminId='admin';
+if(db.settings.adminPass===undefined||db.settings.adminPass==='')db.settings.adminPass='admin123';
+if(db.settings.teacherId===undefined||db.settings.teacherId==='')db.settings.teacherId='teacher';
+if(db.settings.teacherPass===undefined||db.settings.teacherPass==='')db.settings.teacherPass='1234';
+localStorage.setItem(KEY,JSON.stringify(db));
 if(db.settings.autoSync===undefined)db.settings.autoSync=true; // legacy field, always true now — sync is mandatory
 const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
 if(!(db.settings.sheetsUrl||'').trim())db.settings.sheetsUrl=DEFAULT_SHEETS_URL; // migration for data saved before a default URL was built in
@@ -108,14 +113,46 @@ function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
 function today(){return new Date().toISOString().slice(0,10)}
 function dateText(){return new Date().toLocaleDateString('ta-IN')}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function setRole(r){role=r;teacherRole.classList.toggle('active',r==='teacher');studentRole.classList.toggle('active',r==='student');teacherLogin.classList.toggle('hidden',r!=='teacher');studentLogin.classList.toggle('hidden',r!=='student');loginMsg.textContent=''}
+function setRole(r){
+ role=r;
+ adminRole.classList.toggle('active',r==='admin');
+ teacherRole.classList.toggle('active',r==='teacher');
+ studentRole.classList.toggle('active',r==='student');
+ adminLogin.classList.toggle('hidden',r!=='admin');
+ teacherLogin.classList.toggle('hidden',r!=='teacher');
+ studentLogin.classList.toggle('hidden',r!=='student');
+ loginMsg.textContent='';
+}
+function loginAdmin(){
+ const id=String(document.getElementById('adminId').value||'').trim();
+ const pass=String(document.getElementById('adminPass').value||'');
+ const savedId=String(db.settings.adminId||'admin').trim();
+ const savedPass=String(db.settings.adminPass||'admin123');
+ if(id===savedId&&pass===savedPass){enterApp('admin')}
+ else loginMsg.textContent='Admin ID / Password தவறாக உள்ளது.';
+}
 function loginTeacher(){if(teacherId.value===db.settings.teacherId&&teacherPass.value===db.settings.teacherPass){enterApp('teacher')}else loginMsg.textContent='Teacher ID / Password தவறாக உள்ளது.'}
 function loginStudent(){const s=db.students.find(x=>x.id===studentId.value&&x.password===studentPass.value);if(s){currentStudent=s;enterApp('student')}else loginMsg.textContent='Student ID / Password தவறாக உள்ளது.'}
-function enterApp(r){role=r;loginPage.classList.add('hidden');app.classList.remove('hidden');teacherNav.classList.toggle('hidden',r!=='teacher');studentNav.classList.toggle('hidden',r!=='student');topSyncBtn.classList.toggle('hidden',r!=='teacher');welcome.textContent=r==='teacher'?'👨‍🏫 '+db.settings.teacher:'👨‍🎓 '+currentStudent.name;applySettings();showPage(r==='teacher'?'overview':'studentHome')}
-function logout(){currentStudent=null;app.classList.add('hidden');loginPage.classList.remove('hidden');teacherId.value='';teacherPass.value='';studentId.value='';studentPass.value=''}
+function enterApp(r){
+ role=r;loginPage.classList.add('hidden');app.classList.remove('hidden');
+ adminNav.classList.toggle('hidden',r!=='admin');
+ teacherNav.classList.toggle('hidden',r!=='teacher');
+ studentNav.classList.toggle('hidden',r!=='student');
+ topSyncBtn.classList.toggle('hidden',r==='student');
+ welcome.textContent=r==='admin'?'👑 Admin':r==='teacher'?'👨‍🏫 '+db.settings.teacher:'👨‍🎓 '+currentStudent.name;
+ applySettings();showPage(r==='admin'?'overview':r==='teacher'?'attendance':'studentHome');
+}
+function logout(){currentStudent=null;app.classList.add('hidden');loginPage.classList.remove('hidden');adminId.value='';adminPass.value='';teacherId.value='';teacherPass.value='';studentId.value='';studentPass.value='';setRole('teacher')}
 function applySettings(){document.title=db.settings.academy+' - Management';loginAcademy.textContent=db.settings.academy;sideAcademy.textContent=db.settings.academy;loginLogo.src=db.settings.logo||'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#4f46e5"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="35">AS</text></svg>')}
-function showPage(p){document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));const titles={overview:'Overview',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees'};pageTitle.textContent=titles[p]||'';if(p==='overview')overview();if(p==='students')studentsPage();if(p==='attendance')attendancePage();if(p==='fees')feesPage();if(p==='marks')marksPage();if(p==='settings')settingsPage();if(p==='studentHome')studentMarks();if(p==='studentAttendance')studentAttendance();if(p==='studentFees')studentFees()}
-function overview(){const month=new Date().toISOString().slice(0,7), pending=db.students.reduce((a,s)=>a+calcPending(s.id,month),0), collection=db.fees.filter(f=>f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount),0),present=db.attendance.filter(a=>a.date===today()&&a.status==='Present').length;content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Total Students</div><div class="value">${db.students.length}</div></div><div class="card stat"><div class="label">Today Present</div><div class="value">${present}</div></div><div class="card stat"><div class="label">Total Pending Fee</div><div class="value danger-text">${money(pending)}</div></div><div class="card stat"><div class="label">Current Month Collection</div><div class="value success-text">${money(collection)}</div></div></div><div class="grid2"><div class="card"><h3>Monthly Fee Analysis</h3><div id="chart" class="bar-chart"></div></div><div class="card"><h3>Quick Actions</h3><div class="toolbar"><button class="btn" onclick="showPage('students')">➕ Add Student</button><button class="btn" onclick="showPage('fees')">💰 Add Payment</button><button class="btn" onclick="showPage('attendance')">📅 Attendance</button><button class="btn" onclick="showPage('marks')">📝 Marks</button><button class="btn success" onclick="syncSheets()">☁️ Sync Now</button></div><p class="user">Google Sheets Apps Script URL Settings-ல் சேர்க்கலாம். LocalStorage data offline-ஆகவும் இயங்கும்.</p></div></div>`;drawChart()}
+function showPage(p){
+ if(role==='teacher'&&!['attendance','fees','marks'].includes(p))return;
+ if(role==='student'&&!['studentHome','studentAttendance','studentFees'].includes(p))return;
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+ const titles={overview:'Overview',students:'Students',attendance:'Attendance',fees:'Fees',marks:'Marks',reports:'Reports',settings:'Settings',studentHome:'My Marks',studentAttendance:'My Attendance',studentFees:'My Fees'};
+ pageTitle.textContent=titles[p]||'';
+ if(p==='overview')overview();if(p==='students')studentsPage();if(p==='attendance')attendancePage();if(p==='fees')feesPage();if(p==='marks')marksPage();if(p==='reports')reportsPage();if(p==='settings')settingsPage();if(p==='studentHome')studentMarks();if(p==='studentAttendance')studentAttendance();if(p==='studentFees')studentFees();
+}
+function overview(){const month=new Date().toISOString().slice(0,7), pending=db.students.reduce((a,s)=>a+calcPending(s.id,month),0), collection=db.fees.filter(f=>f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount),0),present=db.attendance.filter(a=>a.date===today()&&a.status==='Present').length;content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Total Students</div><div class="value">${db.students.length}</div></div><div class="card stat"><div class="label">Today Present</div><div class="value">${present}</div></div><div class="card stat"><div class="label">Total Pending Fee</div><div class="value danger-text">${money(pending)}</div></div><div class="card stat"><div class="label">Current Month Collection</div><div class="value success-text">${money(collection)}</div></div></div><div class="grid2"><div class="card"><h3>Monthly Fee Analysis</h3><div id="chart" class="bar-chart"></div></div><div class="card"><h3>Quick Actions</h3><div class="toolbar"><button class="btn" onclick="showPage('students')">➕ Add Student</button><button class="btn" onclick="showPage('fees')">💰 Add Payment</button><button class="btn" onclick="showPage('attendance')">📅 Attendance</button><button class="btn" onclick="showPage('marks')">📝 Marks</button><button class="btn" onclick="showPage('reports')">📊 Reports Dashboard</button><button class="btn success" onclick="syncSheets()">☁️ Sync Now</button></div><p class="user">Google Sheets Apps Script URL Settings-ல் சேர்க்கலாம். LocalStorage data offline-ஆகவும் இயங்கும்.</p></div></div>`;drawChart()}
 function drawChart(){const vals=[];for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);const m=d.toISOString().slice(0,7);vals.push([d.toLocaleDateString('en-IN',{month:'short'}),db.fees.filter(f=>f.date?.startsWith(m)).reduce((a,f)=>a+Number(f.amount),0)])}const max=Math.max(1,...vals.map(x=>x[1]));chart.innerHTML=vals.map(x=>`<div class="bar" style="height:${Math.max(8,x[1]/max*160)}px"><span>${money(x[1])}</span><small>${x[0]}</small></div>`).join('')}
 function studentsPage(){content.innerHTML=`<div class="toolbar"><button class="btn" onclick="studentForm()">➕ Add Student</button><input id="studentSearch" placeholder="Search student..." oninput="renderStudents()" style="max-width:300px"></div><div class="card table-wrap"><table class="table"><thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="studentRows"></tbody></table></div>`;renderStudents()}
 function renderStudents(){const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();studentRows.innerHTML=db.students.filter(s=>(s.name+' '+s.id+' '+s.class).toLowerCase().includes(q)).map(s=>`<tr><td>${esc(s.id)}</td><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${esc(s.mobile)}</td><td>${money(s.monthlyFee)}</td><td class="actions"><button class="btn secondary" onclick="studentForm('${s.id}')">Edit</button><button class="btn danger" onclick="deleteStudent('${s.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="6">Student இல்லை.</td></tr>'}
@@ -277,7 +314,67 @@ function marksPage(){content.innerHTML=`<div class="toolbar"><button class="btn"
 function markForm(){openModal('Marks',`<label>Student</label><select id="markStudent">${db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><label>Exam / Subject</label><input id="markExam"><div class="two"><div><label>Mark</label><input id="markValue" type="number"></div><div><label>Total Mark</label><input id="markTotal" type="number" value="100"></div></div><br><button class="btn" onclick="saveMark()">Save Mark</button>`)}
 function saveMark(){db.marks.push({studentId:markStudent.value,exam:markExam.value,mark:Number(markValue.value),total:Number(markTotal.value)});save();closeModal();marksPage()}
 function deleteMark(i){db.marks.splice(i,1);save();marksPage()}
-function settingsPage(){const m=db.settings.messages;content.innerHTML=`<div class="card"><h3>🏫 Academy Settings</h3><div class="two"><div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div><div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div><div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div><div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div><div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div></div><div id="logoPreviewBox" style="margin:10px 0;display:${db.settings.logo?'block':'none'}">
+function reportsPage(){
+ const months=[];for(let i=0;i<12;i++){const d=new Date();d.setMonth(d.getMonth()-i);months.push(d.toISOString().slice(0,7));}
+ const cls=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
+ content.innerHTML=`<div class="cards">
+ <div class="card stat"><div class="label">Students</div><div class="value">${db.students.length}</div></div>
+ <div class="card stat"><div class="label">Attendance Records</div><div class="value">${db.attendance.length}</div></div>
+ <div class="card stat"><div class="label">Fee Records</div><div class="value">${db.fees.length}</div></div>
+ <div class="card stat"><div class="label">Mark Records</div><div class="value">${db.marks.length}</div></div>
+ </div>
+ <div class="grid2">
+ <div class="card"><h3>👨‍🎓 Individual Student Report</h3>
+ <label>Student</label><select id="reportStudent">${db.students.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select>
+ <label>Month</label><input id="reportMonth" type="month" value="${new Date().toISOString().slice(0,7)}">
+ <br><br><button class="btn" onclick="downloadStudentReport()">⬇️ Download Student Report</button></div>
+ <div class="card"><h3>📅 Monthly Report</h3>
+ <label>Month</label><input id="monthlyReportMonth" type="month" value="${new Date().toISOString().slice(0,7)}">
+ <label>Class (optional)</label><select id="monthlyReportClass"><option value="">All Classes</option>${cls.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+ <br><br><button class="btn success" onclick="downloadMonthlyReport()">⬇️ Download Monthly Report</button></div>
+ </div>
+ <div class="card section"><h3>📊 Monthly Summary</h3><div class="table-wrap"><table class="table"><thead><tr><th>Month</th><th>Collection</th><th>Students</th><th>Present</th><th>Absent</th><th>Pending</th></tr></thead><tbody>${months.map(m=>{
+ const collection=db.fees.filter(f=>f.date?.startsWith(m)).reduce((a,f)=>a+Number(f.amount||0),0);
+ const present=db.attendance.filter(a=>a.date?.startsWith(m)&&a.status==='Present').length;
+ const absent=db.attendance.filter(a=>a.date?.startsWith(m)&&a.status==='Absent').length;
+ const pending=db.students.reduce((a,s)=>a+calcPending(s.id,m),0);
+ return `<tr><td>${m}</td><td>${money(collection)}</td><td>${db.students.length}</td><td>${present}</td><td>${absent}</td><td>${money(pending)}</td></tr>`;
+ }).join('')}</tbody></table></div></div>`;
+}
+function downloadStudentReport(){
+ const id=document.getElementById('reportStudent')?.value,month=document.getElementById('reportMonth')?.value||today().slice(0,7),s=db.students.find(x=>x.id===id);
+ if(!s)return alert('Student இல்லை.');
+ const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
+ const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+ const marks=db.marks.filter(m=>m.studentId===id);
+ const paid=fees.filter(f=>f.type!=='Extra').reduce((a,f)=>a+Number(f.amount||0),0);
+ const extra=fees.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);
+ const pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+ let csv=`Arul Siragugal Academy - Individual Student Report\nMonth,${month}\nStudent ID,${s.id}\nStudent Name,${s.name}\nClass,${s.class}\nMobile,${s.mobile}\nMonthly Fee,${s.monthlyFee}\nPaid,${paid}\nExtra Fee,${extra}\nPending,${pending}\n\nAttendance\nDate,Status\n`;
+ att.forEach(a=>csv+=`${a.date},${a.status}\n`);
+ csv+=`\nMarks\nExam / Subject,Mark,Total\n`;marks.forEach(m=>csv+=`${m.exam},${m.mark},${m.total}\n`);
+ downloadText(csv,`student-report-${s.id}-${month}.csv`);
+}
+function downloadMonthlyReport(){
+ const month=document.getElementById('monthlyReportMonth')?.value||today().slice(0,7),cls=document.getElementById('monthlyReportClass')?.value||'';
+ const students=db.students.filter(s=>!cls||s.class===cls);
+ let csv=`Arul Siragugal Academy - Monthly Report\nMonth,${month}\nClass,${cls||'All'}\n\nStudent ID,Student Name,Class,Monthly Fee,Extra Fee,Paid,Pending,Present,Absent\n`;
+ students.forEach(s=>{
+  const fees=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(month));
+  const extra=fees.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);
+  const paid=fees.filter(f=>f.type!=='Extra').reduce((a,f)=>a+Number(f.amount||0),0);
+  const pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+  const present=db.attendance.filter(a=>a.studentId===s.id&&a.date?.startsWith(month)&&a.status==='Present').length;
+  const absent=db.attendance.filter(a=>a.studentId===s.id&&a.date?.startsWith(month)&&a.status==='Absent').length;
+  csv+=`${s.id},${s.name},${s.class},${s.monthlyFee},${extra},${paid},${pending},${present},${absent}\n`;
+ });
+ downloadText(csv,`monthly-report-${month}${cls?'-'+cls:''}.csv`);
+}
+function downloadText(text,filename){
+ const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function settingsPage(){const m=db.settings.messages;content.innerHTML=`<div class="card"><h3>🏫 Academy Settings</h3><div class="two"><div><label>Academy Name</label><input id="setAcademy" value="${esc(db.settings.academy)}"></div><div><label>Teacher Name</label><input id="setTeacher" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="setMobile" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="setFee" type="number" value="${db.settings.fee}"></div><div><label>UPI ID</label><input id="setUpi" value="${esc(db.settings.upi)}"></div><div><label>Teacher ID</label><input id="setTid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="setTpass" value="${esc(db.settings.teacherPass)}"></div><div><label>Admin ID</label><input id="setAid" value="${esc(db.settings.adminId||'admin')}"></div><div><label>Admin Password</label><input id="setApass" type="password" value="${esc(db.settings.adminPass||'admin123')}"></div><div><label>Logo Upload</label><input id="setLogo" type="file" accept="image/*" onchange="logoPreview(this)"></div></div><div id="logoPreviewBox" style="margin:10px 0;display:${db.settings.logo?'block':'none'}">
 <img id="logoPrev" src="${db.settings.logo||''}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;display:block">
 </div><label>Google Sheets Apps Script URL</label><input id="setSheets" value="${esc(db.settings.sheetsUrl)}" placeholder="https://script.google.com/macros/s/.../exec"><p class="user">☁️ இந்த app எப்போதும் Online-ல் இயங்குகிறது. ஒவ்வொரு Add/Edit/Delete உடனடியாக Google Sheets-ல் Save ஆகும் — Offline mode கிடையாது.</p><br><h3>🇮🇳 Tamil Reminder Templates</h3><label>Fee Reminder</label><textarea id="feeMsg">${esc(m.fee)}</textarea><label>Absent Reminder</label><textarea id="absMsg">${esc(m.absent)}</textarea><p class="user">Automatic placeholders: {student}, {amount}, {date}, {academy}</p><p class="user">☁️ Google Sheets: Web App URL must end with <b>/exec</b>. Sync sends all current data as a <b>payload</b> to Apps Script <b>doPost(e)</b>.</p><p class="user">📥 First time on a NEW device? Enter the same URL above and use "Import from Google Sheets" to pull down existing data — don't use Sync first, or you'll push this device's empty data over what's already saved.</p><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn secondary" style="margin-left:8px" onclick="syncSheets()">☁️ Sync to Google Sheets</button><button class="btn secondary" style="margin-left:8px" onclick="importFromSheets()">📥 Import from Google Sheets</button></div>`}
 let uploadedLogo='';
@@ -295,7 +392,7 @@ r.onload=e=>{
 };
 r.readAsDataURL(f);
 }
-function saveSettings(){db.settings={...db.settings,academy:setAcademy.value,teacher:setTeacher.value,mobile:setMobile.value,fee:Number(setFee.value)||0,upi:setUpi.value,teacherId:setTid.value,teacherPass:setTpass.value,sheetsUrl:setSheets.value,autoSync:true,messages:{fee:feeMsg.value,absent:absMsg.value}};if(uploadedLogo)db.settings.logo=uploadedLogo;save();applySettings();alert('Settings saved');}
+function saveSettings(){db.settings={...db.settings,academy:setAcademy.value,teacher:setTeacher.value,mobile:setMobile.value,fee:Number(setFee.value)||0,upi:setUpi.value,teacherId:setTid.value,teacherPass:setTpass.value,adminId:setAid.value,adminPass:setApass.value,sheetsUrl:setSheets.value,autoSync:true,messages:{fee:feeMsg.value,absent:absMsg.value}};if(uploadedLogo)db.settings.logo=uploadedLogo;save();applySettings();alert('Settings saved');}
 function replaceMsg(t,s,amount=''){return t.replaceAll('{student}',s.name).replaceAll('{amount}',money(amount)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
 function whatsapp(id,type){const s=db.students.find(x=>x.id===id);if(!s)return;if(!s.mobile){alert('இந்த student-க்கு mobile number சேமிக்கப்படவில்லை.');return}let amount=calcPending(id,new Date().toISOString().slice(0,7));let text=replaceMsg(type==='fee'?db.settings.messages.fee:db.settings.messages.absent,s,amount);window.open('https://wa.me/'+s.mobile+'?text='+encodeURIComponent(text),'_blank')}
 function callStudent(id){const s=db.students.find(x=>x.id===id);if(s?.mobile)location.href='tel:'+s.mobile}
