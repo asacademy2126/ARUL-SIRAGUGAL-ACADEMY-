@@ -180,9 +180,20 @@ textarea{min-height:90px;resize:vertical}
 
 <script>
 const KEY='asa_management_v1';
-let db=JSON.parse(localStorage.getItem(KEY)||'null')||{
-  settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:'https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec',autoSync:true,
-  messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'}},
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbw4mPoDj-Wksmc9bL8pgeaIqRZcx5Kp7IvfXP4j23ijYjIP85vuLwtYb-fFTWLCleOo/exec';
+
+// Google Sheets is the ONLY database.
+// No application data is read from or written to browser localStorage.
+let db={
+  settings:{
+    academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',
+    teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',
+    sheetsUrl:DEFAULT_SHEETS_URL,autoSync:true,
+    messages:{
+      fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}. தயவுசெய்து கட்டணத்தை செலுத்தவும்.',
+      absent:'வணக்கம் {student}, இன்று நீங்கள் வகுப்பில் வரவில்லை. {academy} - தேதி: {date}.'
+    }
+  },
   students:[],attendance:[],fees:[],marks:[]
 };
 
@@ -190,7 +201,6 @@ if(!db.settings.adminId) db.settings.adminId='admin';
 if(!db.settings.adminPass) db.settings.adminPass='admin123';
 if(!db.settings.teacherId) db.settings.teacherId='teacher';
 if(!db.settings.teacherPass) db.settings.teacherPass='1234';
-const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbygpzp54F2mQl2NZHsXc2K9nCBzCtflplemx11_d_zNoUcYPw4qVODHwH0SPOK3r_nY/exec';
 if(!(db.settings.sheetsUrl||'').trim()) db.settings.sheetsUrl=DEFAULT_SHEETS_URL;
 db.teachers=db.teachers||[];
 db.homework=db.homework||[];
@@ -204,7 +214,10 @@ db.onlineMarks=db.onlineMarks||[]; // Student entered online test marks
 let role='teacher', currentStudent=null;
 let suppressAutoSync=false;
 
-function save(){localStorage.setItem(KEY,JSON.stringify(db));if(!suppressAutoSync)syncNow()}
+function save(){
+  // No local database. Every change is sent directly to Google Sheets.
+  if(!suppressAutoSync) syncNow();
+}
 function syncNow(){if(!(db.settings.sheetsUrl||'').trim())return;setSyncStatus('syncing');syncSheets(true)}
 function setSyncStatus(state){
   const el=document.getElementById('syncStatus');if(!el)return;
@@ -1380,7 +1393,7 @@ function callLink(phone){return 'tel:'+String(phone||'').replace(/[^+\d]/g,'')}
 function fillMsg(t,s,amount){return String(t||'').replaceAll('{student}',s.name).replaceAll('{amount}',String(amount||0)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
 function openModal(t,b){document.getElementById('modalTitle').textContent=t;document.getElementById('modalBody').innerHTML=b;document.getElementById('modal').classList.remove('hidden')}
 function closeModal(){document.getElementById('modal').classList.add('hidden')}
-function toggleDark(){document.body.classList.toggle('dark');localStorage.setItem('asa_dark',document.body.classList.contains('dark'))}
+function toggleDark(){document.body.classList.toggle('dark')}
 function downloadText(text,filename){const blob=new Blob(["\ufeff"+text],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 
 /* ========================================================
@@ -1435,6 +1448,7 @@ async function importFromSheets(){
     const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
     const result=await response.json();
     suppressAutoSync=true;
+    if(result.settings) db.settings={...db.settings,...result.settings,sheetsUrl:db.settings.sheetsUrl||DEFAULT_SHEETS_URL};
     db.students=result.students||[];
     db.attendance=result.attendance||[];
     db.fees=result.fees||[];
@@ -1455,33 +1469,47 @@ async function importFromSheets(){
 }
 
 async function autoImportOnLoad(){
-  const url=(db.settings.sheetsUrl||'').trim();
-  if(!url)return;
+  const url=(db.settings.sheetsUrl||DEFAULT_SHEETS_URL).trim();
+  db.settings.sheetsUrl=url;
+
+  const loading=document.getElementById('loginLoading');
+  if(loading) loading.style.display='block';
+
   try{
-    const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get');
+    const response=await fetch(url+(url.includes('?')?'&':'?')+'action=get',{cache:'no-store'});
+    if(!response.ok) throw new Error('HTTP '+response.status);
     const result=await response.json();
-    if(result && (result.students?.length || result.attendance?.length)){
-      suppressAutoSync=true;
-      db.students=result.students||[];
-      db.attendance=result.attendance||[];
-      db.fees=result.fees||[];
-      db.marks=result.marks||[];
-      db.onlineMarks=result.onlineMarks||[];
-      db.homework=result.homework||[];
-      db.notices=result.notices||[];
-      db.exams=result.exams||[];
-      db.tests=result.tests||[];
-      db.expenses=result.expenses||[];
-      db.teachers=result.teachers||[];
-      save();
-      suppressAutoSync=false;
-      setSyncStatus('success');
+
+    suppressAutoSync=true;
+    if(result && result.settings){
+      db.settings={...db.settings,...result.settings,sheetsUrl:url};
     }
-  }catch(e){}
+    db.students=result?.students||[];
+    db.attendance=result?.attendance||[];
+    db.fees=result?.fees||[];
+    db.marks=result?.marks||[];
+    db.onlineMarks=result?.onlineMarks||[];
+    db.homework=result?.homework||[];
+    db.notices=result?.notices||[];
+    db.exams=result?.exams||[];
+    db.tests=result?.tests||[];
+    db.expenses=result?.expenses||[];
+    db.teachers=result?.teachers||[];
+    suppressAutoSync=false;
+
+    setSyncStatus('success');
+  }catch(e){
+    suppressAutoSync=false;
+    setSyncStatus('error');
+    console.error('Google Sheets database load failed:',e);
+  }finally{
+    if(loading) loading.style.display='none';
+  }
 }
 
-if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark');
+// No localStorage: theme is session-only; all application data is stored in Google Sheets.
 applySettings();
+setSyncStatus('syncing');
 autoImportOnLoad();
 </script>
 </body>
