@@ -50,7 +50,135 @@ label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}input,sele
   .topbar .top-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .period-tools>div{min-width:130px}
 }
-</style></head>
+</style>
+<style id="smart-mobile-responsive">
+/* ===== SMART COMPACT MOBILE UI ===== */
+@media (max-width: 768px){
+  html,body{width:100%;max-width:100%;overflow-x:hidden}
+  body{font-size:14px}
+  .app,.main,.content,.page,.container{max-width:100%;width:100%;box-sizing:border-box}
+  .main{padding:0!important}
+  .topbar{
+    position:sticky!important;top:0;z-index:900;
+    min-height:58px!important;padding:8px 10px!important;
+    gap:7px!important;box-sizing:border-box;
+    backdrop-filter:blur(12px)
+  }
+  .topbar h2,#pageTitle{font-size:17px!important;margin:0!important}
+  .topbar .user{font-size:11px!important;max-width:105px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar>div:last-child{gap:5px!important}
+  .topbar .btn{padding:7px 9px!important;font-size:12px!important}
+
+  /* Drawer menu */
+  .mobile-menu-btn{
+    width:40px!important;height:40px!important;min-width:40px;
+    border:0!important;border-radius:11px!important;
+    font-size:21px!important;cursor:pointer
+  }
+  .mobile-drawer{
+    width:min(84vw,300px)!important;padding:14px!important
+  }
+  .mobile-drawer .nav button{
+    min-height:44px!important;margin:2px 0!important;
+    border-radius:10px!important
+  }
+
+  /* Cards become compact single-column / two-column where useful */
+  .cards{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;padding:8px!important
+  }
+  .card{border-radius:12px!important;padding:11px!important;max-width:100%;box-sizing:border-box}
+  .card.stat{min-height:82px!important}
+  .card.stat .label{font-size:11px!important}
+  .card.stat .value{font-size:21px!important}
+  .grid2,.grid3,.two{
+    grid-template-columns:1fr!important;
+    gap:9px!important
+  }
+
+  /* Forms */
+  input,select,textarea{
+    width:100%!important;max-width:100%!important;
+    min-height:42px!important;box-sizing:border-box!important;
+    font-size:16px!important
+  }
+  textarea{min-height:90px!important}
+  label{font-size:12px!important;margin-top:7px!important}
+  .toolbar{
+    display:flex!important;flex-wrap:wrap!important;
+    gap:7px!important;align-items:center!important
+  }
+  .toolbar .btn,.btn{
+    min-height:40px!important;
+    padding:9px 11px!important;
+    font-size:12px!important;
+    border-radius:9px!important
+  }
+
+  /* Tables: never break the page; scroll only the table */
+  .table-wrap{
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    border-radius:10px
+  }
+  .table-wrap table{
+    min-width:620px!important;
+    font-size:12px!important
+  }
+  .table th,.table td{
+    padding:8px 7px!important;
+    white-space:nowrap
+  }
+
+  /* Period/date tools */
+  .period-tools{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:7px!important
+  }
+  .period-tools>div{min-width:0!important;width:100%!important}
+  .period-tools .btn{
+    width:100%!important
+  }
+  .period-tools .btn:nth-last-child(1){grid-column:span 2}
+  .period-tools input{font-size:15px!important}
+
+  /* Modals */
+  .modal,.modal-box,.modal-content{
+    max-width:calc(100vw - 20px)!important;
+    width:calc(100vw - 20px)!important;
+    max-height:90vh!important;
+    overflow-y:auto!important;
+    box-sizing:border-box
+  }
+
+  /* Hide desktop sidebar; mobile drawer is the navigation */
+  .sidebar{display:none!important}
+
+  /* Keep action buttons usable */
+  .card .toolbar a.btn{display:inline-flex!important;align-items:center;justify-content:center}
+  .section{margin-top:10px!important}
+}
+
+/* Very small phones */
+@media (max-width:420px){
+  .cards{grid-template-columns:1fr 1fr!important;gap:6px!important}
+  .card{padding:9px!important}
+  .card.stat .value{font-size:18px!important}
+  .card.stat .label{font-size:10px!important}
+  .topbar h2,#pageTitle{font-size:15px!important}
+  .topbar .user{display:none!important}
+  .period-tools{grid-template-columns:1fr!important}
+  .period-tools .btn:nth-last-child(1){grid-column:auto}
+  .period-tools .btn{width:100%!important}
+}
+</style>
+
+</head>
 <body>
 <div id="loginPage" class="login">
 <div class="login-card">
@@ -775,7 +903,52 @@ function calcAttendanceStats(id,month){const a=db.attendance.filter(x=>x.student
 function waLink(phone,text){let n=String(phone||'').replace(/\\D/g,'');if(n.length===10)n='91'+n;return 'https://wa.me/'+n+'?text='+encodeURIComponent(text)}
 function callLink(phone){return 'tel:'+String(phone||'').replace(/[^+\\d]/g,'')}
 function studentProfilePage(id){const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;const m=monthNow(),a=calcAttendanceStats(s.id,m),pending=calcPending(s.id,m),fees=db.fees.filter(f=>f.studentId===s.id),marks=db.marks.filter(x=>x.studentId===s.id);content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Attendance</div><div class="value">${fmtPct(a.pct)}</div></div><div class="card stat"><div class="label">Present</div><div class="value">${a.present}</div></div><div class="card stat"><div class="label">Absent</div><div class="value danger-text">${a.absent}</div></div><div class="card stat"><div class="label">Pending Fee</div><div class="value danger-text">${money(pending)}</div></div></div><div class="grid2"><div class="card"><h3>👨‍🎓 Student Profile</h3><p><b>ID:</b> ${esc(s.id)}</p><p><b>Name:</b> ${esc(s.name)}</p><p><b>Class:</b> ${esc(s.class)}</p><p><b>Mobile:</b> ${esc(s.mobile)}</p><p><b>Monthly Fee:</b> ${money(s.monthlyFee)}</p><div class="toolbar"><a class="btn" href="${callLink(s.mobile)}">📞 Call</a><a class="btn success" target="_blank" href="${waLink(s.mobile,'வணக்கம் '+s.name+', '+db.settings.academy+' தொடர்பாக தகவல்.')}">💬 WhatsApp</a><button class="btn secondary" onclick="printStudentReport('${esc(s.id)}')">🖨️ Print Report</button></div></div><div class="card"><h3>📝 Performance</h3><div class="table-wrap"><table class="table"><thead><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th><th>%</th></tr></thead><tbody>${marks.map(x=>`<tr><td>${esc(x.exam)}</td><td>${x.mark}</td><td>${x.total}</td><td>${fmtPct(Number(x.total)?Number(x.mark)/Number(x.total)*100:0)}</td></tr>`).join('')||'<tr><td colspan="4">Marks இல்லை.</td></tr>'}</tbody></table></div></div></div><div class="card section"><h3>💰 Fee History</h3><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Amount</th></tr></thead><tbody>${fees.slice().reverse().map(f=>`<tr><td>${f.date||''}</td><td>${f.type||'Monthly'}</td><td>${f.extraType||'Monthly Fee'}</td><td>${money(Number(f.amount||0)+Number(f.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="4">Fee history இல்லை.</td></tr>'}</tbody></table></div></div>`}
-function printStudentReport(id){const s=db.students.find(x=>x.id===id);if(!s)return;const a=calcAttendanceStats(s.id,monthNow());const pending=calcPending(s.id,monthNow());const w=window.open('','_blank');w.document.write(`<html><head><title>Report - ${esc(s.name)}</title><style>body{font-family:Arial;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px}</style><style>#adminNav,#teacherNav{max-height:calc(100vh - 150px);overflow-y:auto}.nav button{margin-bottom:4px}.card .toolbar a{text-decoration:none;display:inline-block}.section{margin-top:16px}@media(max-width:700px){.nav{display:flex!important;flex-direction:column}.sidebar{overflow-y:auto}}</style></head><body><h1>${esc(db.settings.academy)}</h1><h2>Student Report</h2><p>Name: ${esc(s.name)} | Class: ${esc(s.class)} | ID: ${esc(s.id)}</p><p>Attendance: ${fmtPct(a.pct)} | Present: ${a.present} | Absent: ${a.absent} | Pending: ${money(pending)}</p><h3>Marks</h3><table><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th></tr>${db.marks.filter(x=>x.studentId===s.id).map(x=>`<tr><td>${esc(x.exam)}</td><td>${x.mark}</td><td>${x.total}</td></tr>`).join('')}</table></body></html>`);w.document.close()}
+function printStudentReport(id){const s=db.students.find(x=>x.id===id);if(!s)return;const a=calcAttendanceStats(s.id,monthNow());const pending=calcPending(s.id,monthNow());const w=window.open('','_blank');w.document.write(`<html><head><title>Report - ${esc(s.name)}</title><style>body{font-family:Arial;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px}</style><style>#adminNav,#teacherNav{max-height:calc(100vh - 150px);overflow-y:auto}.nav button{margin-bottom:4px}.card .toolbar a{text-decoration:none;display:inline-block}.section{margin-top:16px}@media(max-width:700px){.nav{display:flex!important;flex-direction:column}.sidebar{overflow-y:auto}}</style></head><body><h1>${esc(db.settings.academy)}</h1><h2>Student Report</h2><p>Name: ${esc(s.name)} | Class: ${esc(s.class)} | ID: ${esc(s.id)}</p><p>Attendance: ${fmtPct(a.pct)} | Present: ${a.present} | Absent: ${a.absent} | Pending: ${money(pending)}</p><h3>Marks</h3><table><tr><th>Exam / Subject</th><th>Mark</th><th>Total</th></tr>${db.marks.filter(x=>x.studentId===s.id).map(x=>`<tr><td>${esc(x.exam)}</td><td>${x.mark}</td><td>${x.total}</td></tr>`).join('')}</table>
+<script id="smart-mobile-behaviour">
+/* ===== SMART MOBILE BEHAVIOUR ===== */
+(function(){
+  function isMobile(){return window.matchMedia('(max-width:768px)').matches}
+  function closeDesktopSidebar(){
+    if(!isMobile()) return;
+    document.querySelectorAll('.sidebar').forEach(function(el){
+      el.style.display='none';
+    });
+  }
+  function bindMobileNav(){
+    const drawer=document.getElementById('mobileDrawer');
+    const target=document.getElementById('mobileDrawerNav');
+    if(!drawer||!target)return;
+    const nav=document.querySelector(
+      role==='admin' ? '#adminNav' :
+      role==='teacher' ? '#teacherNav' : '#studentNav'
+    );
+    if(!nav)return;
+    target.innerHTML=nav.innerHTML;
+    target.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        const page=this.dataset.page;
+        closeMobileMenu();
+        if(page) showPage(page);
+      });
+    });
+  }
+  window.addEventListener('resize',function(){
+    closeDesktopSidebar();
+    if(isMobile()) bindMobileNav();
+  });
+  document.addEventListener('DOMContentLoaded',function(){
+    closeDesktopSidebar();
+    setTimeout(bindMobileNav,300);
+  });
+
+  /* Close drawer with Escape */
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape' && isMobile()) closeMobileMenu();
+  });
+})();
+</script>
+
+</body></html>`);w.document.close()}
 function communicationPage(){const month=monthNow();const pending=db.students.map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);const absent=db.students.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));content.innerHTML=`<div class="cards"><div class="card stat"><div class="label">Fee Pending</div><div class="value danger-text">${pending.length}</div></div><div class="card stat"><div class="label">Absent Today</div><div class="value">${absent.length}</div></div></div><div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3>${pending.map(x=>`<div class="toolbar" style="justify-content:space-between"><span>${esc(x.s.name)} — ${money(x.p)}</span><a class="btn success" target="_blank" href="${waLink(x.s.mobile,fillMsg(db.settings.messages.fee,x.s,x.p))}">WhatsApp</a></div>`).join('')||'<p>No pending fees.</p>'}</div><div class="card"><h3>📅 Absent Reminder</h3>${absent.map(s=>`<div class="toolbar" style="justify-content:space-between"><span>${esc(s.name)}</span><a class="btn success" target="_blank" href="${waLink(s.mobile,fillMsg(db.settings.messages.absent,s,0))}">WhatsApp</a></div>`).join('')||'<p>No absent students today.</p>'}</div></div><div class="card section"><h3>📢 Notice Board</h3><button class="btn" onclick="noticeForm()">➕ Add Notice</button>${db.notices.slice().reverse().map((n,i)=>`<div class="card" style="margin-top:10px"><b>${esc(n.title)}</b><p>${esc(n.text)}</p><small>${esc(n.date)}</small> <button class="btn danger" onclick="db.notices.splice(${db.notices.length-1-i},1);save();communicationPage()">Delete</button></div>`).join('')}</div>`}
 function fillMsg(t,s,amount){return String(t||'').replaceAll('{student}',s.name).replaceAll('{amount}',String(amount||0)).replaceAll('{date}',dateText()).replaceAll('{academy}',db.settings.academy)}
 function noticeForm(){openModal('Add Notice',`<label>Title</label><input id="noticeTitle"><label>Message</label><textarea id="noticeText"></textarea><br><button class="btn" onclick="db.notices.push({title:noticeTitle.value,text:noticeText.value,date:today()});save();closeModal();communicationPage()">Save Notice</button>`)}
