@@ -56,6 +56,15 @@ textarea{min-height:90px;resize:vertical}
 .hub-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));gap:16px;margin-top:16px}
 .hub-card{background:var(--card);border:1px solid var(--border);border-radius:var(--card-radius);padding:22px 18px;text-align:center;box-shadow:var(--card-shadow);cursor:pointer;transition:transform 0.18s ease, box-shadow 0.18s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px}
 .hub-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(15,23,42,0.12);border-color:#c7d2fe}
+/* Different card colour options */
+.group-feature-grid .hub-card:nth-child(4n+1){background:linear-gradient(135deg,#eef2ff,#ffffff);border-color:#c7d2fe}
+.group-feature-grid .hub-card:nth-child(4n+2){background:linear-gradient(135deg,#ecfdf5,#ffffff);border-color:#bbf7d0}
+.group-feature-grid .hub-card:nth-child(4n+3){background:linear-gradient(135deg,#fff7ed,#ffffff);border-color:#fed7aa}
+.group-feature-grid .hub-card:nth-child(4n+4){background:linear-gradient(135deg,#fdf2f8,#ffffff);border-color:#fbcfe8}
+.card.stat:nth-child(4n+1){border-top:4px solid #4f46e5}
+.card.stat:nth-child(4n+2){border-top:4px solid #16a34a}
+.card.stat:nth-child(4n+3){border-top:4px solid #f59e0b}
+.card.stat:nth-child(4n+4){border-top:4px solid #db2777}
 .hub-icon{font-size:36px;margin-bottom:10px;line-height:1}
 .hub-title{font-size:16px;font-weight:bold;color:var(--text)}
 .hub-desc{font-size:12px;color:var(--muted);margin-top:4px}
@@ -1598,6 +1607,125 @@ db.teachers=db.teachers||[]; db.homework=db.homework||[]; db.tests=db.tests||[];
     const w=window.open('','_blank'); if(!w)return alert('Popup blocked. Please allow popups for PDF export.');
     w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${esc(title)}</title><style>body{font-family:Arial,'Noto Sans Tamil',sans-serif;padding:24px;color:#111}h1{font-size:22px}h2{font-size:18px;margin-top:22px}.meta{color:#555;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box{border:1px solid #ddd;border-radius:10px;padding:10px}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #ddd;padding:7px;font-size:12px;text-align:left}th{background:#f3f4f6}@media print{button{display:none!important}}</style></head><body><h1>${esc(title)}</h1><div class="meta">${new Date().toLocaleString('en-IN')}</div>${html}</body></html>`);w.document.close();setTimeout(()=>{w.print()},400);
   }
+/* =========================================================
+   FINAL ROLE + GROUP RULES
+   LKG-5 / 6-8 data isolation + Teacher permissions
+   Attendance P/A click = immediate save + Google sync
+   ========================================================= */
+(function(){
+  const GROUP_FEATURES_ADMIN=['students','attendance','fees','marks','tests','homework','reports','history','communication','exams','finance','calendar','birthdays','teachers','backup','settings'];
+  const GROUP_FEATURES_TEACHER=['students','attendance','fees','marks','tests','notice'];
+
+  function gStudents(g=currentGroup){ return db.students.filter(s=>classBand(s.class)===g); }
+  function gClasses(g=currentGroup){ return [...new Set(gStudents(g).map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})); }
+  function gLabel(g){return g==='6-8'?'6 – 8':'LKG – 5';}
+
+  function teacherNoticePage(){
+    const list=(db.notices||[]).slice().reverse();
+    document.getElementById('content').innerHTML=`
+      <div class="card">
+        <div class="group-head-row">
+          <div><h3 style="margin:0">📢 Notice Board — ${gLabel(currentGroup)}</h3>
+          <div class="group-note" style="margin-top:8px">👨‍🏫 Teacher can add / manage notices. No fee amount is shown here.</div></div>
+          <button class="btn" onclick="teacherNoticeForm()">➕ Add Notice</button>
+        </div>
+      </div>
+      ${list.map((n,i)=>`<div class="card" style="margin-top:10px"><b>${esc(n.title)}</b><p>${esc(n.text)}</p><small>${esc(n.date)}</small> <button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="db.notices.splice(${db.notices.length-1-i},1);save();teacherNoticePage()">Delete</button></div>`).join('')||'<div class="card"><p style="color:var(--muted)">Notices இல்லை.</p></div>'}`;
+  }
+  window.teacherNoticePage=teacherNoticePage;
+  window.teacherNoticeForm=function(){
+    openModal('Add Notice',`
+      <label>Title</label><input id="noticeTitle">
+      <label>Message</label><textarea id="noticeText"></textarea>
+      <br><button class="btn" style="width:100%" onclick="db.notices.push({title:document.getElementById('noticeTitle').value.trim(),text:document.getElementById('noticeText').value.trim(),date:today()});save();closeModal();teacherNoticePage()">Save Notice</button>`);
+  };
+
+  /* Teacher dashboard: ONLY the requested five permissions. */
+  function renderRoleGroupDashboard(){
+    const c=document.getElementById('content');
+    const g=currentGroup, ss=gStudents(g), m=monthNow();
+    const present=ss.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
+    const features=role==='teacher' ? GROUP_FEATURES_TEACHER : GROUP_FEATURES_ADMIN;
+    const meta={
+      students:['👨‍🎓','Students','Add / Edit / Remove student'],
+      attendance:['📅','Attendance','Date-wise / Class-wise P & A'],
+      fees:['💰','Fees & Extra','Month-wise fee management'],
+      marks:['📝','Marks','Regular + Online marks'],
+      tests:['🧪','Online Tests','Test links + online marks'],
+      homework:['📚','Homework','Class-wise homework'],
+      reports:['📊','Reports','Reports & summaries'],
+      history:['🗂️','All History','History & logs'],
+      communication:['📢','Communication','Reminders & notices'],
+      notice:['📢','Notice','Add / manage notices'],
+      exams:['🗓️','Exam Schedule','Exam management'],
+      finance:['💵','Income & Expense','Financial records'],
+      calendar:['🗓️','Calendar','Events & holidays'],
+      birthdays:['🎂','Birthdays','Birthday reminders'],
+      teachers:['👨‍🏫','Teachers','Teacher management'],
+      backup:['💾','Backup & Restore','Backup tools'],
+      settings:['⚙️','Settings','Google Sheets Sync & settings']
+    };
+    document.getElementById('hubBackBtn').classList.add('hidden');
+    document.getElementById('pageTitle').textContent='Dashboard';
+    c.innerHTML=`<div class="group-dashboard">
+      <div class="group-head"><div class="group-head-row"><div><div class="group-kicker">Student Details</div><div class="group-title">Class Group Dashboard</div></div><div class="group-note">${role==='teacher'?'👨‍🏫 Teacher — Attendance, Students, Pending Fees, Marks, Online Tests & Notice only':'👑 Admin — All Features'}</div></div>
+      <div class="group-tabs">
+        <button class="group-tab ${g==='LKG-5'?'active':''}" onclick="openGroup('LKG-5')"><div><div class="gt-name">LKG – 5</div><div class="gt-sub">Only LKG, UKG & 1st–5th students</div></div><span class="group-count">${gStudents('LKG-5').length}</span></button>
+        <button class="group-tab ${g==='6-8'?'active':''}" onclick="openGroup('6-8')"><div><div class="gt-name">6 – 8</div><div class="gt-sub">Only 6th, 7th & 8th students</div></div><span class="group-count">${gStudents('6-8').length}</span></button>
+      </div></div>
+      <div class="group-summary"><div class="gs"><div class="gs-label">${gLabel(g)} Students</div><div class="gs-value">${ss.length}</div></div><div class="gs"><div class="gs-label">Today Present</div><div class="gs-value success-text">${present}</div></div>${role==='admin'?`<div class="gs"><div class="gs-label">Pending Fee</div><div class="gs-value danger-text">${money(ss.reduce((n,s)=>n+calcPending(s.id,m),0))}</div></div>`:''}</div>
+      <h3 style="margin:20px 0 10px">✨ ${gLabel(g)} — Features</h3><div class="hub-grid group-feature-grid">${features.map(k=>{const x=meta[k];return `<div class="hub-card" onclick="groupOpenFeature('${k}')"><div class="hub-icon">${x[0]}</div><div class="hub-title">${x[1]}</div><div class="hub-desc">${x[2]}</div></div>`}).join('')}</div>
+    </div>`;
+  }
+
+  window.renderGroupDashboard=renderRoleGroupDashboard;
+  const oldShowHubOriginal = window.showHubMenu;
+  window.showHubMenu=function(){ if(role==='student'){ return oldShowHubOriginal(); } renderRoleGroupDashboard(); };
+
+  /* Group feature router. Teacher cannot open fee/other admin modules. */
+  const originalGroupOpenFeature=window.groupOpenFeature;
+  window.groupOpenFeature=function(p){
+    if(role==='teacher'){
+      const allowed=GROUP_FEATURES_TEACHER;
+      if(!allowed.includes(p)) return alert('Teacher access: Attendance, Students, Pending Fees, Marks, Online Tests & Notice மட்டும்.');
+      if(p==='notice'){document.getElementById('hubBackBtn').classList.remove('hidden');document.getElementById('hubBackBtn').onclick=renderRoleGroupDashboard;document.getElementById('pageTitle').textContent=gLabel(currentGroup)+' — Notice';return teacherNoticePage();}
+    }
+    return originalGroupOpenFeature(p);
+  };
+
+  /* Teacher should only see group-scoped student records. Add Remove button. */
+  window.renderGroupStudentsPage=function(){
+    const ss=gStudents(currentGroup), c=document.getElementById('content');
+    c.innerHTML=`<div class="toolbar"><button class="btn" onclick="studentForm()">➕ Add Student</button><input id="groupStudentSearch" placeholder="Search student..." oninput="renderGroupStudentsRows()" style="max-width:300px"></div><div class="card table-wrap"><h3>👨‍🎓 ${gLabel(currentGroup)} — Student Details</h3><table class="table"><thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Actions</th></tr></thead><tbody id="groupStudentRows"></tbody></table></div>`;
+    renderGroupStudentsRows();
+  };
+  window.renderGroupStudentsRows=function(){
+    const q=(document.getElementById('groupStudentSearch')?.value||'').toLowerCase();
+    const rows=gStudents(currentGroup).filter(s=>(s.name+' '+s.id+' '+s.class).toLowerCase().includes(q));
+    document.getElementById('groupStudentRows').innerHTML=rows.map(s=>`<tr><td>${esc(s.id)}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.class||'-')}</td><td>${esc(s.mobile||'-')}</td><td><button class="btn secondary" onclick="studentProfilePage('${esc(s.id)}')">Profile</button> <button class="btn secondary" onclick="studentForm('${esc(s.id)}')">Edit</button> <button class="btn danger" onclick="deleteStudent('${esc(s.id)}');setTimeout(renderGroupStudentsPage,0)">Remove</button></td></tr>`).join('')||'<tr><td colspan="5">இந்த group-ல் மாணவர்கள் இல்லை.</td></tr>';
+  };
+
+  /* Attendance: group + class scoped, and P/A click saves immediately. */
+  window.renderGroupAttList=function(){
+    const date=document.getElementById('groupAttDate')?.value||today(), cls=document.getElementById('groupAttClass')?.value||'';
+    const students=gStudents(currentGroup).filter(s=>!cls||s.class===cls), box=document.getElementById('groupAttList'); if(!box)return;
+    const existing={}; db.attendance.filter(a=>a.date===date).forEach(a=>existing[a.studentId]=a.status);
+    box.innerHTML=`<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Student</th><th>Class</th><th>P</th><th>A</th><th>Status</th></tr></thead><tbody>${students.map((s,i)=>{const st=existing[s.id]||'';return `<tr><td>${i+1}</td><td><b>${esc(s.name)}</b><br><small>${esc(s.id)}</small></td><td>${esc(s.class||'-')}</td><td><button type="button" class="att-btn present ${st==='Present'?'selected':''}" data-gstudent="${esc(s.id)}" data-gdate="${esc(date)}" onclick="groupAttendanceClick(this,'Present')">✓ P</button></td><td><button type="button" class="att-btn absent ${st==='Absent'?'selected':''}" data-gstudent="${esc(s.id)}" data-gdate="${esc(date)}" onclick="groupAttendanceClick(this,'Absent')">✕ A</button></td><td><span class="att-status badge ${st==='Present'?'ok':st==='Absent'?'pending':'info'}">${st||'Not Marked'}</span></td></tr>`}).join('')||'<tr><td colspan="6">இந்த class-ல் மாணவர்கள் இல்லை.</td></tr>'}</tbody></table></div>`;
+  };
+  window.groupAttendanceClick=function(btn,status){
+    const id=btn.dataset.gstudent, date=btn.dataset.gdate||today();
+    db.attendance=db.attendance.filter(a=>!(a.studentId===id&&a.date===date));
+    db.attendance.push({studentId:id,date,status});
+    save();
+    const row=btn.closest('tr'); row?.querySelectorAll('.att-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected');
+    const badge=row?.querySelector('.att-status'); if(badge){badge.textContent=status;badge.className='att-status badge '+(status==='Present'?'ok':'pending');}
+    renderGroupAttendanceHistory();
+  };
+
+  /* Re-enter selected group after login. */
+  const originalEnter=window.enterApp;
+  window.enterApp=function(r){ originalEnter(r); if(r!=='student') setTimeout(renderRoleGroupDashboard,0); };
+})();
   window.exportSmartPDF=pdfPrint;
 
   /* Admin dashboard: clickable Total Students with class-wise Present/Absent */
@@ -2357,45 +2485,60 @@ db.teachers=db.teachers||[]; db.homework=db.homework||[]; db.tests=db.tests||[];
     const paidTotal=ss.reduce((n,s)=>n+calcPaid(s.id,m),0);
     const pendingStudents=ss.filter(s=>calcPending(s.id,m)>0);
 
+    if(role==='teacher'){
+      panel.innerHTML=`
+        <div class="card teacher-fee-only">
+          <h3>💰 Pending Fees Collection — ${groupLabel(currentGroup)}</h3>
+          <div class="group-note">👨‍🏫 Teacher can collect <b>pending amount only</b>. Total fee, paid amount and group collection totals are hidden.</div>
+        </div>
+        <div class="card table-wrap">
+          <div class="group-toolbar"><div><label>Month</label><input id="teacherFeeMonth" type="month" value="${m}" onchange="renderTeacherPendingFees()"></div></div>
+          <div id="teacherPendingFees" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3>🔔 Fee Reminder</h3>
+          <div class="group-note">Pending students மட்டும் reminder அனுப்பலாம்.</div>
+          <div id="teacherFeeReminderList" style="margin-top:10px"></div>
+        </div>`;
+      renderTeacherPendingFees();
+      return;
+    }
+
     panel.innerHTML=`
       <div class="group-summary">
         <div class="gs"><div class="gs-label">Students</div><div class="gs-value">${ss.length}</div></div>
         <div class="gs"><div class="gs-label">Month</div><div class="gs-value">${m}</div></div>
         <div class="gs"><div class="gs-label">Pending</div><div class="gs-value danger-text">${money(pendingTotal)}</div></div>
       </div>
-
-      <div class="card ${role==='teacher'?'teacher-fee-only':''}">
-        <div class="group-head-row">
-          <div><h3 style="margin:0">💰 Month-wise Fees — ${groupLabel(currentGroup)}</h3>
-          <div class="group-note" style="margin-top:8px">${role==='teacher'?'👨‍🏫 Teacher: Pending amount மட்டுமே collect செய்ய முடியும். Paid / Pending-ஐ மாற்றி amount கொடுக்க முடியாது.':'👑 Admin: Full fee management'}</div></div>
-          <div class="toolbar">
-            ${role==='admin'?`<button class="btn" onclick="feeForm()">➕ Record Payment</button>`:''}
-            <button class="btn secondary" onclick="extraForm()">➕ Extra Fee</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card table-wrap">
-        <table class="table">
-          <thead><tr><th>Student</th><th>Class</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th><th>Action</th></tr></thead>
-          <tbody>${pendingStudents.map(s=>{
-            const fs=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(m));
-            const ex=fs.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);
-            const paid=calcPaid(s.id,m), pen=calcPending(s.id,m);
-            return `<tr>
-              <td><button class="student-link" onclick="showStudentFeeDetails('${esc(s.id)}')">${esc(s.name)}</button></td>
-              <td>${esc(s.class||'-')}</td><td>${money(s.monthlyFee)}</td><td>${money(ex)}</td>
-              <td>${money(paid)}</td><td><span class="badge pending">${money(pen)}</span></td>
-              <td><button class="btn success" style="padding:6px 9px;font-size:11px" onclick="pendingFeeForm('${esc(s.id)}')">💳 Collect Pending</button></td>
-            </tr>`;
-          }).join('')||'<tr><td colspan="7" style="text-align:center">இந்த group-ல் pending fees இல்லை. 🎉</td></tr>'}</tbody>
-        </table>
-      </div>
       <div class="card">
-        <h3>👨‍🎓 Student Details — Fee Status</h3>
-        <div class="group-students">${ss.map(s=>`<div class="group-student"><div><div class="group-student-name">${esc(s.name)}</div><div class="group-student-meta">${esc(s.class||'-')} · Pending: ${money(calcPending(s.id,m))}</div></div><button class="group-mini-btn" onclick="showStudentFeeDetails('${esc(s.id)}')">View Record</button></div>`).join('')||'<div class="group-note">மாணவர்கள் இல்லை.</div>'}</div>
-      </div>`;
+        <div class="group-head-row"><div><h3 style="margin:0">💰 Month-wise Fees — ${groupLabel(currentGroup)}</h3></div>
+        <div class="toolbar"><button class="btn" onclick="feeForm()">➕ Record Payment</button><button class="btn secondary" onclick="extraForm()">➕ Extra Fee</button></div></div>
+      </div>
+      <div class="card table-wrap"><table class="table"><thead><tr><th>Student</th><th>Class</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th><th>Action</th></tr></thead>
+      <tbody>${ss.map(s=>{const fs=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(m));const ex=fs.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);const paid=calcPaid(s.id,m),pen=calcPending(s.id,m);return `<tr><td><button class="student-link" onclick="showStudentFeeDetails('${esc(s.id)}')">${esc(s.name)}</button></td><td>${esc(s.class||'-')}</td><td>${money(s.monthlyFee)}</td><td>${money(ex)}</td><td>${money(paid)}</td><td><span class="badge ${pen?'pending':'ok'}">${money(pen)}</span></td><td>${pen?`<button class="btn success" style="padding:6px 9px;font-size:11px" onclick="pendingFeeForm('${esc(s.id)}')">💳 Collect Pending</button> <button class="btn secondary" style="padding:6px 9px;font-size:11px" onclick="whatsapp('${esc(s.id)}','fee')">🔔 Reminder</button>`:'Paid'}</td></tr>`;}).join('')||'<tr><td colspan="7">Students இல்லை.</td></tr>'}</tbody></table></div>`;
   }
+
+  window.renderTeacherPendingFees=function(){
+    const m=document.getElementById('teacherFeeMonth')?.value||monthNow();
+    const ss=groupStudents().filter(s=>calcPending(s.id,m)>0);
+    const box=document.getElementById('teacherPendingFees'), rb=document.getElementById('teacherFeeReminderList');
+    if(box) box.innerHTML=`<table class="table"><thead><tr><th>Student</th><th>Class</th><th>Pending</th><th>Action</th></tr></thead><tbody>${ss.map(s=>{const p=calcPending(s.id,m);return `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.class||'-')}</td><td><span class="badge pending">${money(p)}</span></td><td><button class="btn success" style="padding:6px 9px;font-size:11px" onclick="pendingFeeFormForMonth('${esc(s.id)}','${esc(m)}')">💳 Collect</button> ${s.mobile?`<button class="btn secondary" style="padding:6px 9px;font-size:11px" onclick="whatsapp('${esc(s.id)}','fee')">🔔 Reminder</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="4">Pending fees இல்லை. 🎉</td></tr>'}</tbody></table>`;
+    if(rb) rb.innerHTML=ss.map(s=>s.mobile?`<div class="group-student"><div><b>${esc(s.name)}</b><div class="group-student-meta">Pending: ${money(calcPending(s.id,m))}</div></div><button class="btn secondary" style="padding:6px 9px" onclick="whatsapp('${esc(s.id)}','fee')">💬 Send Reminder</button></div>`:'').join('')||'<div class="group-note">Reminder அனுப்ப pending students இல்லை.</div>';
+  };
+
+  window.pendingFeeFormForMonth=function(studentId,month){
+    const s=db.students.find(x=>x.id===studentId); if(!s)return;
+    const pending=calcPending(s.id,month);
+    if(pending<=0)return alert('இந்த month-க்கு pending fee இல்லை.');
+    openModal('💳 Collect Pending Fee',`<div class="paybox"><h3>${esc(s.name)}</h3><p>Class: <b>${esc(s.class||'-')}</b></p><p>Pending: <b class="danger-text">${money(pending)}</b></p></div><label>Collect Amount</label><input id="pendingPayAmount" type="number" min="1" max="${pending}" value="${pending}"><label>Date</label><input id="pendingPayDate" type="date" value="${today()}"><p class="group-note">Maximum allowed: ${money(pending)}. Teacher cannot collect more than pending.</p><br><button class="btn success" style="width:100%" onclick="savePendingFeeForMonth('${esc(s.id)}','${esc(month)}',${pending})">Save Payment</button>`);
+  };
+  window.savePendingFeeForMonth=function(studentId,month,maxPending){
+    const amount=Number(document.getElementById('pendingPayAmount')?.value||0);
+    const date=document.getElementById('pendingPayDate')?.value||today();
+    if(amount<=0||amount>maxPending)return alert('Pending amount-க்குள் மட்டும் payment பதிவு செய்யவும்.');
+    db.fees.push({studentId,amount,date,type:'Payment',collectedBy:role==='admin'?'Admin':(db.settings.teacher||'Teacher')});
+    save();closeModal();renderGroupFees(document.getElementById('content'));
+  };
 
   window.pendingFeeForm=function(studentId){
     const s=db.students.find(x=>x.id===studentId); if(!s)return;
@@ -2503,6 +2646,129 @@ db.teachers=db.teachers||[]; db.homework=db.homework||[]; db.tests=db.tests||[];
     oldEnterApp(r);
     if(r!=='student') setTimeout(renderGroupDashboard,0);
   };
+})();
+</script>
+
+
+<script>
+/* =========================================================
+   FINAL ROLE + GROUP RULES
+   LKG-5 / 6-8 data isolation + Teacher permissions
+   Attendance P/A click = immediate save + Google sync
+   ========================================================= */
+(function(){
+  const GROUP_FEATURES_ADMIN=['students','attendance','fees','marks','tests','homework','reports','history','communication','exams','finance','calendar','birthdays','teachers','backup','settings'];
+  const GROUP_FEATURES_TEACHER=['students','attendance','fees','marks','tests','notice'];
+
+  function gStudents(g=currentGroup){ return db.students.filter(s=>classBand(s.class)===g); }
+  function gClasses(g=currentGroup){ return [...new Set(gStudents(g).map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})); }
+  function gLabel(g){return g==='6-8'?'6 – 8':'LKG – 5';}
+
+  function teacherNoticePage(){
+    const list=(db.notices||[]).slice().reverse();
+    document.getElementById('content').innerHTML=`
+      <div class="card">
+        <div class="group-head-row">
+          <div><h3 style="margin:0">📢 Notice Board — ${gLabel(currentGroup)}</h3>
+          <div class="group-note" style="margin-top:8px">👨‍🏫 Teacher can add / manage notices. No fee amount is shown here.</div></div>
+          <button class="btn" onclick="teacherNoticeForm()">➕ Add Notice</button>
+        </div>
+      </div>
+      ${list.map((n,i)=>`<div class="card" style="margin-top:10px"><b>${esc(n.title)}</b><p>${esc(n.text)}</p><small>${esc(n.date)}</small> <button class="btn danger" style="padding:4px 8px;font-size:11px" onclick="db.notices.splice(${db.notices.length-1-i},1);save();teacherNoticePage()">Delete</button></div>`).join('')||'<div class="card"><p style="color:var(--muted)">Notices இல்லை.</p></div>'}`;
+  }
+  window.teacherNoticePage=teacherNoticePage;
+  window.teacherNoticeForm=function(){
+    openModal('Add Notice',`
+      <label>Title</label><input id="noticeTitle">
+      <label>Message</label><textarea id="noticeText"></textarea>
+      <br><button class="btn" style="width:100%" onclick="db.notices.push({title:document.getElementById('noticeTitle').value.trim(),text:document.getElementById('noticeText').value.trim(),date:today()});save();closeModal();teacherNoticePage()">Save Notice</button>`);
+  };
+
+  /* Teacher dashboard: ONLY the requested five permissions. */
+  function renderRoleGroupDashboard(){
+    const c=document.getElementById('content');
+    const g=currentGroup, ss=gStudents(g), m=monthNow();
+    const present=ss.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
+    const features=role==='teacher' ? GROUP_FEATURES_TEACHER : GROUP_FEATURES_ADMIN;
+    const meta={
+      students:['👨‍🎓','Students','Add / Edit / Remove student'],
+      attendance:['📅','Attendance','Date-wise / Class-wise P & A'],
+      fees:['💰','Fees & Extra','Month-wise fee management'],
+      marks:['📝','Marks','Regular + Online marks'],
+      tests:['🧪','Online Tests','Test links + online marks'],
+      homework:['📚','Homework','Class-wise homework'],
+      reports:['📊','Reports','Reports & summaries'],
+      history:['🗂️','All History','History & logs'],
+      communication:['📢','Communication','Reminders & notices'],
+      notice:['📢','Notice','Add / manage notices'],
+      exams:['🗓️','Exam Schedule','Exam management'],
+      finance:['💵','Income & Expense','Financial records'],
+      calendar:['🗓️','Calendar','Events & holidays'],
+      birthdays:['🎂','Birthdays','Birthday reminders'],
+      teachers:['👨‍🏫','Teachers','Teacher management'],
+      backup:['💾','Backup & Restore','Backup tools'],
+      settings:['⚙️','Settings','Google Sheets Sync & settings']
+    };
+    document.getElementById('hubBackBtn').classList.add('hidden');
+    document.getElementById('pageTitle').textContent='Dashboard';
+    c.innerHTML=`<div class="group-dashboard">
+      <div class="group-head"><div class="group-head-row"><div><div class="group-kicker">Student Details</div><div class="group-title">Class Group Dashboard</div></div><div class="group-note">${role==='teacher'?'👨‍🏫 Teacher — Attendance, Students, Pending Fees, Marks, Online Tests & Notice only':'👑 Admin — All Features'}</div></div>
+      <div class="group-tabs">
+        <button class="group-tab ${g==='LKG-5'?'active':''}" onclick="openGroup('LKG-5')"><div><div class="gt-name">LKG – 5</div><div class="gt-sub">Only LKG, UKG & 1st–5th students</div></div><span class="group-count">${gStudents('LKG-5').length}</span></button>
+        <button class="group-tab ${g==='6-8'?'active':''}" onclick="openGroup('6-8')"><div><div class="gt-name">6 – 8</div><div class="gt-sub">Only 6th, 7th & 8th students</div></div><span class="group-count">${gStudents('6-8').length}</span></button>
+      </div></div>
+      <div class="group-summary"><div class="gs"><div class="gs-label">${gLabel(g)} Students</div><div class="gs-value">${ss.length}</div></div><div class="gs"><div class="gs-label">Today Present</div><div class="gs-value success-text">${present}</div></div>${role==='admin'?`<div class="gs"><div class="gs-label">Pending Fee</div><div class="gs-value danger-text">${money(ss.reduce((n,s)=>n+calcPending(s.id,m),0))}</div></div>`:''}</div>
+      <h3 style="margin:20px 0 10px">✨ ${gLabel(g)} — Features</h3><div class="hub-grid group-feature-grid">${features.map(k=>{const x=meta[k];return `<div class="hub-card" onclick="groupOpenFeature('${k}')"><div class="hub-icon">${x[0]}</div><div class="hub-title">${x[1]}</div><div class="hub-desc">${x[2]}</div></div>`}).join('')}</div>
+    </div>`;
+  }
+
+  window.renderGroupDashboard=renderRoleGroupDashboard;
+  const oldShowHubOriginal = window.showHubMenu;
+  window.showHubMenu=function(){ if(role==='student'){ return oldShowHubOriginal(); } renderRoleGroupDashboard(); };
+
+  /* Group feature router. Teacher cannot open fee/other admin modules. */
+  const originalGroupOpenFeature=window.groupOpenFeature;
+  window.groupOpenFeature=function(p){
+    if(role==='teacher'){
+      const allowed=GROUP_FEATURES_TEACHER;
+      if(!allowed.includes(p)) return alert('Teacher access: Attendance, Students, Pending Fees, Marks, Online Tests & Notice மட்டும்.');
+      if(p==='notice'){document.getElementById('hubBackBtn').classList.remove('hidden');document.getElementById('hubBackBtn').onclick=renderRoleGroupDashboard;document.getElementById('pageTitle').textContent=gLabel(currentGroup)+' — Notice';return teacherNoticePage();}
+    }
+    return originalGroupOpenFeature(p);
+  };
+
+  /* Teacher should only see group-scoped student records. Add Remove button. */
+  window.renderGroupStudentsPage=function(){
+    const ss=gStudents(currentGroup), c=document.getElementById('content');
+    c.innerHTML=`<div class="toolbar"><button class="btn" onclick="studentForm()">➕ Add Student</button><input id="groupStudentSearch" placeholder="Search student..." oninput="renderGroupStudentsRows()" style="max-width:300px"></div><div class="card table-wrap"><h3>👨‍🎓 ${gLabel(currentGroup)} — Student Details</h3><table class="table"><thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Actions</th></tr></thead><tbody id="groupStudentRows"></tbody></table></div>`;
+    renderGroupStudentsRows();
+  };
+  window.renderGroupStudentsRows=function(){
+    const q=(document.getElementById('groupStudentSearch')?.value||'').toLowerCase();
+    const rows=gStudents(currentGroup).filter(s=>(s.name+' '+s.id+' '+s.class).toLowerCase().includes(q));
+    document.getElementById('groupStudentRows').innerHTML=rows.map(s=>`<tr><td>${esc(s.id)}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.class||'-')}</td><td>${esc(s.mobile||'-')}</td><td><button class="btn secondary" onclick="studentProfilePage('${esc(s.id)}')">Profile</button> <button class="btn secondary" onclick="studentForm('${esc(s.id)}')">Edit</button> <button class="btn danger" onclick="deleteStudent('${esc(s.id)}');setTimeout(renderGroupStudentsPage,0)">Remove</button></td></tr>`).join('')||'<tr><td colspan="5">இந்த group-ல் மாணவர்கள் இல்லை.</td></tr>';
+  };
+
+  /* Attendance: group + class scoped, and P/A click saves immediately. */
+  window.renderGroupAttList=function(){
+    const date=document.getElementById('groupAttDate')?.value||today(), cls=document.getElementById('groupAttClass')?.value||'';
+    const students=gStudents(currentGroup).filter(s=>!cls||s.class===cls), box=document.getElementById('groupAttList'); if(!box)return;
+    const existing={}; db.attendance.filter(a=>a.date===date).forEach(a=>existing[a.studentId]=a.status);
+    box.innerHTML=`<div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Student</th><th>Class</th><th>P</th><th>A</th><th>Status</th></tr></thead><tbody>${students.map((s,i)=>{const st=existing[s.id]||'';return `<tr><td>${i+1}</td><td><b>${esc(s.name)}</b><br><small>${esc(s.id)}</small></td><td>${esc(s.class||'-')}</td><td><button type="button" class="att-btn present ${st==='Present'?'selected':''}" data-gstudent="${esc(s.id)}" data-gdate="${esc(date)}" onclick="groupAttendanceClick(this,'Present')">✓ P</button></td><td><button type="button" class="att-btn absent ${st==='Absent'?'selected':''}" data-gstudent="${esc(s.id)}" data-gdate="${esc(date)}" onclick="groupAttendanceClick(this,'Absent')">✕ A</button></td><td><span class="att-status badge ${st==='Present'?'ok':st==='Absent'?'pending':'info'}">${st||'Not Marked'}</span></td></tr>`}).join('')||'<tr><td colspan="6">இந்த class-ல் மாணவர்கள் இல்லை.</td></tr>'}</tbody></table></div>`;
+  };
+  window.groupAttendanceClick=function(btn,status){
+    const id=btn.dataset.gstudent, date=btn.dataset.gdate||today();
+    db.attendance=db.attendance.filter(a=>!(a.studentId===id&&a.date===date));
+    db.attendance.push({studentId:id,date,status});
+    save();
+    const row=btn.closest('tr'); row?.querySelectorAll('.att-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected');
+    const badge=row?.querySelector('.att-status'); if(badge){badge.textContent=status;badge.className='att-status badge '+(status==='Present'?'ok':'pending');}
+    renderGroupAttendanceHistory();
+  };
+
+  /* Re-enter selected group after login. */
+  const originalEnter=window.enterApp;
+  window.enterApp=function(r){ originalEnter(r); if(r!=='student') setTimeout(renderRoleGroupDashboard,0); };
 })();
 </script>
 
