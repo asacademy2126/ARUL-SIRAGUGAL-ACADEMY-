@@ -2218,5 +2218,240 @@ autoImportOnLoad();
 })();
 </script>
 
+
+<style>
+.att-status-btns{display:flex;gap:6px;flex-wrap:wrap}
+.att-status-btn{border:1px solid #cfd8e3;border-radius:9px;padding:7px 12px;background:#fff;cursor:pointer;font-weight:700}
+.att-status-btn.present{background:#e9f9ef;border-color:#8fd3a8}
+.att-status-btn.absent{background:#fff0f0;border-color:#f2a2a2}
+.att-status-btn.active{box-shadow:0 0 0 2px currentColor inset}
+.reminder-actions{display:flex;gap:6px;flex-wrap:wrap}
+.permission-badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;font-size:11px}
+</style>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const E=x=>typeof esc==='function'?esc(x):String(x??'');
+  const teacherMode=()=>role==='teacher';
+  const adminMode=()=>role==='admin';
+
+  /* =========================================================
+     TEACHER CLASS PERMISSION
+     Expected teacher record:
+     {id,name,mobile,username,password,allowedClasses:["6","7"]}
+     Also supports comma-separated allowedClasses / classes.
+     ========================================================= */
+  window.getTeacherAllowedClasses=function(){
+    if(!teacherMode()) return [...new Set(db.students.map(s=>s.class).filter(Boolean))];
+    const me = db.teachers?.find(t =>
+      t.id===currentUser?.id ||
+      t.username===currentUser?.username ||
+      t.email===currentUser?.email ||
+      t.name===currentUser?.name
+    );
+    if(!me) return [];
+    const raw=me.allowedClasses ?? me.classes ?? me.classPermissions ?? me.permissionClasses ?? [];
+    if(Array.isArray(raw)) return raw.map(String).map(x=>x.trim()).filter(Boolean);
+    return String(raw||'').split(',').map(x=>x.trim()).filter(Boolean);
+  };
+
+  window.teacherCanClass=function(cls){
+    return !teacherMode() || getTeacherAllowedClasses().includes(String(cls));
+  };
+
+  window.teacherFilterStudents=function(list){
+    return teacherMode() ? list.filter(s=>teacherCanClass(s.class)) : list;
+  };
+
+  /* ---------- ADMIN: GIVE TEACHER CLASS PERMISSION ---------- */
+  window.teacherPermissionPage=function(){
+    if(!adminMode()) return alert('Admin மட்டும் teacher permission மாற்ற முடியும்.');
+    const teachers=db.teachers||[];
+    const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    $('content').innerHTML=`
+      <div class="card">
+        <h3>🔐 Teacher Class Permission</h3>
+        <p style="color:var(--muted)">Admin எந்த class-ஐ permission கொடுக்கிறாரோ அந்த class students/data மட்டும் அந்த teacher-க்கு தெரியும்.</p>
+        <div class="table-wrap"><table class="table">
+        <tr><th>Teacher</th><th>Allowed Classes</th><th>Change Permission</th></tr>
+        ${teachers.map((t,i)=>{
+          const raw=t.allowedClasses??t.classes??t.classPermissions??[];
+          const allowed=Array.isArray(raw)?raw:String(raw||'').split(',').map(x=>x.trim()).filter(Boolean);
+          return `<tr><td><b>${E(t.name||t.username||t.id)}</b><br><small>${E(t.username||'')}</small></td>
+          <td>${allowed.map(c=>`<span class="permission-badge">${E(c)}</span>`).join(' ')||'<span class="permission-badge">No class</span>'}</td>
+          <td><button class="btn secondary" onclick="editTeacherPermission(${i})">✏️ Edit Permission</button></td></tr>`;
+        }).join('')||'<tr><td colspan="3">Teachers இல்லை.</td></tr>'}
+        </table></div>
+      </div>`;
+  };
+
+  window.editTeacherPermission=function(i){
+    const t=(db.teachers||[])[i];if(!t)return;
+    const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    const raw=t.allowedClasses??t.classes??t.classPermissions??[];
+    const allowed=Array.isArray(raw)?raw:String(raw||'').split(',').map(x=>x.trim()).filter(Boolean);
+    openModal('🔐 Teacher Class Permission — '+(t.name||t.username||''),`
+      <p>Select the classes this teacher can access.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">
+      ${classes.map(c=>`<label style="border:1px solid #ddd;border-radius:9px;padding:9px">
+        <input type="checkbox" class="teacher-class-check" value="${E(c)}" ${allowed.includes(c)?'checked':''}> ${E(c)}
+      </label>`).join('')}</div>
+      <br><button class="btn success" style="width:100%" onclick="saveTeacherPermission(${i})">💾 Save Permission</button>
+    `);
+  };
+
+  window.saveTeacherPermission=function(i){
+    const t=(db.teachers||[])[i];if(!t)return;
+    const allowed=[...document.querySelectorAll('.teacher-class-check:checked')].map(x=>x.value);
+    t.allowedClasses=allowed;
+    t.classPermissions=allowed;
+    t.permissionUpdatedBy='Admin';
+    t.permissionUpdatedAt=new Date().toISOString();
+    save();closeModal();teacherPermissionPage();
+  };
+
+  /* ---------- ATTENDANCE: CLICK PRESENT / ABSENT BUTTON ---------- */
+  window.renderClassAttendanceV3=function(){
+    const date=$('attDate')?.value||today(), group=$('attGroup')?.value||'', cls=$('attClass')?.value||'';
+    let students=db.students.filter(s=>(!group||classBand(s.class)===group)&&(!cls||s.class===cls));
+    students=teacherFilterStudents(students);
+    const box=$('classAttendanceBox');if(!box)return;
+
+    box.innerHTML=`<div class="table-wrap"><table class="table">
+      <tr><th>Student</th><th>Class</th><th>Attendance</th></tr>
+      ${students.map(s=>{
+        const a=db.attendance.find(x=>x.studentId===s.id&&x.date===date);
+        const st=a?.status||'';
+        return `<tr>
+          <td><b>${E(s.name)}</b><br><small>${E(s.id)}</small></td>
+          <td>${E(s.class||'-')}</td>
+          <td><div class="att-status-btns">
+            <button type="button" class="att-status-btn present ${st==='Present'?'active':''}" onclick="setAttendanceButton('${E(s.id)}','Present')">✅ Present</button>
+            <button type="button" class="att-status-btn absent ${st==='Absent'?'active':''}" onclick="setAttendanceButton('${E(s.id)}','Absent')">❌ Absent</button>
+          </div>
+          <input type="hidden" id="attStatus_${E(s.id)}" value="${E(st)}"></td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="3">இந்த class-க்கு permission இல்லை / students இல்லை.</td></tr>'}</table></div>`;
+  };
+
+  window.setAttendanceButton=function(studentId,status){
+    const input=$('attStatus_'+studentId);if(input)input.value=status;
+    const row=input?.closest('tr');
+    row?.querySelectorAll('.att-status-btn').forEach(b=>b.classList.remove('active'));
+    row?.querySelector('.att-status-btn.'+(status==='Present'?'present':'absent'))?.classList.add('active');
+  };
+
+  /* ---------- SAVE ONLY ALLOWED TEACHER CLASSES ---------- */
+  window.saveClassAttendance=function(){
+    const date=$('attDate')?.value||today();
+    if(!date)return alert('Date தேவை.');
+    const rows=[...document.querySelectorAll('#classAttendanceBox input[id^="attStatus_"]')];
+    let saved=0;
+    rows.forEach(input=>{
+      const studentId=input.id.replace('attStatus_',''),status=input.value;
+      const s=db.students.find(x=>x.id===studentId);
+      if(!s || !status || !teacherCanClass(s.class))return;
+      const idx=db.attendance.findIndex(a=>a.studentId===studentId&&a.date===date);
+      const obj={studentId,date,status,enteredBy:teacherMode()?'Teacher':(adminMode()?'Admin':'User')};
+      if(idx>=0){db.attendance[idx]={...db.attendance[idx],...obj,editedBy:role,editedAt:new Date().toISOString()};}
+      else db.attendance.push(obj);
+      saved++;
+    });
+    save();renderClassAttendanceV3();renderAttendanceHistoryV3();
+    alert(`✅ ${saved} attendance records saved.`);
+  };
+
+  /* ---------- TEACHER EDIT ATTENDANCE WITH PERMISSION CHECK ---------- */
+  const oldEditAttendance=window.editAttendance;
+  window.editAttendance=function(i){
+    const a=db.attendance[i];if(!a)return;
+    const s=db.students.find(x=>x.id===a.studentId);
+    if(teacherMode()&&!teacherCanClass(s?.class))return alert('இந்த class-க்கு உங்களுக்கு permission இல்லை.');
+    if(typeof oldEditAttendance==='function')oldEditAttendance(i);
+  };
+
+  /* ---------- ABSENT REMINDER: CALL + WHATSAPP ---------- */
+  window.absentReminderCall=function(studentId,date){
+    const s=db.students.find(x=>x.id===studentId);if(!s)return;
+    const phone=s.mobile||s.parentMobile||s.phone;
+    if(!phone)return alert('Student / Parent mobile number இல்லை.');
+    window.location.href='tel:'+String(phone).replace(/[^\d+]/g,'');
+  };
+
+  window.absentReminderWhatsApp=function(studentId,date){
+    const s=db.students.find(x=>x.id===studentId);if(!s)return;
+    const phone=s.mobile||s.parentMobile||s.phone;
+    if(!phone)return alert('Student / Parent mobile number இல்லை.');
+    const msg=`வணக்கம் ${s.parent||s.name},%0A%0A📢 ${db.settings.academy||'Academy'}%0A👨‍🎓 மாணவர்: ${s.name}%0A🏫 Class: ${s.class||'-'}%0A📅 Date: ${date}%0A❌ இன்று Attendance: Absent%0A%0Aதயவுசெய்து மாணவரின் வருகை குறித்து உறுதி செய்யவும்.%0Aநன்றி.`;
+    window.open(waLink(phone,decodeURIComponent(msg)),'_blank');
+  };
+
+  window.showAbsentReminders=function(date,group,cls){
+    let arr=db.attendance.filter(a=>a.date===date&&a.status==='Absent').map(a=>({...a,s:db.students.find(x=>x.id===a.studentId)}));
+    arr=arr.filter(x=>(!group||classBand(x.s?.class)===group)&&(!cls||x.s?.class===cls));
+    arr=teacherMode()?arr.filter(x=>teacherCanClass(x.s?.class)):arr;
+    openModal('📢 Absent Reminder — '+date,`
+      <p><b>${arr.length}</b> absent students.</p>
+      <div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Reminder</th></tr>
+      ${arr.map(x=>`<tr><td><b>${E(x.s?.name||x.studentId)}</b></td><td>${E(x.s?.class||'-')}</td>
+      <td><div class="reminder-actions"><button class="btn secondary" onclick="absentReminderCall('${E(x.studentId)}','${E(date)}')">📞 Call</button>
+      <button class="btn secondary" onclick="absentReminderWhatsApp('${E(x.studentId)}','${E(date)}')">💬 WhatsApp</button></div></td></tr>`).join('')||'<tr><td colspan="3">Absent records இல்லை.</td></tr>'}
+      </table></div>`);
+  };
+
+  /* Add reminder button to attendance page. */
+  const oldAttendancePage=window.attendancePage;
+  window.attendancePage=function(){
+    oldAttendancePage();
+    const toolbar=document.querySelector('#content .card .toolbar');
+    if(toolbar&&!toolbar.querySelector('[data-absent-reminder]')){
+      const b=document.createElement('button');b.className='btn secondary';b.dataset.absentReminder='1';
+      b.textContent='📢 Absent Reminder';
+      b.onclick=()=>showAbsentReminders($('attDate')?.value||today(),$('attGroup')?.value||'',$('attClass')?.value||'');
+      toolbar.appendChild(b);
+    }
+  };
+
+  /* ---------- DATE-WISE HISTORY: teacher sees only permitted classes ---------- */
+  const oldHistory=window.renderAttendanceHistoryV3;
+  window.renderAttendanceHistoryV3=function(){
+    if(typeof oldHistory==='function')oldHistory();
+    if(!teacherMode())return;
+    const box=$('attendanceHistoryV2');if(!box)return;
+    [...box.querySelectorAll('tr')].forEach(tr=>{
+      const cls=tr.children?.[2]?.textContent?.trim();
+      if(cls&&!teacherCanClass(cls))tr.style.display='none';
+    });
+  };
+
+  /* ---------- TEACHER CLASS DETAILS: permission restricted ---------- */
+  const oldTeacherRender=window.renderTeacherClassDetails;
+  window.renderTeacherClassDetails=function(){
+    if(!teacherMode()){oldTeacherRender?.();return;}
+    const allowed=getTeacherAllowedClasses();
+    const cls=$('teacherClass')?.value||'',group=$('teacherGroup')?.value||'';
+    let ss=db.students.filter(s=>(!cls||s.class===cls)&&(!group||classBand(s.class)===group)&&teacherCanClass(s.class));
+    const target=$('teacherClassDetails');if(!target)return;
+    target.innerHTML=`<div class="summary-cards"><div class="summary-box">Permitted Classes <b>${allowed.length}</b></div><div class="summary-box">Students <b>${ss.length}</b></div></div>
+    <div class="table-wrap"><table class="table"><tr><th>ID</th><th>Name</th><th>Class</th><th>Group</th><th>Attendance</th><th>P/A</th><th>Marks</th><th>Paid</th><th>Details</th></tr>
+    ${ss.map(s=>{const a=calcAttendanceStats(s.id,''),m=db.marks.filter(x=>x.studentId===s.id),paid=db.fees.filter(x=>x.studentId===s.id&&x.type!=='Extra').reduce((z,x)=>z+Number(x.amount||0),0);
+      return `<tr><td>${E(s.id)}</td><td><b>${E(s.name)}</b></td><td>${E(s.class||'-')}</td><td>${E(classBand(s.class||''))}</td><td>${fmtPct(a.pct)}</td><td>${a.present}/${a.absent}</td><td>${m.length}</td><td>${money(paid)}</td><td><button class="btn secondary" onclick="studentProfilePage('${E(s.id)}')">👤 Details</button></td></tr>`}).join('')||'<tr><td colspan="9">Permission உள்ள class students இல்லை.</td></tr>'}</table></div>`;
+  };
+
+  /* Filter teacher-visible classes in attendance dropdown. */
+  const oldAttendanceV3=window.attendancePage;
+  window.attendancePage=function(){
+    oldAttendanceV3();
+    if(!teacherMode())return;
+    const allowed=getTeacherAllowedClasses();
+    const sel=$('attClass');
+    if(sel)[...sel.options].forEach(o=>{if(o.value&&!allowed.includes(o.value))o.remove();});
+    const hist=$('attHistoryClass');
+    if(hist)[...hist.options].forEach(o=>{if(o.value&&!allowed.includes(o.value))o.remove();});
+  };
+
+})();
+</script>
+
 </body>
 </html>
