@@ -5,425 +5,374 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arul Siragugal Academy - Management</title>
 <style>
+
 :root{
-  --primary:#4f46e5;
-  --primary-hover:#4338ca;
-  --bg:#f4f6fb;
+  --primary:#6d28d9;
+  --primary2:#2563eb;
+  --accent:#06b6d4;
+  --pink:#ec4899;
+  --orange:#f97316;
+  --green:#10b981;
+  --red:#ef4444;
+  --yellow:#eab308;
+  --bg:#f4f7ff;
   --card:#ffffff;
+  --soft:#eef2ff;
   --text:#172033;
-  --muted:#687386;
-  --danger:#dc2626;
-  --success:#16a34a;
+  --muted:#6b7280;
   --border:#e5e7eb;
-  --card-radius:18px;
-  --card-shadow:0 6px 20px rgba(15,23,42,0.06);
+  --radius:14px;
+  --shadow:0 8px 24px rgba(30,41,59,.08);
+  --shadow2:0 14px 35px rgba(37,99,235,.14);
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,"Noto Sans Tamil",sans-serif;background:var(--bg);color:var(--text);-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Inter,Arial,"Noto Sans Tamil",sans-serif;
+  background:
+    radial-gradient(circle at 5% 0%,rgba(99,102,241,.10),transparent 25%),
+    radial-gradient(circle at 95% 10%,rgba(6,182,212,.09),transparent 25%),
+    var(--bg);
+  color:var(--text);
+  -webkit-tap-highlight-color:transparent;
+}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer;border:0}
 .hidden{display:none!important}
 
-/* Login Screen */
-.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#4f46e5,#7c3aed)}
-.login-card{width:100%;max-width:430px;background:#fff;border-radius:24px;padding:30px;box-shadow:0 20px 50px rgba(0,0,0,0.25)}
-.logo{width:80px;height:80px;border-radius:22px;object-fit:cover;background:#eef0ff;display:block;margin:0 auto 12px}
-h1,h2,h3{margin-top:0}.login-card h1{text-align:center;font-size:23px;color:#1e1b4b}.login-card p{text-align:center;color:var(--muted);font-size:14px;margin-bottom:20px}
-.role-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:20px 0}
-.role-tabs button{padding:12px 6px;border-radius:12px;background:#eef0ff;color:var(--primary);font-weight:bold;font-size:13px;transition:0.2s}
-.role-tabs .active{background:var(--primary);color:#fff}
-label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}
-input,select,textarea{width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:#fff;color:var(--text)}
-textarea{min-height:90px;resize:vertical}
-.btn{padding:11px 16px;border-radius:12px;background:var(--primary);color:white;font-weight:bold;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s ease}
-.btn:hover{background:var(--primary-hover)}
-.btn.secondary{background:#e9ecf7;color:#25304a}
-.btn.secondary:hover{background:#dfe4f2}
-.btn.danger{background:var(--danger)}
-.btn.success{background:var(--success)}
-.msg{text-align:center;margin-top:14px;font-size:14px;color:var(--danger)}
+/* ---------- LOGIN ---------- */
+.login{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:
+    radial-gradient(circle at 15% 15%,rgba(255,255,255,.22),transparent 22%),
+    radial-gradient(circle at 85% 80%,rgba(255,255,255,.16),transparent 25%),
+    linear-gradient(135deg,#312e81 0%,#6d28d9 45%,#2563eb 100%);
+}
+.login-card{
+  width:100%;
+  max-width:430px;
+  background:rgba(255,255,255,.97);
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 25px 70px rgba(15,23,42,.30);
+  backdrop-filter:blur(18px);
+}
+.logo{
+  width:76px;height:76px;border-radius:20px;object-fit:cover;
+  background:linear-gradient(135deg,#ede9fe,#dbeafe);
+  display:block;margin:0 auto 10px;
+  box-shadow:0 10px 25px rgba(79,70,229,.20);
+}
+.login-card h1{text-align:center;font-size:22px;color:#24164f;margin:0 0 4px}
+.login-card p{text-align:center;color:var(--muted);font-size:13px;margin:0 0 16px}
+.role-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:15px 0}
+.role-tabs button{
+  padding:10px 5px;border-radius:11px;
+  background:#f1f5f9;color:#475569;font-weight:800;font-size:12px;
+  transition:.2s;
+}
+.role-tabs button:hover{transform:translateY(-1px)}
+.role-tabs .active{color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary2));box-shadow:0 7px 16px rgba(79,70,229,.25)}
+label{display:block;font-size:12px;font-weight:800;margin:10px 0 5px;color:#334155}
+input,select,textarea{
+  width:100%;padding:10px 11px;border:1px solid var(--border);
+  border-radius:10px;background:#fff;color:var(--text);outline:none;
+  transition:.15s;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:#818cf8;box-shadow:0 0 0 3px rgba(99,102,241,.12);
+}
+textarea{min-height:82px;resize:vertical}
+.btn{
+  padding:9px 13px;border-radius:10px;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:#fff;font-weight:800;display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;transition:.18s;box-shadow:0 5px 12px rgba(79,70,229,.16);
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.03);box-shadow:0 8px 18px rgba(79,70,229,.22)}
+.btn.secondary{background:#eef2ff;color:#4338ca;box-shadow:none}
+.btn.secondary:hover{background:#e0e7ff}
+.btn.danger{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.btn.success{background:linear-gradient(135deg,#10b981,#059669)}
+.msg{text-align:center;margin-top:12px;font-size:13px;color:var(--red);font-weight:700}
 
-/* Main App Shell */
-.app{min-height:100vh;max-width:1100px;margin:0 auto;padding:18px}
-.topbar{display:flex;justify-content:space-between;align-items:center;background:var(--card);padding:14px 20px;border-radius:var(--card-radius);box-shadow:var(--card-shadow);margin-bottom:20px;gap:12px;flex-wrap:wrap}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.topbar h2{font-size:20px;margin:0;color:var(--text)}
-.topbar .user{color:var(--muted);font-size:13px;margin-top:2px}
-.back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;background:#eef0ff;color:var(--primary);font-weight:bold;font-size:14px}
-.back-btn:hover{background:#dfe4ff}
+/* ---------- APP ---------- */
+.app{min-height:100vh;max-width:1400px;margin:0 auto;padding:12px}
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(135deg,#ffffff 0%,#f8faff 100%);
+  padding:10px 14px;border:1px solid #e7e9f4;border-radius:16px;
+  box-shadow:var(--shadow);margin-bottom:12px;gap:10px;flex-wrap:wrap;
+  position:sticky;top:8px;z-index:50;
+  backdrop-filter:blur(12px);
+}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar h2{font-size:17px;margin:0;color:#1e1b4b}
+.topbar .user{color:var(--muted);font-size:11px;margin-top:2px}
+.back-btn{
+  display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border-radius:9px;
+  background:#eef2ff;color:#4f46e5;font-weight:800;font-size:12px
+}
+.back-btn:hover{background:#e0e7ff}
+#syncStatus{font-weight:700}
 
-/* Hub Grid Menu */
-.hub-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(210px, 1fr));gap:16px;margin-top:16px}
-.hub-card{background:var(--card);border:1px solid var(--border);border-radius:var(--card-radius);padding:22px 18px;text-align:center;box-shadow:var(--card-shadow);cursor:pointer;transition:transform 0.18s ease, box-shadow 0.18s ease;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px}
-.hub-card:hover{transform:translateY(-4px);box-shadow:0 12px 28px rgba(15,23,42,0.12);border-color:#c7d2fe}
-.hub-icon{font-size:36px;margin-bottom:10px;line-height:1}
-.hub-title{font-size:16px;font-weight:bold;color:var(--text)}
-.hub-desc{font-size:12px;color:var(--muted);margin-top:4px}
+/* ---------- HOME MODULES ---------- */
+.hub-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(175px,1fr));
+  gap:11px;margin-top:12px
+}
+.hub-card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(145deg,#fff,#f8faff);
+  border:1px solid #e7eaf3;border-radius:15px;
+  padding:15px 12px;text-align:center;
+  box-shadow:var(--shadow);cursor:pointer;
+  transition:.2s;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;min-height:112px
+}
+.hub-card:before{
+  content:"";position:absolute;width:70px;height:70px;border-radius:50%;
+  right:-30px;top:-30px;background:rgba(99,102,241,.08)
+}
+.hub-card:hover{transform:translateY(-3px);box-shadow:var(--shadow2);border-color:#c7d2fe}
+.hub-icon{
+  width:42px;height:42px;border-radius:13px;
+  display:grid;place-items:center;font-size:23px;margin-bottom:8px;
+  background:linear-gradient(135deg,#eef2ff,#e0f2fe);
+  box-shadow:0 6px 14px rgba(79,70,229,.10)
+}
+.hub-card:nth-child(3n+2) .hub-icon{background:linear-gradient(135deg,#ecfeff,#cffafe)}
+.hub-card:nth-child(3n+3) .hub-icon{background:linear-gradient(135deg,#fff7ed,#ffedd5)}
+.hub-title{font-size:13px;font-weight:900;color:#1f2937}
+.hub-desc{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3}
 
-/* Generic Cards & Tables */
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--card-radius);padding:20px;box-shadow:var(--card-shadow);margin-bottom:18px}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
-.cards .card.stat{position:relative;overflow:hidden;min-height:105px;margin-bottom:0}
-.cards .card.stat:after{content:"";position:absolute;width:60px;height:60px;right:-15px;top:-15px;border-radius:50%;background:rgba(79,70,229,0.08)}
-.stat .label{color:var(--muted);font-size:13px}
-.stat .value{font-size:24px;font-weight:bold;margin-top:8px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
-.table-wrap{overflow:auto}
-.table{width:100%;border-collapse:collapse}
-.table th,.table td{padding:11px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;font-size:14px}
-.table th{background:#f8fafc;font-weight:bold}
-.table tbody tr:hover{background:#f8fafc}
-.badge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:bold}
+/* ---------- DASHBOARD STATS ---------- */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.cards .card.stat{
+  position:relative;overflow:hidden;min-height:88px;margin-bottom:0;
+  padding:14px 15px;border:0;color:#fff;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+}
+.cards .card.stat:nth-child(2){background:linear-gradient(135deg,#0891b2,#06b6d4)}
+.cards .card.stat:nth-child(3){background:linear-gradient(135deg,#f97316,#f59e0b)}
+.cards .card.stat:nth-child(4){background:linear-gradient(135deg,#059669,#10b981)}
+.cards .card.stat:after{
+  content:"";position:absolute;width:85px;height:85px;right:-28px;top:-30px;
+  border-radius:50%;background:rgba(255,255,255,.14)
+}
+.stat .label{color:rgba(255,255,255,.86);font-size:11px;font-weight:700}
+.stat .value{font-size:22px;font-weight:900;margin-top:5px}
+.stat .danger-text,.stat .success-text{color:#fff!important}
+
+/* ---------- CARDS / TABLES ---------- */
+.card{
+  background:rgba(255,255,255,.96);border:1px solid #e7eaf2;border-radius:14px;
+  padding:15px;box-shadow:var(--shadow);margin-bottom:12px
+}
+.card h3{font-size:15px;margin-bottom:10px}
+.cards+.card{margin-top:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.toolbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:11px}
+.table-wrap{overflow:auto;border-radius:10px}
+.table{width:100%;border-collapse:separate;border-spacing:0}
+.table th,.table td{
+  padding:8px 9px;border-bottom:1px solid #edf0f5;
+  text-align:left;white-space:nowrap;font-size:12px
+}
+.table th{
+  background:linear-gradient(180deg,#f8faff,#f1f5f9);
+  font-weight:900;color:#475569;position:sticky;top:0;z-index:1
+}
+.table tbody tr:hover{background:#f8faff}
+.table tbody tr:last-child td{border-bottom:0}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}
 .badge.ok{background:#dcfce7;color:#166534}
 .badge.pending{background:#fee2e2;color:#991b1b}
 .badge.info{background:#e0e7ff;color:#3730a3}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999}
-.modal-box{width:100%;max-width:650px;max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:24px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.paybox{background:#eefbf2;border:1px solid #bbf7d0;padding:16px;border-radius:14px}
-.danger-text{color:var(--danger)}.success-text{color:var(--success)}
-.att-buttons{display:flex;gap:8px;flex-wrap:wrap}
-.att-btn{padding:8px 14px;border-radius:10px;border:2px solid #d1d5db;background:#f8fafc;color:#374151;font-weight:bold}
+.modal{
+  position:fixed;inset:0;background:rgba(15,23,42,.58);
+  display:flex;align-items:center;justify-content:center;padding:14px;z-index:999;
+  backdrop-filter:blur(5px)
+}
+.modal-box{
+  width:100%;max-width:700px;max-height:92vh;overflow:auto;
+  background:#fff;border-radius:18px;padding:17px;
+  box-shadow:0 25px 70px rgba(15,23,42,.30)
+}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.paybox{
+  background:linear-gradient(135deg,#ecfdf5,#f0fdf4);
+  border:1px solid #bbf7d0;padding:13px;border-radius:12px
+}
+.danger-text{color:var(--red)}.success-text{color:var(--green)}
+.att-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.att-btn{
+  padding:7px 10px;border-radius:9px;border:2px solid #e2e8f0;
+  background:#f8fafc;color:#374151;font-weight:800;font-size:11px
+}
 .att-btn.present.selected{background:#16a34a;color:#fff;border-color:#16a34a}
 .att-btn.absent.selected{background:#dc2626;color:#fff;border-color:#dc2626}
-.student-link{background:none;border:0;padding:0;color:var(--primary);font-weight:bold;text-decoration:underline;cursor:pointer}
-.period-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-.period-tools>div{min-width:140px;flex:1}
+.student-link{background:none;border:0;padding:0;color:#4f46e5;font-weight:900;text-decoration:underline;cursor:pointer}
+.period-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.period-tools>div{min-width:135px;flex:1}
 
-/* Dark Mode */
-.dark{--bg:#0b1220;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--border:#273449}
-.dark input,.dark select,.dark textarea{background:#0f172a;color:#e5e7eb}
-.dark .table th{background:#172033}
-.dark .table tbody tr:hover{background:#1a2333}
-.dark .back-btn{background:#1e1b4b;color:#a5b4fc}
-
-/* Responsive Rules */
-@media(max-width:768px){
-  .app{padding:12px}
-  .cards{grid-template-columns:repeat(2,1fr);gap:10px}
-  .hub-grid{grid-template-columns:repeat(2,1fr);gap:12px}
-  .hub-card{padding:16px 12px;min-height:120px}
-  .hub-icon{font-size:30px}
-  .hub-title{font-size:14px}
-  .grid2{grid-template-columns:1fr}
-  .two{grid-template-columns:1fr}
-  .period-tools{grid-template-columns:1fr 1fr}
+/* ---------- SMALL SPECIAL ELEMENTS ---------- */
+.summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.summary-box{
+  padding:10px;border-radius:11px;background:#f8fafc;border:1px solid #e5e7eb;
+  font-size:11px;color:#64748b
 }
-@media(max-width:480px){
-  .role-tabs{grid-template-columns:1fr}
-  .topbar{padding:12px}
+.summary-box b{display:block;font-size:17px;color:#1f2937;margin-top:2px}
+.pdf-btn{background:linear-gradient(135deg,#0f766e,#0891b2)!important}
+
+/* ---------- DARK MODE ---------- */
+.dark{
+  --bg:#080d18;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--border:#263244;
+  background:radial-gradient(circle at 10% 0%,rgba(99,102,241,.12),transparent 25%),#080d18;
+}
+.dark .topbar,.dark .card,.dark .hub-card,.dark .modal-box{
+  background:linear-gradient(145deg,#111827,#0f172a);
+  border-color:#263244;color:var(--text)
+}
+.dark .hub-title,.dark .topbar h2,.dark label{color:#e5e7eb}
+.dark input,.dark select,.dark textarea{background:#0b1220;color:#e5e7eb;border-color:#334155}
+.dark .table th{background:#172033;color:#cbd5e1}
+.dark .table td{border-color:#263244}
+.dark .table tbody tr:hover{background:#172033}
+.dark .back-btn{background:#1e1b4b;color:#c4b5fd}
+.dark .btn.secondary{background:#1e293b;color:#c4b5fd}
+.dark .summary-box{background:#0f172a;border-color:#263244}
+.dark .summary-box b{color:#e5e7eb}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:900px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .hub-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:680px){
+  .app{padding:8px}
+  .topbar{top:4px;padding:9px 10px;border-radius:13px}
+  .topbar h2{font-size:15px}
+  .hub-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .hub-card{min-height:100px;padding:12px 8px}
+  .hub-icon{width:38px;height:38px;font-size:20px}
+  .cards{gap:8px}
+  .card{padding:11px;border-radius:12px}
+  .grid2,.two{grid-template-columns:1fr}
+  .summary-cards{grid-template-columns:1fr 1fr}
+  .summary-box:last-child{grid-column:1/-1}
+}
+@media(max-width:440px){
+  .login{padding:10px}
+  .login-card{padding:18px;border-radius:20px}
+  .role-tabs{grid-template-columns:1fr 1fr 1fr}
+  .role-tabs button{font-size:10px;padding:9px 2px}
+  .cards{grid-template-columns:1fr 1fr}
+  .cards .card.stat{min-height:78px;padding:11px}
+  .stat .value{font-size:18px}
+  .hub-title{font-size:12px}
+  .hub-desc{font-size:9px}
+  .btn{padding:8px 10px;font-size:11px}
   .period-tools{grid-template-columns:1fr}
 }
 
-/* Smart compact UI upgrade - preserves existing modules */
-.login-card{max-width:390px;padding:22px;border-radius:20px}
-.login-card .logo{width:68px;height:68px;margin-bottom:8px}
-.login-card h1{font-size:20px;margin:4px 0}
-.login-card .role-tabs{gap:6px;margin:12px 0}
-.login-card .role-tabs button{padding:8px 7px;font-size:12px}
-.login-card label{margin-top:8px;font-size:12px}
-.login-card input{padding:9px 10px;font-size:13px}
-.login-card .btn{padding:9px 12px;font-size:13px}
-.smart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.compact-card{padding:14px!important}
-.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
-.student-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}
-.detail-chip{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card)}
-@media(max-width:700px){.login-card{max-width:340px;padding:18px}.hub-grid{gap:9px}.hub-card{padding:13px}.table-wrap{overflow-x:auto}}
-@media print{body *{visibility:hidden!important}.pdf-report,.pdf-report *{visibility:visible!important}.pdf-report{position:absolute;left:0;top:0;width:100%;padding:20px;background:white;color:#111}.no-print{display:none!important}}
+/* compact scrollbar */
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-thumb{background:#c7d2fe;border-radius:99px}
+::-webkit-scrollbar-track{background:transparent}
+
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-/* ========================================================
-   SMART UPGRADE: CLASS ACCESS + STUDENT SELF REPORT PDF
-   ======================================================== */
-function teacherAllowedClass(cls){
-  if(role!=='teacher') return true;
-  const allowed=window.currentTeacher?.classes;
-  return !allowed || !allowed.length || allowed.includes(cls);
+
+<style id="ocean-ui-upgrade">
+:root{
+  --ocean-1:#063970;--ocean-2:#087ea4;--ocean-3:#10b6b0;--ocean-4:#5eead4;
+  --ocean-bg:#eafcff;--ocean-soft:#e6f8fb;
 }
-function teacherAllowedStudent(s){return role!=='teacher'||teacherAllowedClass(s.class)}
-function teacherStudentList(){return db.students.filter(teacherAllowedStudent)}
-
-// Keep existing student data columns; only restrict teacher visibility/access.
-const _oldStudentsPage=studentsPage;
-studentsPage=function(){
-  if(role==='teacher'){
-    const original=db.students; db.students=teacherStudentList();
-    try{_oldStudentsPage();}finally{db.students=original;}
-  }else _oldStudentsPage();
-};
-
-// Teacher class restriction for attendance/fees/marks/tests.
-const _oldAttendancePage=attendancePage;
-attendancePage=function(){
-  if(role==='teacher'){
-    const original=db.students; db.students=teacherStudentList(); try{_oldAttendancePage();}finally{db.students=original;}
-  }else _oldAttendancePage();
-};
-const _oldFeesPage=feesPage;
-feesPage=function(){
-  if(role==='teacher'){
-    const original=db.students; db.students=teacherStudentList(); try{_oldFeesPage();}finally{db.students=original;}
-  }else _oldFeesPage();
-};
-const _oldMarksPage=marksPage;
-marksPage=function(){
-  if(role==='teacher'){
-    const original=db.students; db.students=teacherStudentList(); try{_oldMarksPage();}finally{db.students=original;}
-  }else _oldMarksPage();
-};
-const _oldTestsPage=testsPage;
-testsPage=function(){
-  if(role==='teacher'){
-    const original=db.students; db.students=teacherStudentList(); try{_oldTestsPage();}finally{db.students=original;}
-  }else _oldTestsPage();
-};
-
-// Student portal: compact, no duplicate columns; mark is entered directly from the existing Mark cell.
-studentTestsPage=function(){
-  const tests=(db.tests||[]).filter(t=>!t.class || t.class===currentStudent.class);
-  const submitted=db.onlineMarks.filter(m=>m.studentId===currentStudent.id);
-  document.getElementById('content').innerHTML=`
-  <div class="card compact-card"><div class="toolbar"><div><h3 style="margin:0">🧪 My Tests</h3><small style="color:var(--muted)">${esc(currentStudent.name)} · ${esc(currentStudent.class)}</small></div></div>
-  <div class="table-wrap"><table class="table compact-table"><thead><tr><th>Test</th><th>Subject</th><th>Mark</th><th>Action</th></tr></thead><tbody>
-  ${tests.map(t=>{const m=submitted.find(x=>x.testName===t.name);return `<tr><td><b>${esc(t.name)}</b><br><small>${t.date||''}</small></td><td>${esc(t.subject||'-')}</td><td>${m?`<b>${m.mark}/${m.total}</b>`:`<span class="badge pending">Pending</span>`}</td><td><a href="${esc(t.link)}" target="_blank" class="btn secondary" style="padding:5px 9px">🔗 Test</a> ${m?'<span class="badge ok">Submitted</span>':`<button class="btn success" style="padding:5px 9px" onclick="studentMarkEntryForm('${esc(t.name)}','${esc(t.subject||'')}',${t.total||100})">Enter Mark</button>`}</td></tr>`}).join('')||'<tr><td colspan="4">No tests for your class.</td></tr>'}
-  </tbody></table></div></div>`;
-};
-
-// Student profile: show all useful student information without exposing password.
-const _oldStudentProfilePage=studentProfilePage;
-studentProfilePage=function(id){
-  const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;
-  if(role==='student') id=currentStudent.id;
-  const a=calcAttendanceStats(s.id,monthNow()),pending=calcPending(s.id,monthNow());
-  const marks=db.marks.filter(m=>m.studentId===s.id), online=db.onlineMarks.filter(m=>m.studentId===s.id);
-  document.getElementById('content').innerHTML=`
-  <div class="smart-grid">
-    <div class="card stat compact-card"><div class="label">Attendance</div><div class="value">${fmtPct(a.pct)}</div></div>
-    <div class="card stat compact-card"><div class="label">Present</div><div class="value">${a.present}</div></div>
-    <div class="card stat compact-card"><div class="label">Absent</div><div class="value danger-text">${a.absent}</div></div>
-    <div class="card stat compact-card"><div class="label">Pending Fee</div><div class="value danger-text">${money(pending)}</div></div>
-  </div>
-  <div class="card compact-card"><div class="toolbar"><h3 style="margin:0">👨‍🎓 ${esc(s.name)}</h3>${role==='student'?`<button class="btn secondary" onclick="studentReportPDF('${s.id}',monthNow())">📄 Monthly PDF</button>`:''}</div>
-  <div class="student-detail-grid">
-   <div class="detail-chip"><small>ID</small><br><b>${esc(s.id)}</b></div><div class="detail-chip"><small>Class</small><br><b>${esc(s.class)}</b></div>
-   <div class="detail-chip"><small>Mobile</small><br><b>${esc(s.mobile||'-')}</b></div><div class="detail-chip"><small>Parent</small><br><b>${esc(s.parent||'-')}</b></div>
-   <div class="detail-chip"><small>Birthday</small><br><b>${esc(s.birthday||'-')}</b></div><div class="detail-chip"><small>Monthly Fee</small><br><b>${money(s.monthlyFee)}</b></div>
-   <div class="detail-chip" style="grid-column:1/-1"><small>Address</small><br><b>${esc(s.address||'-')}</b></div>
-  </div></div>
-  <div class="card compact-card"><h3>📊 Marks</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Date</th><th>Exam / Test</th><th>Subject</th><th>Mark</th></tr></thead><tbody>${marks.concat(online.map(m=>({...m,exam:m.testName,entryType:'Online'}))).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(m=>`<tr><td>${m.date||'-'}</td><td>${esc(m.exam||'-')}</td><td>${esc(m.subject||'-')}</td><td><b>${m.mark}/${m.total}</b></td></tr>`).join('')||'<tr><td colspan="4">No marks.</td></tr>'}</tbody></table></div></div>`;
-};
-
-// Monthly individual PDF. Uses jsPDF when available; otherwise opens a clean print-ready PDF page.
-function studentReportPDF(id,month){
-  const s=db.students.find(x=>x.id===id); if(!s)return;
-  month=month||monthNow();
-  const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
-  const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
-  const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
-  const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
-  const p=att.filter(x=>x.status==='Present').length, ab=att.filter(x=>x.status==='Absent').length;
-  const paid=fees.reduce((a,f)=>a+Number(f.amount||0),0), extra=fees.reduce((a,f)=>a+Number(f.extraAmount||0),0);
-  const pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
-  if(window.jspdf?.jsPDF){
-    const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=16;
-    const line=(txt,size=10,bold=false)=>{doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(txt),14,y);y+=6;};
-    line(db.settings.academy||'Academy',18,true);line('Monthly Student Report - '+month,12,true);y+=2;
-    line(`Student: ${s.name}`);line(`ID: ${s.id}`);line(`Class: ${s.class}`);line(`Mobile: ${s.mobile||'-'}`);line(`Attendance: Present ${p} | Absent ${ab}`);line(`Fees: Paid ${paid} | Extra ${extra} | Pending ${pending}`);y+=3;line('MARKS',12,true);
-    [...marks,...online.map(m=>({date:m.date,exam:m.testName,mark:m.mark,total:m.total}))].forEach(m=>{if(y>280){doc.addPage();y=16}line(`${m.date||'-'}  ${m.exam||'-'}  ${m.mark}/${m.total}`)});
-    doc.save(`student-report-${s.id}-${month}.pdf`);
-  }else{printStudentReportPDF(id,month)}
+body.ocean-theme{
+  background:
+    radial-gradient(circle at 8% 5%,rgba(94,234,212,.28),transparent 24%),
+    radial-gradient(circle at 92% 12%,rgba(14,165,233,.22),transparent 27%),
+    linear-gradient(145deg,#eafcff 0%,#eef8ff 48%,#e8fbf7 100%);
 }
-function printStudentReportPDF(id,month){
- const s=db.students.find(x=>x.id===id);if(!s)return;const a=calcAttendanceStats(id,month),fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
- const w=window.open('','_blank');if(!w)return alert('Popup block செய்யப்பட்டுள்ளது.');
- w.document.write(`<html><head><title>Student Report</title><style>body{font-family:Arial;padding:25px;color:#111}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:7px;text-align:left}</style></head><body><div class="pdf-report"><h2>${esc(db.settings.academy)}</h2><h3>Monthly Student Report - ${esc(month)}</h3><p><b>Name:</b> ${esc(s.name)} &nbsp; <b>ID:</b> ${esc(s.id)} &nbsp; <b>Class:</b> ${esc(s.class)}</p><p><b>Attendance:</b> Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}</p><p><b>Fees:</b> Paid ${money(fees.reduce((x,f)=>x+Number(f.amount||0),0))}</p><button class="no-print" onclick="window.print()">Print / Save PDF</button></div>
-<style id="smart-final-css">
-:root{--smart1:#6d5dfc;--smart2:#00b8d9;--smart3:#ff6b8a;--smart4:#22c55e}
-.login-card{border:1px solid rgba(109,93,252,.22)!important;box-shadow:0 20px 60px rgba(31,41,55,.12)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,250,255,.98))!important}
-.smart-login-panel{animation:smartIn .35s ease both}.smart-role-btn{transition:.2s ease}.smart-role-btn:hover{transform:translateY(-2px)}
-.smart-page-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;padding:16px 18px;border-radius:18px;background:linear-gradient(120deg,#eef2ff,#ecfeff,#fff1f2);border:1px solid rgba(109,93,252,.12)}
-.smart-page-head h2{margin:2px 0 4px;font-size:22px}.smart-page-head p{margin:0;color:var(--muted);font-size:12px}.smart-kicker{font-size:10px;letter-spacing:1.5px;font-weight:800;color:var(--smart1)}
-.smart-actions,.smart-toolbar,.row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.smart-toolbar{margin:10px 0}.smart-toolbar input{flex:1;min-width:220px}.smart-toolbar select{min-width:150px}
-.smart-table th{white-space:nowrap}.smart-table td{vertical-align:middle}.empty-cell{text-align:center!important;padding:25px!important;color:var(--muted)}
-.sms-btn{background:linear-gradient(135deg,#0ea5e9,#06b6d4)!important;color:#fff!important;border:0!important}.smart-gradient-card{background:linear-gradient(145deg,#eef2ff,#ecfeff)!important}
-.smart-dashboard-strip{margin:14px 0;padding:14px 16px;border-radius:16px;background:linear-gradient(100deg,#111827,#312e81,#0f766e);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}.smart-dashboard-strip span{display:block;opacity:.78;font-size:11px;margin-top:3px}.smart-dash-pills{display:flex;gap:7px;flex-wrap:wrap}.smart-dash-pills span{display:inline-block;background:rgba(255,255,255,.13);padding:7px 10px;border-radius:999px;color:#fff}.smart-dash-pills b{color:#fff}.smart-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.smart-tile{padding:14px;border-radius:15px;background:linear-gradient(135deg,#fff,#eef2ff);border:1px solid #e5e7eb}.smart-tile b{display:block;font-size:22px}.smart-tile span{font-size:11px;color:var(--muted)}
-.report-filter-grid{display:grid;grid-template-columns:1.4fr .8fr auto;gap:12px;align-items:end}.report-button{display:flex;align-items:end}.compact-card{border-radius:15px!important}.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
-@keyframes smartIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media(max-width:760px){.smart-page-head,.smart-dashboard-strip{flex-direction:column;align-items:stretch}.smart-mini-grid{grid-template-columns:1fr 1fr}.report-filter-grid{grid-template-columns:1fr}.smart-toolbar input{min-width:0;width:100%}.row-actions .btn{padding:5px 7px;font-size:11px}}
+body.ocean-theme .topbar{
+  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(232,250,255,.94));
+  border-color:#b9e8ef;
+}
+body.ocean-theme .hub-card{
+  background:linear-gradient(145deg,#ffffff,#e9fbff);
+  border-color:#bfe8ee;
+}
+body.ocean-theme .hub-card:hover{border-color:#5fcad3;box-shadow:0 14px 35px rgba(8,126,164,.18)}
+body.ocean-theme .hub-icon{background:linear-gradient(135deg,#dffaff,#ccfbf1)}
+body.ocean-theme .cards .card.stat:nth-child(1){background:linear-gradient(135deg,#075985,#0284c7)}
+body.ocean-theme .cards .card.stat:nth-child(2){background:linear-gradient(135deg,#087f8c,#0d9488)}
+body.ocean-theme .cards .card.stat:nth-child(3){background:linear-gradient(135deg,#0891b2,#06b6d4)}
+body.ocean-theme .cards .card.stat:nth-child(4){background:linear-gradient(135deg,#0f766e,#10b981)}
+body.ocean-theme .btn{background:linear-gradient(135deg,#075985,#0891b2)}
+body.ocean-theme .btn.success{background:linear-gradient(135deg,#0f766e,#10b981)}
+body.ocean-theme .btn.secondary{background:#e0f7fa;color:#075985}
+body.ocean-theme .back-btn{background:#e0f7fa;color:#075985}
+body.ocean-theme .table th{background:linear-gradient(180deg,#effcff,#e5f6fa)}
+body.ocean-theme .summary-box{background:linear-gradient(145deg,#f7feff,#e9fafa);border-color:#c8e9ed}
+
+.smart-insights-shell{
+  position:relative;border-radius:18px;overflow:hidden;
+  background:linear-gradient(135deg,#ffffff,#effcff);
+  border:1px solid #bfe8ee;box-shadow:0 10px 28px rgba(8,126,164,.10);
+}
+.smart-insights-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:11px 13px;background:linear-gradient(135deg,#075985,#0891b2);color:#fff;
+}
+.smart-insights-head h3{margin:0;font-size:14px}
+.smart-insights-body{padding:12px}
+.smart-insights-shell.minimized .smart-insights-body{display:none}
+.smart-insights-shell.minimized .smart-chevron{transform:rotate(-90deg)}
+.smart-chevron{transition:.2s}
+.student-four-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.student-four-card{
+  min-height:94px;padding:12px;border-radius:15px;color:#fff;position:relative;overflow:hidden;
+  box-shadow:0 8px 20px rgba(15,23,42,.10)
+}
+.student-four-card:nth-child(1){background:linear-gradient(135deg,#075985,#0ea5e9)}
+.student-four-card:nth-child(2){background:linear-gradient(135deg,#0f766e,#14b8a6)}
+.student-four-card:nth-child(3){background:linear-gradient(135deg,#0891b2,#06b6d4)}
+.student-four-card:nth-child(4){background:linear-gradient(135deg,#7c3aed,#a855f7)}
+.student-four-card .k{font-size:10px;opacity:.88;font-weight:800}
+.student-four-card .v{font-size:21px;font-weight:900;margin-top:5px}
+.student-four-card .s{font-size:9px;opacity:.84;margin-top:3px}
+.month-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.month-panel{
+  background:#fff;border:1px solid #d9eef2;border-radius:14px;padding:12px;
+  box-shadow:0 5px 16px rgba(8,126,164,.07)
+}
+.month-panel h4{margin:0 0 8px;font-size:13px;color:#075985}
+.ui-order-list{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.ui-order-item{
+  padding:9px 10px;border:1px solid #cfe8ed;border-radius:10px;background:#f7feff;
+  cursor:grab;font-weight:800;font-size:11px;color:#164e63
+}
+.ui-order-item.dragging{opacity:.45}
+.ui-check{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:12px;font-weight:800}
+.ui-check input{width:auto}
+@media(max-width:800px){.student-four-grid{grid-template-columns:repeat(2,1fr)}.month-detail-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.student-four-grid{grid-template-columns:1fr 1fr}.ui-order-list{grid-template-columns:1fr}.student-four-card{min-height:82px;padding:10px}.student-four-card .v{font-size:18px}}
 </style>
-<script>
-/* =========================================================
-   ARUL SIRAGUGAL ACADEMY — SMART UI / REPORT / SMS UPGRADE
-   Preserves existing database + Google Sheets sync functions.
-   ========================================================= */
-(function(){
-  const esc0 = window.esc || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
-  const allowed = s => role!=='teacher' || !currentTeacher || !(currentTeacher.classes||[]).length || currentTeacher.classes.includes(s.class);
-  window.teacherAllowedStudent = allowed;
-  window.teacherStudentList = ()=>db.students.filter(allowed);
 
-  /* SMS: opens the phone/desktop SMS composer; no data is sent automatically. */
-  window.smsStudent=function(id,text){
-    const s=db.students.find(x=>x.id===id); if(!s)return;
-    if(!s.mobile)return alert('இந்த student-க்கு mobile number இல்லை.');
-    const body=encodeURIComponent(text||`வணக்கம் ${s.name}, ${db.settings.academy} தொடர்பாக தகவல்.`);
-    const n=String(s.mobile).replace(/[^+\d]/g,'');
-    window.location.href=`sms:${n}?body=${body}`;
-  };
-  window.smsFee=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம் ${s.name}, ${db.settings.academy}. உங்கள் fee pending: ${money(calcPending(id,monthNow()))}.`)};
-  window.smsAbsent=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம், ${s.name} இன்று ${db.settings.academy} attendance-ல் Absent. தயவு செய்து கவனிக்கவும்.`)};
-
-  /* Keep teacher identity and permissions. */
-  const oldLoginTeacher=window.loginTeacher;
-  window.loginTeacher=function(){
-    const id=document.getElementById('teacherId')?.value||'', pass=document.getElementById('teacherPass')?.value||'';
-    const t=(db.teachers||[]).find(x=>x.id===id && x.password===pass);
-    if(t){ currentTeacher=t; enterApp('teacher'); return; }
-    if(id===db.settings.teacherId && pass===db.settings.teacherPass){ currentTeacher={name:db.settings.teacher, id, password:pass, classes:[]}; enterApp('teacher'); return; }
-    if(oldLoginTeacher) oldLoginTeacher();
-  };
-
-  /* Teacher filtering helper for all important class-based pages. */
-  function withTeacherStudents(fn){
-    if(role!=='teacher') return fn();
-    const original=db.students;
-    db.students=original.filter(allowed);
-    try{return fn();}finally{db.students=original;}
-  }
-  ['studentsPage','attendancePage','feesPage','marksPage','testsPage','homeworkPage'].forEach(name=>{
-    const old=window[name]; if(typeof old!=='function')return;
-    window[name]=function(){return withTeacherStudents(()=>old.apply(this,arguments));};
-  });
-
-  /* Compact + colourful student manager with full edit/delete + SMS. */
-  window.studentsPage=function(){
-    const list=db.students.filter(allowed);
-    document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">STUDENTS</div><h2>👨‍🎓 Student Management</h2><p>${list.length} students in your access area</p></div>
-      <div class="smart-actions"><button class="btn" onclick="studentForm()">➕ Add Student</button><button class="btn secondary" onclick="showPage('reports')">📄 Reports</button></div></div>
-      <div class="smart-toolbar"><input id="studentSearch" placeholder="🔎 Search name / ID / class..." oninput="smartRenderStudents()"><select id="studentClassFilter" onchange="smartRenderStudents()"><option value="">All Classes</option>${[...new Set(list.map(s=>s.class).filter(Boolean))].sort().map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select></div>
-      <div class="card table-wrap"><table class="table smart-table"><thead><tr><th>Student</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="smartStudentRows"></tbody></table></div>`;
-    smartRenderStudents();
-  };
-  window.smartRenderStudents=function(){
-    const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();
-    const cf=document.getElementById('studentClassFilter')?.value||'';
-    const list=db.students.filter(allowed).filter(s=>(!cf||s.class===cf)&&(s.name+' '+s.id+' '+s.class+' '+s.mobile).toLowerCase().includes(q));
-    const box=document.getElementById('smartStudentRows'); if(!box)return;
-    box.innerHTML=list.map(s=>`<tr><td><b>${esc0(s.name)}</b><br><small>ID: ${esc0(s.id)}</small></td><td><span class="badge info">${esc0(s.class||'-')}</span></td><td>${esc0(s.mobile||'-')}</td><td>${money(s.monthlyFee)}</td><td class="row-actions"><button class="btn secondary" onclick="studentProfilePage('${esc0(s.id)}')">View</button><button class="btn secondary" onclick="studentForm('${esc0(s.id)}')">Edit</button><button class="btn sms-btn" onclick="smsStudent('${esc0(s.id)}')">SMS</button><button class="btn danger" onclick="deleteStudent('${esc0(s.id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell">No students found.</td></tr>';
-  };
-
-  /* SMS Centre */
-  window.smsCenterPage=function(){
-    const month=monthNow();
-    const pending=db.students.filter(allowed).map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
-    const absent=db.students.filter(allowed).filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));
-    document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">COMMUNICATION</div><h2>📱 SMS Centre</h2><p>SMS composer shortcuts — select a student and send from your device.</p></div></div>
-      <div class="smart-mini-grid"><div class="smart-tile"><b>${pending.length}</b><span>Fee Pending</span></div><div class="smart-tile"><b>${absent.length}</b><span>Absent Today</span></div><div class="smart-tile"><b>${db.students.filter(allowed).length}</b><span>Total Students</span></div></div>
-      <div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Pending</th><th>SMS</th></tr></thead><tbody>${pending.map(x=>`<tr><td>${esc0(x.s.name)}</td><td>${money(x.p)}</td><td><button class="btn sms-btn" onclick="smsFee('${esc0(x.s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No pending fees.</td></tr>'}</tbody></table></div></div>
-      <div class="card"><h3>📅 Absent Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Class</th><th>SMS</th></tr></thead><tbody>${absent.map(s=>`<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td><button class="btn sms-btn" onclick="smsAbsent('${esc0(s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No absent students today.</td></tr>'}</tbody></table></div></div></div>`;
-  };
-
-  /* Smart dashboard after the existing dashboard is rendered. */
-  const oldShowHub=window.showHubMenu;
-  window.showHubMenu=function(){
-    oldShowHub();
-    const c=document.getElementById('content'); if(!c)return;
-    const list=db.students.filter(allowed), month=monthNow();
-    const present=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
-    const absent=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent')).length;
-    const pending=list.reduce((n,s)=>n+calcPending(s.id,month),0);
-    const testsPending=role==='student'?0:(db.tests||[]).filter(t=>!t.class||list.some(s=>s.class===t.class)).filter(t=>!db.onlineMarks.some(m=>m.testName===t.name)).length;
-    const old=c.querySelector('.cards');
-    if(old) old.insertAdjacentHTML('afterend',`<div class="smart-dashboard-strip"><div><b>✨ Smart Overview</b><span>${role==='admin'?'Admin Control Centre':role==='teacher'?'Your Class Dashboard':'Your personal academy dashboard'}</span></div><div class="smart-dash-pills"><span>Present <b>${present}</b></span><span>Absent <b>${absent}</b></span><span>Pending <b>${money(pending)}</b></span>${role!=='student'?`<span>Tests Pending <b>${testsPending}</b></span>`:''}</div></div>`);
-    if(role==='admin'||role==='teacher'){
-      const grid=c.querySelector('.hub-grid'); if(grid&&!grid.querySelector('[data-sms-card]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.smsCard='1';d.onclick=()=>showPage('smsCenter');d.innerHTML='<div class="hub-icon">📱</div><div class="hub-title">SMS Centre</div><div class="hub-desc">Fee & absent reminders</div>';grid.insertBefore(d,grid.firstChild);}
-    }
-    if(role==='student'){
-      const profile=c.querySelector('.hub-grid');
-      if(profile&&!profile.querySelector('[data-student-report]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.studentReport='1';d.onclick=()=>studentReportPDF(currentStudent.id,monthNow());d.innerHTML='<div class="hub-icon">📄</div><div class="hub-title">Monthly PDF</div><div class="hub-desc">Download my report</div>';profile.insertBefore(d,profile.firstChild);}
-    }
-  };
-
-  /* Reports: PDF-first centre. Existing CSV/export functions remain available elsewhere. */
-  window.reportsPage=function(){
-    const list=db.students.filter(allowed), classes=[...new Set(list.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-    document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">REPORT CENTRE</div><h2>📄 PDF Reports</h2><p>Only the selected information is included in the report.</p></div></div>
-      <div class="card compact-card"><div class="report-filter-grid"><div><label>Student</label><select id="reportStudent">${list.map(s=>`<option value="${esc0(s.id)}">${esc0(s.name)} — ${esc0(s.class)}</option>`).join('')}</select></div><div><label>Month</label><input id="reportMonth" type="month" value="${monthNow()}"></div><div class="report-button"><button class="btn" onclick="studentReportPDF(document.getElementById('reportStudent').value,document.getElementById('reportMonth').value)">📥 Student Monthly PDF</button></div></div></div>
-      <div class="grid2"><div class="card compact-card"><h3>👥 Class Report</h3><label>Class</label><select id="pdfClass"><option value="">All Classes</option>${classes.map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select><label>Month</label><input id="pdfClassMonth" type="month" value="${monthNow()}"><br><button class="btn success" onclick="classReportPDF(document.getElementById('pdfClass').value,document.getElementById('pdfClassMonth').value)">📥 Class PDF</button></div>
-      <div class="card compact-card"><h3>📅 Attendance Report</h3><div class="two"><div><label>From</label><input id="pdfFrom" type="date" value="${today()}"></div><div><label>To</label><input id="pdfTo" type="date" value="${today()}"></div></div><br><button class="btn secondary" onclick="attendanceReportPDF(document.getElementById('pdfFrom').value,document.getElementById('pdfTo').value)">📥 Attendance PDF</button></div></div>`;
-  };
-
-  function pdfDoc(title){
-    if(!window.jspdf?.jsPDF){return null;}
-    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});let y=15;
-    const text=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=15}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
-    text(db.settings.academy||'Academy',18,true); text(title,13,true); text(new Date().toLocaleDateString('en-IN'),9,false); y+=3;
-    return {doc,text};
-  }
-  window.classReportPDF=function(cls,month){
-    const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls), p=pdfDoc(`Class Report — ${cls||'All Classes'} — ${month}`); if(!p)return printClassReport(cls,month); const {doc,text}=p;
-    list.forEach(s=>{const a=calcAttendanceStats(s.id,month),pending=calcPending(s.id,month);text(`${s.name} | ${s.class||'-'} | Present ${a.present} | Absent ${a.absent} | Attendance ${fmtPct(a.pct)} | Pending ${money(pending)}`)});doc.save(`class-report-${cls||'all'}-${month}.pdf`);
-  };
-  window.attendanceReportPDF=function(from,to){
-    const p=pdfDoc(`Attendance Report — ${from} to ${to}`); if(!p)return printAttendanceReport(from,to); const {doc,text}=p;
-    db.attendance.filter(a=>a.date>=from&&a.date<=to).filter(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)}).forEach(a=>{const s=db.students.find(x=>x.id===a.studentId);text(`${a.date} | ${s.name} | ${s.class||'-'} | ${a.status}`)});doc.save(`attendance-report-${from}-to-${to}.pdf`);
-  };
-  function printClassReport(cls,month){const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls);const html=`<h1>${esc0(db.settings.academy)}</h1><h2>Class Report - ${esc0(cls||'All')} - ${esc0(month)}</h2><table><tr><th>Student</th><th>Class</th><th>Present</th><th>Absent</th><th>Attendance</th><th>Pending</th></tr>${list.map(s=>{const a=calcAttendanceStats(s.id,month);return `<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.present}</td><td>${a.absent}</td><td>${fmtPct(a.pct)}</td><td>${money(calcPending(s.id,month))}</td></tr>`}).join('')}</table>`;pdfPrint('Class Report',html)}
-  function printAttendanceReport(from,to){const rows=db.attendance.filter(a=>a.date>=from&&a.date<=to).map(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)?`<tr><td>${a.date}</td><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.status}</td></tr>`:''}).join('');pdfPrint('Attendance Report',`<h1>${esc0(db.settings.academy)}</h1><h2>${from} to ${to}</h2><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${rows}</table>`)}
-
-  /* Rich monthly student PDF replaces the earlier short report while keeping same function name. */
-  window.studentReportPDF=function(id,month){
-    const s=db.students.find(x=>x.id===id); if(!s)return;
-    month=month||monthNow();
-    const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
-    const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
-    const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
-    const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
-    const a=calcAttendanceStats(id,month),paid=fees.reduce((n,f)=>n+Number(f.amount||0),0),extra=fees.reduce((n,f)=>n+Number(f.extraAmount||0),0),pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
-    if(window.jspdf?.jsPDF){
-      const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=14;
-      const line=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=14}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
-      line(db.settings.academy,18,true);line(`Student Monthly Report — ${month}`,13,true);y+=2;
-      line(`Name: ${s.name}`,10,true);line(`Student ID: ${s.id}`);line(`Class: ${s.class||'-'}`);line(`Mobile: ${s.mobile||'-'}`);line(`Parent: ${s.parent||'-'}`);line(`Attendance: Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}`);line(`Fees: Monthly ${money(s.monthlyFee)} | Paid ${money(paid)} | Extra ${money(extra)} | Pending ${money(pending)}`);y+=3;line('MARKS',12,true);
-      [...marks.map(m=>({date:m.date,exam:m.exam,subject:m.subject,mark:m.mark,total:m.total})),...online.map(m=>({date:m.date,exam:m.testName,subject:m.subject,mark:m.mark,total:m.total}))].forEach(m=>line(`${m.date||'-'} | ${m.exam||'-'} | ${m.subject||'-'} | ${m.mark}/${m.total}`));
-      y+=3;line('ATTENDANCE',12,true);att.forEach(x=>line(`${x.date} | ${x.status}`));
-      y+=3;line('FEE TRANSACTIONS',12,true);fees.forEach(f=>line(`${f.date} | ${f.type||'Payment'} | ${money(Number(f.amount||0)+Number(f.extraAmount||0))}`));
-      doc.save(`student-report-${s.id}-${month}.pdf`);
-    }else printStudentReportPDF(id,month);
-  };
-
-  /* Add SMS shortcut to teacher/admin profile cards and keep student full details. */
-  const oldProfile=window.studentProfilePage;
-  window.studentProfilePage=function(id){oldProfile(id);setTimeout(()=>{const h=document.querySelector('#content .card h3');const s=db.students.find(x=>x.id===id)||currentStudent;if(h&&s&&!h.parentElement.querySelector('[data-sms-profile]')){const b=document.createElement('button');b.className='btn sms-btn';b.dataset.smsProfile='1';b.textContent='📱 SMS';b.onclick=()=>smsStudent(s.id);h.parentElement.querySelector('.toolbar')?.appendChild(b);}},0)};
-
-  /* Teacher management remains fully editable/deletable; allowed-class selection is preserved. */
-  const oldTeachers=window.teachersPage;
-  window.teachersPage=function(){oldTeachers();};
-
-  /* Login polish */
-  setTimeout(()=>{
-    document.querySelectorAll('#adminLogin,#teacherLogin,#studentLogin').forEach(el=>el.classList.add('smart-login-panel'));
-    const roleButtons=document.querySelectorAll('#adminRole,#teacherRole,#studentRole'); roleButtons.forEach(x=>x.classList.add('smart-role-btn'));
-  },300);
-})();
-
-</script>
-</body></html>`);w.document.close();setTimeout(()=>w.print(),300);
-}
-
-</script>
 </head>
 <body>
 
 <div id="loginPage" class="login">
   <div class="login-card">
     <img id="loginLogo" class="logo" alt="Logo">
-    <h1 id="loginAcademy">Arul Siragugal Academy</h1><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Secure Login</div>
+    <h1 id="loginAcademy">Arul Siragugal Academy</h1>
     <p>Management System</p>
     <div id="loginLoading" style="display:none;text-align:center;color:var(--muted);font-size:13px;margin:6px 0">⏳ Shared data ஏற்றப்படுகிறது...</div>
     <div class="role-tabs">
@@ -537,16 +486,8 @@ function loginAdmin(){
   else document.getElementById('loginMsg').textContent='Admin ID / Password தவறாக உள்ளது.';
 }
 function loginTeacher(){
-  const id=String(document.getElementById('teacherId').value||'').trim();
-  const pass=String(document.getElementById('teacherPass').value||'');
-  const extra=(db.teachers||[]).find(t=>t.id===id && t.password===pass);
-  if(id===db.settings.teacherId && pass===db.settings.teacherPass){
-    window.currentTeacher={id,name:db.settings.teacher||'Teacher',classes:db.settings.teacherClasses||[]};
-    enterApp('teacher');
-  }else if(extra){
-    window.currentTeacher=extra;
-    enterApp('teacher');
-  }else document.getElementById('loginMsg').textContent='Teacher ID / Password தவறாக உள்ளது.';
+  if(document.getElementById('teacherId').value===db.settings.teacherId && document.getElementById('teacherPass').value===db.settings.teacherPass){enterApp('teacher')}
+  else document.getElementById('loginMsg').textContent='Teacher ID / Password தவறாக உள்ளது.';
 }
 function loginStudent(){
   const s=db.students.find(x=>x.id===document.getElementById('studentId').value && x.password===document.getElementById('studentPass').value);
@@ -1518,32 +1459,17 @@ function examForm(){
 function teachersPage(){
   document.getElementById('content').innerHTML=`
     <div class="toolbar"><button class="btn" onclick="teacherForm()">➕ Add Teacher</button></div>
-    <div class="card table-wrap compact-card"><table class="table compact-table"><thead><tr><th>Name</th><th>Login ID</th><th>Classes</th><th>Mobile</th><th>Action</th></tr></thead>
-    <tbody>${db.teachers.map((t,i)=>`<tr><td><b>${esc(t.name)}</b></td><td>${esc(t.id)}</td><td>${esc((t.classes||[]).join(', ')||'All')}</td><td>${esc(t.mobile||'-')}</td><td><button class="btn secondary" onclick="editTeacherAccount(${i})">Edit</button> <button class="btn danger" onclick="db.teachers.splice(${i},1);save();teachersPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">Additional teachers இல்லை.</td></tr>'}</tbody></table></div>`;
+    <div class="card table-wrap"><table class="table"><thead><tr><th>Name</th><th>ID</th><th>Mobile</th><th>Action</th></tr></thead>
+    <tbody>${db.teachers.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.id)}</td><td>${esc(t.mobile)}</td><td><button class="btn danger" onclick="db.teachers.splice(${i},1);save();teachersPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="4">Additional teachers இல்லை.</td></tr>'}</tbody></table></div>`;
 }
-function editTeacherAccount(i){
- const t=db.teachers[i]; if(!t)return;
- const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
- openModal('Edit Teacher',`<label>Name</label><input id="etName" value="${esc(t.name)}"><div class="two"><div><label>Login ID</label><input id="etId" value="${esc(t.id)}"></div><div><label>Password</label><input id="etPass" value="${esc(t.password||'')}"></div></div><label>Mobile</label><input id="etMobile" value="${esc(t.mobile||'')}"><label>Allowed Classes</label><select id="etClasses" multiple style="min-height:110px">${classes.map(c=>`<option value="${esc(c)}" ${(t.classes||[]).includes(c)?'selected':''}>${esc(c)}</option>`).join('')}</select><br><button class="btn" style="width:100%" onclick="updateTeacherAccount(${i})">Save Changes</button>`);
-}
-function updateTeacherAccount(i){const t=db.teachers[i];t.name=document.getElementById('etName').value.trim();t.id=document.getElementById('etId').value.trim();t.password=document.getElementById('etPass').value;t.mobile=document.getElementById('etMobile').value.trim();t.classes=[...document.getElementById('etClasses').selectedOptions].map(o=>o.value);save();closeModal();teachersPage();}
 function teacherForm(){
-  const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   openModal('Teacher Account',`
     <label>Name</label><input id="trName">
-    <div class="two"><div><label>Login ID</label><input id="trId"></div><div><label>Password</label><input id="trPass" type="password"></div></div>
+    <label>Login ID</label><input id="trId">
+    <label>Password</label><input id="trPass" type="password">
     <label>Mobile</label><input id="trMobile">
-    <label>Allowed Classes</label><select id="trClasses" multiple style="min-height:110px">${classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
-    <small style="color:var(--muted)">Teacher login செய்தால் தேர்வு செய்த class மாணவர்கள் மட்டும் access ஆகும்.</small>
-    <br><button class="btn" style="width:100%" onclick="saveTeacherAccount()">Save Teacher</button>
+    <br><button class="btn" style="width:100%" onclick="db.teachers.push({name:document.getElementById('trName').value,id:document.getElementById('trId').value,password:document.getElementById('trPass').value,mobile:document.getElementById('trMobile').value,att:true,fees:true,marks:true});save();closeModal();teachersPage()">Save Teacher</button>
   `);
-}
-function saveTeacherAccount(){
-  const name=document.getElementById('trName').value.trim(),id=document.getElementById('trId').value.trim(),password=document.getElementById('trPass').value;
-  if(!name||!id||!password)return alert('Name, Login ID, Password கட்டாயம்.');
-  const classes=[...document.getElementById('trClasses').selectedOptions].map(o=>o.value);
-  db.teachers.push({name,id,password,mobile:document.getElementById('trMobile').value.trim(),classes,att:true,fees:true,marks:true});
-  save();closeModal();teachersPage();
 }
 
 function financePage(){
@@ -1898,180 +1824,358 @@ autoImportOnLoad();
   function pdfPrint(title,html){
     const w=window.open('','_blank'); if(!w)return alert('Popup blocked. Please allow popups for PDF export.');
     w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${esc(title)}</title><style>body{font-family:Arial,'Noto Sans Tamil',sans-serif;padding:24px;color:#111}h1{font-size:22px}h2{font-size:18px;margin-top:22px}.meta{color:#555;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box{border:1px solid #ddd;border-radius:10px;padding:10px}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #ddd;padding:7px;font-size:12px;text-align:left}th{background:#f3f4f6}@media print{button{display:none!important}}</style></head><body><h1>${esc(title)}</h1><div class="meta">${new Date().toLocaleString('en-IN')}</div>${html}
-<style id="smart-final-css">
-:root{--smart1:#6d5dfc;--smart2:#00b8d9;--smart3:#ff6b8a;--smart4:#22c55e}
-.login-card{border:1px solid rgba(109,93,252,.22)!important;box-shadow:0 20px 60px rgba(31,41,55,.12)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,250,255,.98))!important}
-.smart-login-panel{animation:smartIn .35s ease both}.smart-role-btn{transition:.2s ease}.smart-role-btn:hover{transform:translateY(-2px)}
-.smart-page-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;padding:16px 18px;border-radius:18px;background:linear-gradient(120deg,#eef2ff,#ecfeff,#fff1f2);border:1px solid rgba(109,93,252,.12)}
-.smart-page-head h2{margin:2px 0 4px;font-size:22px}.smart-page-head p{margin:0;color:var(--muted);font-size:12px}.smart-kicker{font-size:10px;letter-spacing:1.5px;font-weight:800;color:var(--smart1)}
-.smart-actions,.smart-toolbar,.row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.smart-toolbar{margin:10px 0}.smart-toolbar input{flex:1;min-width:220px}.smart-toolbar select{min-width:150px}
-.smart-table th{white-space:nowrap}.smart-table td{vertical-align:middle}.empty-cell{text-align:center!important;padding:25px!important;color:var(--muted)}
-.sms-btn{background:linear-gradient(135deg,#0ea5e9,#06b6d4)!important;color:#fff!important;border:0!important}.smart-gradient-card{background:linear-gradient(145deg,#eef2ff,#ecfeff)!important}
-.smart-dashboard-strip{margin:14px 0;padding:14px 16px;border-radius:16px;background:linear-gradient(100deg,#111827,#312e81,#0f766e);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}.smart-dashboard-strip span{display:block;opacity:.78;font-size:11px;margin-top:3px}.smart-dash-pills{display:flex;gap:7px;flex-wrap:wrap}.smart-dash-pills span{display:inline-block;background:rgba(255,255,255,.13);padding:7px 10px;border-radius:999px;color:#fff}.smart-dash-pills b{color:#fff}.smart-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.smart-tile{padding:14px;border-radius:15px;background:linear-gradient(135deg,#fff,#eef2ff);border:1px solid #e5e7eb}.smart-tile b{display:block;font-size:22px}.smart-tile span{font-size:11px;color:var(--muted)}
-.report-filter-grid{display:grid;grid-template-columns:1.4fr .8fr auto;gap:12px;align-items:end}.report-button{display:flex;align-items:end}.compact-card{border-radius:15px!important}.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
-@keyframes smartIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media(max-width:760px){.smart-page-head,.smart-dashboard-strip{flex-direction:column;align-items:stretch}.smart-mini-grid{grid-template-columns:1fr 1fr}.report-filter-grid{grid-template-columns:1fr}.smart-toolbar input{min-width:0;width:100%}.row-actions .btn{padding:5px 7px;font-size:11px}}
-</style>
 <script>
 /* =========================================================
-   ARUL SIRAGUGAL ACADEMY — SMART UI / REPORT / SMS UPGRADE
-   Preserves existing database + Google Sheets sync functions.
+   OCEAN UI + SMART INSIGHTS MINIMIZE + CARD ARRANGEMENT
+   + STUDENT MONTH VIEW + DATE-WISE ATTENDANCE
+   + FULL FEE HISTORY + OFFLINE MARK ENTRY
    ========================================================= */
 (function(){
-  const esc0 = window.esc || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
-  const allowed = s => role!=='teacher' || !currentTeacher || !(currentTeacher.classes||[]).length || currentTeacher.classes.includes(s.class);
-  window.teacherAllowedStudent = allowed;
-  window.teacherStudentList = ()=>db.students.filter(allowed);
-
-  /* SMS: opens the phone/desktop SMS composer; no data is sent automatically. */
-  window.smsStudent=function(id,text){
-    const s=db.students.find(x=>x.id===id); if(!s)return;
-    if(!s.mobile)return alert('இந்த student-க்கு mobile number இல்லை.');
-    const body=encodeURIComponent(text||`வணக்கம் ${s.name}, ${db.settings.academy} தொடர்பாக தகவல்.`);
-    const n=String(s.mobile).replace(/[^+\d]/g,'');
-    window.location.href=`sms:${n}?body=${body}`;
+  db.settings=db.settings||{};
+  db.settings.ui=db.settings.ui||{
+    ocean:true,smartMinimized:false,studentFour:true,
+    dashboardPreset:'4-columns',
+    visibleCards:{students:true,attendance:true,fees:true,marks:true},
+    hubOrder:[]
   };
-  window.smsFee=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம் ${s.name}, ${db.settings.academy}. உங்கள் fee pending: ${money(calcPending(id,monthNow()))}.`)};
-  window.smsAbsent=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம், ${s.name} இன்று ${db.settings.academy} attendance-ல் Absent. தயவு செய்து கவனிக்கவும்.`)};
+  db.offlineMarks=db.offlineMarks||[];
 
-  /* Keep teacher identity and permissions. */
-  const oldLoginTeacher=window.loginTeacher;
-  window.loginTeacher=function(){
-    const id=document.getElementById('teacherId')?.value||'', pass=document.getElementById('teacherPass')?.value||'';
-    const t=(db.teachers||[]).find(x=>x.id===id && x.password===pass);
-    if(t){ currentTeacher=t; enterApp('teacher'); return; }
-    if(id===db.settings.teacherId && pass===db.settings.teacherPass){ currentTeacher={name:db.settings.teacher, id, password:pass, classes:[]}; enterApp('teacher'); return; }
-    if(oldLoginTeacher) oldLoginTeacher();
-  };
+  const ui=()=>db.settings.ui;
 
-  /* Teacher filtering helper for all important class-based pages. */
-  function withTeacherStudents(fn){
-    if(role!=='teacher') return fn();
-    const original=db.students;
-    db.students=original.filter(allowed);
-    try{return fn();}finally{db.students=original;}
+  function applyOceanUI(){
+    document.body.classList.toggle('ocean-theme',ui().ocean!==false);
+    document.body.classList.toggle('smart-ui-minimized',ui().smartMinimized===true);
   }
-  ['studentsPage','attendancePage','feesPage','marksPage','testsPage','homeworkPage'].forEach(name=>{
-    const old=window[name]; if(typeof old!=='function')return;
-    window[name]=function(){return withTeacherStudents(()=>old.apply(this,arguments));};
-  });
+  window.applyOceanUI=applyOceanUI;
 
-  /* Compact + colourful student manager with full edit/delete + SMS. */
-  window.studentsPage=function(){
-    const list=db.students.filter(allowed);
+  function smartInsightsHTML(){
+    const u=ui();
+    const total=db.students.length;
+    const present=db.attendance.filter(a=>a.date===today()&&a.status==='Present').length;
+    const absent=db.attendance.filter(a=>a.date===today()&&a.status==='Absent').length;
+    const pending=db.students.reduce((a,s)=>a+calcPending(s.id,monthNow()),0);
+    const marks=[...db.marks,...(db.onlineMarks||[]),...(db.offlineMarks||[])];
+    const avg=marks.length?marks.reduce((a,m)=>a+(Number(m.total)?Number(m.mark)/Number(m.total)*100:0),0)/marks.length:0;
+    return `<div class="smart-insights-shell ${u.smartMinimized?'minimized':''}" id="smartInsightsShell">
+      <div class="smart-insights-head">
+        <h3>🧠 Smart Insights</h3>
+        <button class="btn secondary" style="padding:5px 9px;background:rgba(255,255,255,.18);color:#fff" onclick="toggleSmartInsights()">
+          <span class="smart-chevron">⌄</span> <span id="smartToggleText">${u.smartMinimized?'Expand':'Minimize'}</span>
+        </button>
+      </div>
+      <div class="smart-insights-body">
+        <div class="summary-cards" style="margin:0">
+          <div class="summary-box">Students<b>${total}</b></div>
+          <div class="summary-box">Today Present<b>${present}</b></div>
+          <div class="summary-box">Today Absent<b class="danger-text">${absent}</b></div>
+          <div class="summary-box">Fee Pending<b class="danger-text">${money(pending)}</b></div>
+          <div class="summary-box">Mark Average<b>${avg.toFixed(1)}%</b></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  window.toggleSmartInsights=function(){
+    ui().smartMinimized=!ui().smartMinimized;save();applyOceanUI();
+    const shell=document.getElementById('smartInsightsShell');
+    if(shell){
+      shell.classList.toggle('minimized',ui().smartMinimized);
+      const t=document.getElementById('smartToggleText');if(t)t.textContent=ui().smartMinimized?'Expand':'Minimize';
+    }
+  };
+
+  /* Rebuild admin dashboard with a compact, colourful smart block. */
+  const previousRenderFeatureDashboard=window.renderFeatureDashboard;
+  window.renderFeatureDashboard=function(){
+    if(typeof previousRenderFeatureDashboard==='function') previousRenderFeatureDashboard();
+    const c=document.getElementById('content');if(!c)return;
+    const old=c.querySelector('.smart-insights-shell');if(old)old.remove();
+    const cards=c.querySelector('.cards');
+    if(cards) cards.insertAdjacentHTML('afterend',smartInsightsHTML());
+    applyOceanUI();
+  };
+
+  /* ---------- Student 360 month-wise interface ---------- */
+  window.studentProfilePage=function(id){
+    const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;
+    const selected=ui().studentMonth||monthNow();
+    const months=[];
+    for(let i=0;i<12;i++){const d=new Date();d.setMonth(d.getMonth()-i);months.push(d.toISOString().slice(0,7));}
+    const att=db.attendance.filter(a=>a.studentId===s.id&&a.date?.startsWith(selected)).slice().sort((a,b)=>b.date.localeCompare(a.date));
+    const fees=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(selected)).slice().sort((a,b)=>b.date.localeCompare(a.date));
+    const marks=[...db.marks.filter(m=>m.studentId===s.id&&((m.date||'').startsWith(selected)||!m.date)),...(db.onlineMarks||[]).filter(m=>m.studentId===s.id&&((m.date||'').startsWith(selected)||!m.date)),...(db.offlineMarks||[]).filter(m=>m.studentId===s.id&&((m.date||'').startsWith(selected)||!m.date))];
+    const a=calcAttendanceStats(s.id,selected);
+    const extra=fees.filter(f=>f.type==='Extra').reduce((x,f)=>x+Number(f.extraAmount||0),0);
+    const paid=calcPaid(s.id,selected);
+    const pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+    const avg=marks.length?marks.reduce((x,m)=>x+(Number(m.total)?Number(m.mark)/Number(m.total)*100:0),0)/marks.length:0;
+
     document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">STUDENTS</div><h2>👨‍🎓 Student Management</h2><p>${list.length} students in your access area</p></div>
-      <div class="smart-actions"><button class="btn" onclick="studentForm()">➕ Add Student</button><button class="btn secondary" onclick="showPage('reports')">📄 Reports</button></div></div>
-      <div class="smart-toolbar"><input id="studentSearch" placeholder="🔎 Search name / ID / class..." oninput="smartRenderStudents()"><select id="studentClassFilter" onchange="smartRenderStudents()"><option value="">All Classes</option>${[...new Set(list.map(s=>s.class).filter(Boolean))].sort().map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select></div>
-      <div class="card table-wrap"><table class="table smart-table"><thead><tr><th>Student</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="smartStudentRows"></tbody></table></div>`;
-    smartRenderStudents();
-  };
-  window.smartRenderStudents=function(){
-    const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();
-    const cf=document.getElementById('studentClassFilter')?.value||'';
-    const list=db.students.filter(allowed).filter(s=>(!cf||s.class===cf)&&(s.name+' '+s.id+' '+s.class+' '+s.mobile).toLowerCase().includes(q));
-    const box=document.getElementById('smartStudentRows'); if(!box)return;
-    box.innerHTML=list.map(s=>`<tr><td><b>${esc0(s.name)}</b><br><small>ID: ${esc0(s.id)}</small></td><td><span class="badge info">${esc0(s.class||'-')}</span></td><td>${esc0(s.mobile||'-')}</td><td>${money(s.monthlyFee)}</td><td class="row-actions"><button class="btn secondary" onclick="studentProfilePage('${esc0(s.id)}')">View</button><button class="btn secondary" onclick="studentForm('${esc0(s.id)}')">Edit</button><button class="btn sms-btn" onclick="smsStudent('${esc0(s.id)}')">SMS</button><button class="btn danger" onclick="deleteStudent('${esc0(s.id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell">No students found.</td></tr>';
+      <div class="card" style="background:linear-gradient(135deg,#063970,#0891b2);color:#fff;border:0">
+        <div class="toolbar" style="justify-content:space-between;margin:0">
+          <div><div style="font-size:18px;font-weight:900">👨‍🎓 ${esc(s.name)}</div><small>ID: ${esc(s.id)} · Class: ${esc(s.class||'-')}</small></div>
+          <div class="toolbar" style="margin:0">
+            ${s.mobile?`<a class="btn secondary" href="${callLink(s.mobile)}">📞 Call</a>`:''}
+            ${s.mobile?`<a class="btn success" target="_blank" href="${waLink(s.mobile,'வணக்கம் '+s.name+', '+db.settings.academy+' தொடர்பாக.')}">💬 WhatsApp</a>`:''}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <h3 style="margin:0">📅 Month-wise Student Details</h3>
+          <select id="studentMonthSelect" style="max-width:170px" onchange="changeStudentMonth('${esc(s.id)}',this.value)">
+            ${months.map(m=>`<option value="${m}" ${m===selected?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div class="student-four-grid">
+          <div class="student-four-card"><div class="k">📅 ATTENDANCE</div><div class="v">${a.pct.toFixed(1)}%</div><div class="s">${a.present} Present · ${a.absent} Absent</div></div>
+          <div class="student-four-card"><div class="k">💰 FEES</div><div class="v">${money(paid)}</div><div class="s">Paid · Pending ${money(pending)}</div></div>
+          <div class="student-four-card"><div class="k">📝 MARKS</div><div class="v">${avg.toFixed(1)}%</div><div class="s">${marks.length} Test Records</div></div>
+          <div class="student-four-card"><div class="k">📚 ACADEMIC</div><div class="v">${s.class||'-'}</div><div class="s">${selected} · Student 360</div></div>
+        </div>
+      </div>
+
+      <div class="month-detail-grid">
+        <div class="month-panel">
+          <h4>📅 Date-wise Attendance</h4>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Status</th></tr></thead><tbody>
+            ${att.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${esc(x.status)}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance</td></tr>'}
+          </tbody></table></div>
+        </div>
+        <div class="month-panel">
+          <h4>💰 Month-wise Fee History</h4>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Amount</th></tr></thead><tbody>
+            ${fees.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.type||'Fee')}</td><td>${money(x.type==='Extra'?x.extraAmount:x.amount)}</td></tr>`).join('')||'<tr><td colspan="3">No fee history</td></tr>'}
+          </tbody></table></div>
+        </div>
+        <div class="month-panel">
+          <h4>📝 Month-wise Marks</h4>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Test</th><th>Mark</th><th>%</th></tr></thead><tbody>
+            ${marks.map(x=>`<tr><td>${esc(x.exam||x.testName||'-')}</td><td>${x.mark}/${x.total}</td><td>${x.total?((x.mark/x.total)*100).toFixed(1):0}%</td></tr>`).join('')||'<tr><td colspan="3">No marks</td></tr>'}
+          </tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🧾 Complete Student Details</h3>
+        <div class="two">
+          <div><b>Student ID:</b> ${esc(s.id)}</div><div><b>Name:</b> ${esc(s.name)}</div>
+          <div><b>Class:</b> ${esc(s.class||'-')}</div><div><b>Mobile:</b> ${esc(s.mobile||'-')}</div>
+          <div><b>Parent:</b> ${esc(s.parent||'-')}</div><div><b>Monthly Fee:</b> ${money(s.monthlyFee||0)}</div>
+        </div>
+        <div class="toolbar" style="margin-top:12px">
+          <button class="btn pdf-btn" onclick="student360Report('${esc(s.id)}')">📄 Full PDF Report</button>
+          ${role==='admin'||role==='teacher'?`<button class="btn secondary" onclick="showPage('marks')">📝 Mark Entry</button>`:''}
+        </div>
+      </div>`;
+    applyOceanUI();
   };
 
-  /* SMS Centre */
-  window.smsCenterPage=function(){
-    const month=monthNow();
-    const pending=db.students.filter(allowed).map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
-    const absent=db.students.filter(allowed).filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));
+  window.changeStudentMonth=function(id,m){
+    ui().studentMonth=m;save();studentProfilePage(id);
+  };
+
+  /* ---------- Student login: full fee history ---------- */
+  window.studentFees=function(){
+    const s=currentStudent;if(!s)return;
+    const months=[];
+    for(let i=0;i<12;i++){const d=new Date();d.setMonth(d.getMonth()-i);months.push(d.toISOString().slice(0,7));}
+    const history=db.fees.filter(f=>f.studentId===s.id).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const totalPaid=history.reduce((a,f)=>a+Number(f.amount||0)+Number(f.extraAmount||0),0);
     document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">COMMUNICATION</div><h2>📱 SMS Centre</h2><p>SMS composer shortcuts — select a student and send from your device.</p></div></div>
-      <div class="smart-mini-grid"><div class="smart-tile"><b>${pending.length}</b><span>Fee Pending</span></div><div class="smart-tile"><b>${absent.length}</b><span>Absent Today</span></div><div class="smart-tile"><b>${db.students.filter(allowed).length}</b><span>Total Students</span></div></div>
-      <div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Pending</th><th>SMS</th></tr></thead><tbody>${pending.map(x=>`<tr><td>${esc0(x.s.name)}</td><td>${money(x.p)}</td><td><button class="btn sms-btn" onclick="smsFee('${esc0(x.s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No pending fees.</td></tr>'}</tbody></table></div></div>
-      <div class="card"><h3>📅 Absent Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Class</th><th>SMS</th></tr></thead><tbody>${absent.map(s=>`<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td><button class="btn sms-btn" onclick="smsAbsent('${esc0(s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No absent students today.</td></tr>'}</tbody></table></div></div></div>`;
+      <div class="student-four-grid" style="margin-bottom:12px">
+        <div class="student-four-card"><div class="k">💰 TOTAL PAID</div><div class="v">${money(totalPaid)}</div><div class="s">All recorded payments</div></div>
+        <div class="student-four-card"><div class="k">📆 CURRENT MONTH</div><div class="v">${money(calcPaid(s.id,monthNow()))}</div><div class="s">${monthNow()}</div></div>
+        <div class="student-four-card"><div class="k">⏳ PENDING</div><div class="v">${money(calcPending(s.id,monthNow()))}</div><div class="s">Current month</div></div>
+        <div class="student-four-card"><div class="k">🧾 RECEIPTS</div><div class="v">${history.length}</div><div class="s">Payment records</div></div>
+      </div>
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <h3 style="margin:0">💰 My Fees — Complete History</h3>
+          <select id="studentFeeMonth" style="max-width:160px" onchange="filterStudentFeeHistory()">
+            <option value="">All Months</option>${months.map(m=>`<option>${m}</option>`).join('')}
+          </select>
+        </div>
+        <div id="studentFeeHistory"></div>
+      </div>`;
+    renderStudentFeeHistory();
   };
 
-  /* Smart dashboard after the existing dashboard is rendered. */
+  window.filterStudentFeeHistory=function(){renderStudentFeeHistory(document.getElementById('studentFeeMonth')?.value||'')};
+  window.renderStudentFeeHistory=function(month=''){
+    const s=currentStudent;if(!s)return;
+    const rows=db.fees.filter(f=>f.studentId===s.id&&(!month||f.date?.startsWith(month))).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    document.getElementById('studentFeeHistory').innerHTML=`<div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th></tr></thead><tbody>${rows.map(f=>`<tr><td>${esc(f.date||'-')}</td><td>${esc(f.type||'Fee')}</td><td>${esc(f.purpose||f.note||'-')}</td><td>${money(Number(f.amount||0)+Number(f.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="4">Fee history இல்லை.</td></tr>'}</tbody></table></div>`;
+  };
+
+  /* ---------- Student attendance: date-wise visit ---------- */
+  const oldStudentAttendance=window.studentAttendance;
+  window.studentAttendance=function(){
+    const s=currentStudent;if(!s)return;
+    const rows=db.attendance.filter(a=>a.studentId===s.id).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const present=rows.filter(a=>a.status==='Present').length, absent=rows.filter(a=>a.status==='Absent').length;
+    document.getElementById('content').innerHTML=`
+      <div class="student-four-grid" style="margin-bottom:12px">
+        <div class="student-four-card"><div class="k">📅 TOTAL VISITS</div><div class="v">${rows.length}</div><div class="s">Attendance entries</div></div>
+        <div class="student-four-card"><div class="k">✅ PRESENT</div><div class="v">${present}</div><div class="s">Present days</div></div>
+        <div class="student-four-card"><div class="k">❌ ABSENT</div><div class="v">${absent}</div><div class="s">Absent days</div></div>
+        <div class="student-four-card"><div class="k">📊 RATE</div><div class="v">${rows.length?((present/rows.length)*100).toFixed(1):'0.0'}%</div><div class="s">Overall attendance</div></div>
+      </div>
+      <div class="card"><h3>📅 Date-wise Attendance Visit</h3>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Day</th><th>Status</th></tr></thead><tbody>
+      ${rows.map(a=>`<tr><td>${esc(a.date)}</td><td>${a.date?new Date(a.date+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short'}):'-'}</td><td><span class="badge ${a.status==='Present'?'ok':'pending'}">${esc(a.status)}</span></td></tr>`).join('')||'<tr><td colspan="3">Attendance இல்லை.</td></tr>'}
+      </tbody></table></div></div>`;
+    applyOceanUI();
+  };
+
+  /* ---------- Offline mark entry for student ---------- */
+  window.studentOfflineMarksPage=function(){
+    const rows=(db.offlineMarks||[]).filter(m=>m.studentId===currentStudent.id).slice().reverse();
+    document.getElementById('content').innerHTML=`
+      <div class="grid2">
+        <div class="card">
+          <h3>📝 Offline Mark Entry</h3>
+          <p style="color:var(--muted)">Offline / written test mark-ஐ student record-ல் submit செய்யலாம். Admin / Teacher பார்க்க முடியும்.</p>
+          <label>Test / Exam Name</label><input id="offTest" placeholder="e.g. Unit Test 1">
+          <label>Subject</label><input id="offSubject" placeholder="e.g. Mathematics">
+          <div class="two">
+            <div><label>Mark</label><input id="offMark" type="number" min="0"></div>
+            <div><label>Total</label><input id="offTotal" type="number" min="1" value="100"></div>
+          </div>
+          <label>Date</label><input id="offDate" type="date" value="${today()}">
+          <label>Remarks</label><textarea id="offRemark" placeholder="Optional"></textarea>
+          <button class="btn success" style="width:100%;margin-top:10px" onclick="submitStudentOfflineMark()">➕ Submit Offline Mark</button>
+        </div>
+        <div class="card">
+          <h3>📋 My Offline Marks</h3>
+          <div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Test</th><th>Subject</th><th>Mark</th><th>Status</th></tr></thead><tbody>
+          ${rows.map(m=>`<tr><td>${esc(m.date)}</td><td>${esc(m.testName)}</td><td>${esc(m.subject)}</td><td>${m.mark}/${m.total}</td><td><span class="badge info">Student Entry</span></td></tr>`).join('')||'<tr><td colspan="5">Offline marks இல்லை.</td></tr>'}
+          </tbody></table></div>
+        </div>
+      </div>`;
+  };
+  window.submitStudentOfflineMark=function(){
+    const test=document.getElementById('offTest').value.trim(),subject=document.getElementById('offSubject').value.trim();
+    const mark=Number(document.getElementById('offMark').value),total=Number(document.getElementById('offTotal').value);
+    if(!test||!subject||!total||mark<0||mark>total)return alert('Test, Subject, Mark and valid Total enter செய்யவும்.');
+    db.offlineMarks.push({id:'OFF-'+Date.now(),studentId:currentStudent.id,studentName:currentStudent.name,testName:test,subject,mark,total,date:document.getElementById('offDate').value||today(),remarks:document.getElementById('offRemark').value.trim(),source:'Student Offline Entry'});
+    save();alert('Offline mark submitted. Admin / Teacher can view it.');studentOfflineMarksPage();
+  };
+
+  /* ---------- Student hub additions ---------- */
   const oldShowHub=window.showHubMenu;
   window.showHubMenu=function(){
     oldShowHub();
-    const c=document.getElementById('content'); if(!c)return;
-    const list=db.students.filter(allowed), month=monthNow();
-    const present=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
-    const absent=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent')).length;
-    const pending=list.reduce((n,s)=>n+calcPending(s.id,month),0);
-    const testsPending=role==='student'?0:(db.tests||[]).filter(t=>!t.class||list.some(s=>s.class===t.class)).filter(t=>!db.onlineMarks.some(m=>m.testName===t.name)).length;
-    const old=c.querySelector('.cards');
-    if(old) old.insertAdjacentHTML('afterend',`<div class="smart-dashboard-strip"><div><b>✨ Smart Overview</b><span>${role==='admin'?'Admin Control Centre':role==='teacher'?'Your Class Dashboard':'Your personal academy dashboard'}</span></div><div class="smart-dash-pills"><span>Present <b>${present}</b></span><span>Absent <b>${absent}</b></span><span>Pending <b>${money(pending)}</b></span>${role!=='student'?`<span>Tests Pending <b>${testsPending}</b></span>`:''}</div></div>`);
-    if(role==='admin'||role==='teacher'){
-      const grid=c.querySelector('.hub-grid'); if(grid&&!grid.querySelector('[data-sms-card]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.smsCard='1';d.onclick=()=>showPage('smsCenter');d.innerHTML='<div class="hub-icon">📱</div><div class="hub-title">SMS Centre</div><div class="hub-desc">Fee & absent reminders</div>';grid.insertBefore(d,grid.firstChild);}
+    if(role!=='student')return;
+    const grid=document.querySelector('.hub-grid');if(!grid)return;
+    if(!grid.querySelector('[data-extra-student="fees"]')){
+      grid.insertAdjacentHTML('beforeend',`
+        <div class="hub-card" data-extra-student="fees" onclick="showPage('studentFees')"><div class="hub-icon">💳</div><div class="hub-title">Fee History</div><div class="hub-desc">All months & payments</div></div>
+        <div class="hub-card" data-extra-student="attendance" onclick="showPage('studentAttendance')"><div class="hub-icon">📆</div><div class="hub-title">Date-wise Visit</div><div class="hub-desc">Every attendance date</div></div>
+        <div class="hub-card" data-extra-student="offline" onclick="showPage('studentOfflineMarks')"><div class="hub-icon">📝</div><div class="hub-title">Offline Mark Entry</div><div class="hub-desc">Written test marks</div></div>
+        <div class="hub-card" data-extra-student="360" onclick="showPage('studentProfile')"><div class="hub-icon">🌊</div><div class="hub-title">Student Smart 360</div><div class="hub-desc">Month-wise complete details</div></div>`);
     }
-    if(role==='student'){
-      const profile=c.querySelector('.hub-grid');
-      if(profile&&!profile.querySelector('[data-student-report]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.studentReport='1';d.onclick=()=>studentReportPDF(currentStudent.id,monthNow());d.innerHTML='<div class="hub-icon">📄</div><div class="hub-title">Monthly PDF</div><div class="hub-desc">Download my report</div>';profile.insertBefore(d,profile.firstChild);}
-    }
+    applyOceanUI();
   };
 
-  /* Reports: PDF-first centre. Existing CSV/export functions remain available elsewhere. */
-  window.reportsPage=function(){
-    const list=db.students.filter(allowed), classes=[...new Set(list.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-    document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">REPORT CENTRE</div><h2>📄 PDF Reports</h2><p>Only the selected information is included in the report.</p></div></div>
-      <div class="card compact-card"><div class="report-filter-grid"><div><label>Student</label><select id="reportStudent">${list.map(s=>`<option value="${esc0(s.id)}">${esc0(s.name)} — ${esc0(s.class)}</option>`).join('')}</select></div><div><label>Month</label><input id="reportMonth" type="month" value="${monthNow()}"></div><div class="report-button"><button class="btn" onclick="studentReportPDF(document.getElementById('reportStudent').value,document.getElementById('reportMonth').value)">📥 Student Monthly PDF</button></div></div></div>
-      <div class="grid2"><div class="card compact-card"><h3>👥 Class Report</h3><label>Class</label><select id="pdfClass"><option value="">All Classes</option>${classes.map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select><label>Month</label><input id="pdfClassMonth" type="month" value="${monthNow()}"><br><button class="btn success" onclick="classReportPDF(document.getElementById('pdfClass').value,document.getElementById('pdfClassMonth').value)">📥 Class PDF</button></div>
-      <div class="card compact-card"><h3>📅 Attendance Report</h3><div class="two"><div><label>From</label><input id="pdfFrom" type="date" value="${today()}"></div><div><label>To</label><input id="pdfTo" type="date" value="${today()}"></div></div><br><button class="btn secondary" onclick="attendanceReportPDF(document.getElementById('pdfFrom').value,document.getElementById('pdfTo').value)">📥 Attendance PDF</button></div></div>`;
+  /* ---------- Page routing ---------- */
+  const oldShowPage2=window.showPage;
+  window.showPage=function(p){
+    if(p==='studentOfflineMarks'){
+      document.getElementById('hubBackBtn').classList.remove('hidden');
+      document.getElementById('pageTitle').textContent='Offline Mark Entry';
+      return studentOfflineMarksPage();
+    }
+    if(p==='studentProfile'){
+      document.getElementById('hubBackBtn').classList.remove('hidden');
+      document.getElementById('pageTitle').textContent='Student Smart 360';
+      return studentProfilePage();
+    }
+    return oldShowPage2(p);
   };
 
-  function pdfDoc(title){
-    if(!window.jspdf?.jsPDF){return null;}
-    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});let y=15;
-    const text=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=15}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
-    text(db.settings.academy||'Academy',18,true); text(title,13,true); text(new Date().toLocaleDateString('en-IN'),9,false); y+=3;
-    return {doc,text};
+  /* ---------- Settings: interface customization ---------- */
+  const oldSettings2=window.settingsPage;
+  window.settingsPage=function(){
+    oldSettings2();
+    const c=document.getElementById('content');if(!c)return;
+    const u=ui();
+    const box=document.createElement('div');box.className='card';box.id='interfaceCustomizationCard';
+    const cards=u.visibleCards||{students:true,attendance:true,fees:true,marks:true};
+    box.innerHTML=`
+      <div class="toolbar" style="justify-content:space-between">
+        <h3 style="margin:0">🎨 Interface Customization</h3>
+        <span class="feature-chip">New Ocean UI</span>
+      </div>
+      <div class="two">
+        <div>
+          <label>Background Theme</label>
+          <select id="uiOcean"><option value="ocean" ${u.ocean!==false?'selected':''}>🌊 Ocean Colour</option><option value="light" ${u.ocean===false?'selected':''}>☀️ Clean Light</option></select>
+        </div>
+        <div>
+          <label>Smart Insights</label>
+          <select id="uiSmart"><option value="show" ${!u.smartMinimized?'selected':''}>📊 Show Expanded</option><option value="min" ${u.smartMinimized?'selected':''}>➖ Start Minimized</option></select>
+        </div>
+        <div>
+          <label>Student 4-Card Layout</label>
+          <select id="uiFour"><option value="four" ${u.studentFour!==false?'selected':''}>🧩 4 Merged Cards</option><option value="normal" ${u.studentFour===false?'selected':''}>📋 Normal Cards</option></select>
+        </div>
+        <div>
+          <label>Dashboard Card Arrangement</label>
+          <select id="uiPreset">
+            <option value="4-columns" ${u.dashboardPreset==='4-columns'?'selected':''}>4 Cards — Compact</option>
+            <option value="2-columns" ${u.dashboardPreset==='2-columns'?'selected':''}>2 × 2 Cards</option>
+            <option value="single" ${u.dashboardPreset==='single'?'selected':''}>Single Column</option>
+          </select>
+        </div>
+      </div>
+      <h4 style="margin:15px 0 5px">👁️ Show / Hide Dashboard Cards</h4>
+      <div class="ui-check"><input type="checkbox" id="uiStudents" ${cards.students!==false?'checked':''}><span>👨‍🎓 Students</span></div>
+      <div class="ui-check"><input type="checkbox" id="uiAttendance" ${cards.attendance!==false?'checked':''}><span>📅 Attendance</span></div>
+      <div class="ui-check"><input type="checkbox" id="uiFees" ${cards.fees!==false?'checked':''}><span>💰 Fees</span></div>
+      <div class="ui-check"><input type="checkbox" id="uiMarks" ${cards.marks!==false?'checked':''}><span>📝 Marks</span></div>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn" onclick="saveInterfaceCustomization()">💾 Save Interface Design</button>
+        <button class="btn secondary" onclick="resetInterfaceCustomization()">↺ Reset Design</button>
+      </div>
+      <p style="font-size:10px;color:var(--muted);margin:8px 0 0">இந்த settings-ல் Ocean background, Smart Insights minimize, card arrangement, 4-card layout மற்றும் dashboard card visibility மாற்றலாம்.</p>`;
+    c.appendChild(box);
+  };
+
+  window.saveInterfaceCustomization=function(){
+    const u=ui();
+    u.ocean=document.getElementById('uiOcean').value==='ocean';
+    u.smartMinimized=document.getElementById('uiSmart').value==='min';
+    u.studentFour=document.getElementById('uiFour').value==='four';
+    u.dashboardPreset=document.getElementById('uiPreset').value;
+    u.visibleCards={
+      students:document.getElementById('uiStudents').checked,
+      attendance:document.getElementById('uiAttendance').checked,
+      fees:document.getElementById('uiFees').checked,
+      marks:document.getElementById('uiMarks').checked
+    };
+    save();applyOceanUI();alert('Interface design saved.');
+    if(role==='admin')showPage('settings');
+  };
+  window.resetInterfaceCustomization=function(){
+    db.settings.ui={ocean:true,smartMinimized:false,studentFour:true,dashboardPreset:'4-columns',visibleCards:{students:true,attendance:true,fees:true,marks:true},hubOrder:[]};
+    save();applyOceanUI();alert('Interface design reset.');showPage('settings');
+  };
+
+  /* Apply card arrangement to all .cards blocks. */
+  function applyCardPreset(){
+    const p=ui().dashboardPreset||'4-columns';
+    const style=document.getElementById('dynamicCardPreset')||document.createElement('style');
+    style.id='dynamicCardPreset';
+    style.textContent=`#content>.cards{grid-template-columns:${p==='single'?'1fr':p==='2-columns'?'repeat(2,1fr)':'repeat(4,1fr)'}}@media(max-width:680px){#content>.cards{grid-template-columns:repeat(2,1fr)}}`;
+    document.head.appendChild(style);
   }
-  window.classReportPDF=function(cls,month){
-    const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls), p=pdfDoc(`Class Report — ${cls||'All Classes'} — ${month}`); if(!p)return printClassReport(cls,month); const {doc,text}=p;
-    list.forEach(s=>{const a=calcAttendanceStats(s.id,month),pending=calcPending(s.id,month);text(`${s.name} | ${s.class||'-'} | Present ${a.present} | Absent ${a.absent} | Attendance ${fmtPct(a.pct)} | Pending ${money(pending)}`)});doc.save(`class-report-${cls||'all'}-${month}.pdf`);
-  };
-  window.attendanceReportPDF=function(from,to){
-    const p=pdfDoc(`Attendance Report — ${from} to ${to}`); if(!p)return printAttendanceReport(from,to); const {doc,text}=p;
-    db.attendance.filter(a=>a.date>=from&&a.date<=to).filter(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)}).forEach(a=>{const s=db.students.find(x=>x.id===a.studentId);text(`${a.date} | ${s.name} | ${s.class||'-'} | ${a.status}`)});doc.save(`attendance-report-${from}-to-${to}.pdf`);
-  };
-  function printClassReport(cls,month){const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls);const html=`<h1>${esc0(db.settings.academy)}</h1><h2>Class Report - ${esc0(cls||'All')} - ${esc0(month)}</h2><table><tr><th>Student</th><th>Class</th><th>Present</th><th>Absent</th><th>Attendance</th><th>Pending</th></tr>${list.map(s=>{const a=calcAttendanceStats(s.id,month);return `<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.present}</td><td>${a.absent}</td><td>${fmtPct(a.pct)}</td><td>${money(calcPending(s.id,month))}</td></tr>`}).join('')}</table>`;pdfPrint('Class Report',html)}
-  function printAttendanceReport(from,to){const rows=db.attendance.filter(a=>a.date>=from&&a.date<=to).map(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)?`<tr><td>${a.date}</td><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.status}</td></tr>`:''}).join('');pdfPrint('Attendance Report',`<h1>${esc0(db.settings.academy)}</h1><h2>${from} to ${to}</h2><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${rows}</table>`)}
 
-  /* Rich monthly student PDF replaces the earlier short report while keeping same function name. */
-  window.studentReportPDF=function(id,month){
-    const s=db.students.find(x=>x.id===id); if(!s)return;
-    month=month||monthNow();
-    const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
-    const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
-    const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
-    const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
-    const a=calcAttendanceStats(id,month),paid=fees.reduce((n,f)=>n+Number(f.amount||0),0),extra=fees.reduce((n,f)=>n+Number(f.extraAmount||0),0),pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
-    if(window.jspdf?.jsPDF){
-      const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=14;
-      const line=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=14}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
-      line(db.settings.academy,18,true);line(`Student Monthly Report — ${month}`,13,true);y+=2;
-      line(`Name: ${s.name}`,10,true);line(`Student ID: ${s.id}`);line(`Class: ${s.class||'-'}`);line(`Mobile: ${s.mobile||'-'}`);line(`Parent: ${s.parent||'-'}`);line(`Attendance: Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}`);line(`Fees: Monthly ${money(s.monthlyFee)} | Paid ${money(paid)} | Extra ${money(extra)} | Pending ${money(pending)}`);y+=3;line('MARKS',12,true);
-      [...marks.map(m=>({date:m.date,exam:m.exam,subject:m.subject,mark:m.mark,total:m.total})),...online.map(m=>({date:m.date,exam:m.testName,subject:m.subject,mark:m.mark,total:m.total}))].forEach(m=>line(`${m.date||'-'} | ${m.exam||'-'} | ${m.subject||'-'} | ${m.mark}/${m.total}`));
-      y+=3;line('ATTENDANCE',12,true);att.forEach(x=>line(`${x.date} | ${x.status}`));
-      y+=3;line('FEE TRANSACTIONS',12,true);fees.forEach(f=>line(`${f.date} | ${f.type||'Payment'} | ${money(Number(f.amount||0)+Number(f.extraAmount||0))}`));
-      doc.save(`student-report-${s.id}-${month}.pdf`);
-    }else printStudentReportPDF(id,month);
-  };
-
-  /* Add SMS shortcut to teacher/admin profile cards and keep student full details. */
-  const oldProfile=window.studentProfilePage;
-  window.studentProfilePage=function(id){oldProfile(id);setTimeout(()=>{const h=document.querySelector('#content .card h3');const s=db.students.find(x=>x.id===id)||currentStudent;if(h&&s&&!h.parentElement.querySelector('[data-sms-profile]')){const b=document.createElement('button');b.className='btn sms-btn';b.dataset.smsProfile='1';b.textContent='📱 SMS';b.onclick=()=>smsStudent(s.id);h.parentElement.querySelector('.toolbar')?.appendChild(b);}},0)};
-
-  /* Teacher management remains fully editable/deletable; allowed-class selection is preserved. */
-  const oldTeachers=window.teachersPage;
-  window.teachersPage=function(){oldTeachers();};
-
-  /* Login polish */
-  setTimeout(()=>{
-    document.querySelectorAll('#adminLogin,#teacherLogin,#studentLogin').forEach(el=>el.classList.add('smart-login-panel'));
-    const roleButtons=document.querySelectorAll('#adminRole,#teacherRole,#studentRole'); roleButtons.forEach(x=>x.classList.add('smart-role-btn'));
-  },300);
+  applyOceanUI();applyCardPreset();
 })();
-
 </script>
+
 </body></html>`);w.document.close();setTimeout(()=>{w.print()},400);
   }
   window.exportSmartPDF=pdfPrint;
@@ -2153,180 +2257,350 @@ autoImportOnLoad();
   enterApp=function(r){originalEnter(r);if(r==='admin'){setTimeout(()=>{const header=document.querySelector('.topbar > div:last-child');if(header&&!header.querySelector('[data-smart-pdf]')){const b=document.createElement('button');b.className='btn pdf-btn';b.dataset.smartPdf='1';b.textContent='🖨️ PDF';b.onclick=exportCurrentPagePDF;header.insertBefore(b,header.firstChild)}},0)}};
 })();
 </script>
-
-<style id="smart-final-css">
-:root{--smart1:#6d5dfc;--smart2:#00b8d9;--smart3:#ff6b8a;--smart4:#22c55e}
-.login-card{border:1px solid rgba(109,93,252,.22)!important;box-shadow:0 20px 60px rgba(31,41,55,.12)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,250,255,.98))!important}
-.smart-login-panel{animation:smartIn .35s ease both}.smart-role-btn{transition:.2s ease}.smart-role-btn:hover{transform:translateY(-2px)}
-.smart-page-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;padding:16px 18px;border-radius:18px;background:linear-gradient(120deg,#eef2ff,#ecfeff,#fff1f2);border:1px solid rgba(109,93,252,.12)}
-.smart-page-head h2{margin:2px 0 4px;font-size:22px}.smart-page-head p{margin:0;color:var(--muted);font-size:12px}.smart-kicker{font-size:10px;letter-spacing:1.5px;font-weight:800;color:var(--smart1)}
-.smart-actions,.smart-toolbar,.row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.smart-toolbar{margin:10px 0}.smart-toolbar input{flex:1;min-width:220px}.smart-toolbar select{min-width:150px}
-.smart-table th{white-space:nowrap}.smart-table td{vertical-align:middle}.empty-cell{text-align:center!important;padding:25px!important;color:var(--muted)}
-.sms-btn{background:linear-gradient(135deg,#0ea5e9,#06b6d4)!important;color:#fff!important;border:0!important}.smart-gradient-card{background:linear-gradient(145deg,#eef2ff,#ecfeff)!important}
-.smart-dashboard-strip{margin:14px 0;padding:14px 16px;border-radius:16px;background:linear-gradient(100deg,#111827,#312e81,#0f766e);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}.smart-dashboard-strip span{display:block;opacity:.78;font-size:11px;margin-top:3px}.smart-dash-pills{display:flex;gap:7px;flex-wrap:wrap}.smart-dash-pills span{display:inline-block;background:rgba(255,255,255,.13);padding:7px 10px;border-radius:999px;color:#fff}.smart-dash-pills b{color:#fff}.smart-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.smart-tile{padding:14px;border-radius:15px;background:linear-gradient(135deg,#fff,#eef2ff);border:1px solid #e5e7eb}.smart-tile b{display:block;font-size:22px}.smart-tile span{font-size:11px;color:var(--muted)}
-.report-filter-grid{display:grid;grid-template-columns:1.4fr .8fr auto;gap:12px;align-items:end}.report-button{display:flex;align-items:end}.compact-card{border-radius:15px!important}.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
-@keyframes smartIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media(max-width:760px){.smart-page-head,.smart-dashboard-strip{flex-direction:column;align-items:stretch}.smart-mini-grid{grid-template-columns:1fr 1fr}.report-filter-grid{grid-template-columns:1fr}.smart-toolbar input{min-width:0;width:100%}.row-actions .btn{padding:5px 7px;font-size:11px}}
-</style>
 <script>
 /* =========================================================
-   ARUL SIRAGUGAL ACADEMY — SMART UI / REPORT / SMS UPGRADE
-   Preserves existing database + Google Sheets sync functions.
+   ARUL SIRAGUGAL ACADEMY — FEATURE PACK
+   Student 360 + Smart Dashboard + Teacher Permissions
+   PDF Report Centre + Fee Receipt + Test Analytics
+   Homework Tracking + WhatsApp Automation + Backup/Restore
+   + Class Promotion
    ========================================================= */
 (function(){
-  const esc0 = window.esc || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
-  const allowed = s => role!=='teacher' || !currentTeacher || !(currentTeacher.classes||[]).length || currentTeacher.classes.includes(s.class);
-  window.teacherAllowedStudent = allowed;
-  window.teacherStudentList = ()=>db.students.filter(allowed);
+  db.teachers=db.teachers||[];
+  db.homework=db.homework||[];
+  db.tests=db.tests||[];
+  db.onlineMarks=db.onlineMarks||[];
+  db.promotionHistory=db.promotionHistory||[];
+  db.activityLog=db.activityLog||[];
 
-  /* SMS: opens the phone/desktop SMS composer; no data is sent automatically. */
-  window.smsStudent=function(id,text){
-    const s=db.students.find(x=>x.id===id); if(!s)return;
-    if(!s.mobile)return alert('இந்த student-க்கு mobile number இல்லை.');
-    const body=encodeURIComponent(text||`வணக்கம் ${s.name}, ${db.settings.academy} தொடர்பாக தகவல்.`);
-    const n=String(s.mobile).replace(/[^+\d]/g,'');
-    window.location.href=`sms:${n}?body=${body}`;
-  };
-  window.smsFee=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம் ${s.name}, ${db.settings.academy}. உங்கள் fee pending: ${money(calcPending(id,monthNow()))}.`)};
-  window.smsAbsent=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம், ${s.name} இன்று ${db.settings.academy} attendance-ல் Absent. தயவு செய்து கவனிக்கவும்.`)};
-
-  /* Keep teacher identity and permissions. */
-  const oldLoginTeacher=window.loginTeacher;
-  window.loginTeacher=function(){
-    const id=document.getElementById('teacherId')?.value||'', pass=document.getElementById('teacherPass')?.value||'';
-    const t=(db.teachers||[]).find(x=>x.id===id && x.password===pass);
-    if(t){ currentTeacher=t; enterApp('teacher'); return; }
-    if(id===db.settings.teacherId && pass===db.settings.teacherPass){ currentTeacher={name:db.settings.teacher, id, password:pass, classes:[]}; enterApp('teacher'); return; }
-    if(oldLoginTeacher) oldLoginTeacher();
-  };
-
-  /* Teacher filtering helper for all important class-based pages. */
-  function withTeacherStudents(fn){
-    if(role!=='teacher') return fn();
-    const original=db.students;
-    db.students=original.filter(allowed);
-    try{return fn();}finally{db.students=original;}
+  function logActivity(action,detail){
+    db.activityLog.unshift({date:new Date().toISOString(),role:role,action,detail});
+    db.activityLog=db.activityLog.slice(0,500);
   }
-  ['studentsPage','attendancePage','feesPage','marksPage','testsPage','homeworkPage'].forEach(name=>{
-    const old=window[name]; if(typeof old!=='function')return;
-    window[name]=function(){return withTeacherStudents(()=>old.apply(this,arguments));};
-  });
+  window.logActivity=logActivity;
 
-  /* Compact + colourful student manager with full edit/delete + SMS. */
-  window.studentsPage=function(){
-    const list=db.students.filter(allowed);
-    document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">STUDENTS</div><h2>👨‍🎓 Student Management</h2><p>${list.length} students in your access area</p></div>
-      <div class="smart-actions"><button class="btn" onclick="studentForm()">➕ Add Student</button><button class="btn secondary" onclick="showPage('reports')">📄 Reports</button></div></div>
-      <div class="smart-toolbar"><input id="studentSearch" placeholder="🔎 Search name / ID / class..." oninput="smartRenderStudents()"><select id="studentClassFilter" onchange="smartRenderStudents()"><option value="">All Classes</option>${[...new Set(list.map(s=>s.class).filter(Boolean))].sort().map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select></div>
-      <div class="card table-wrap"><table class="table smart-table"><thead><tr><th>Student</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="smartStudentRows"></tbody></table></div>`;
-    smartRenderStudents();
-  };
-  window.smartRenderStudents=function(){
-    const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();
-    const cf=document.getElementById('studentClassFilter')?.value||'';
-    const list=db.students.filter(allowed).filter(s=>(!cf||s.class===cf)&&(s.name+' '+s.id+' '+s.class+' '+s.mobile).toLowerCase().includes(q));
-    const box=document.getElementById('smartStudentRows'); if(!box)return;
-    box.innerHTML=list.map(s=>`<tr><td><b>${esc0(s.name)}</b><br><small>ID: ${esc0(s.id)}</small></td><td><span class="badge info">${esc0(s.class||'-')}</span></td><td>${esc0(s.mobile||'-')}</td><td>${money(s.monthlyFee)}</td><td class="row-actions"><button class="btn secondary" onclick="studentProfilePage('${esc0(s.id)}')">View</button><button class="btn secondary" onclick="studentForm('${esc0(s.id)}')">Edit</button><button class="btn sms-btn" onclick="smsStudent('${esc0(s.id)}')">SMS</button><button class="btn danger" onclick="deleteStudent('${esc0(s.id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell">No students found.</td></tr>';
+  function canEdit(module){
+    if(role==='admin') return true;
+    if(role!=='teacher') return false;
+    const t=window.currentTeacherAccount;
+    if(!t) return module!=='teachers' && module!=='settings' && module!=='backup';
+    if(t.permissions && t.permissions[module]===false) return false;
+    return true;
+  }
+  window.canEdit=canEdit;
+
+  /* -------- Smart Dashboard -------- */
+  const oldHub=showHubMenu;
+  showHubMenu=function(){
+    oldHub();
+    if(role==='admin') renderFeatureDashboard();
+    else if(role==='teacher') renderTeacherMiniDashboard();
+    else if(role==='student') renderStudentMiniDashboard();
   };
 
-  /* SMS Centre */
-  window.smsCenterPage=function(){
-    const month=monthNow();
-    const pending=db.students.filter(allowed).map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
-    const absent=db.students.filter(allowed).filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));
-    document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">COMMUNICATION</div><h2>📱 SMS Centre</h2><p>SMS composer shortcuts — select a student and send from your device.</p></div></div>
-      <div class="smart-mini-grid"><div class="smart-tile"><b>${pending.length}</b><span>Fee Pending</span></div><div class="smart-tile"><b>${absent.length}</b><span>Absent Today</span></div><div class="smart-tile"><b>${db.students.filter(allowed).length}</b><span>Total Students</span></div></div>
-      <div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Pending</th><th>SMS</th></tr></thead><tbody>${pending.map(x=>`<tr><td>${esc0(x.s.name)}</td><td>${money(x.p)}</td><td><button class="btn sms-btn" onclick="smsFee('${esc0(x.s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No pending fees.</td></tr>'}</tbody></table></div></div>
-      <div class="card"><h3>📅 Absent Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Class</th><th>SMS</th></tr></thead><tbody>${absent.map(s=>`<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td><button class="btn sms-btn" onclick="smsAbsent('${esc0(s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No absent students today.</td></tr>'}</tbody></table></div></div></div>`;
-  };
+  function renderFeatureDashboard(){
+    const c=document.getElementById('content');
+    if(!c)return;
+    const month=monthNow(), todayDate=today();
+    const total=db.students.length;
+    const present=db.attendance.filter(a=>a.date===todayDate&&a.status==='Present').length;
+    const absent=db.attendance.filter(a=>a.date===todayDate&&a.status==='Absent').length;
+    const collection=db.fees.filter(f=>f.date?.startsWith(month)).reduce((a,f)=>a+Number(f.amount||0)+Number(f.extraAmount||0),0);
+    const pending=db.students.reduce((a,s)=>a+calcPending(s.id,month),0);
+    const marks=[...db.marks,...(db.onlineMarks||[])];
+    const avg=marks.length ? marks.reduce((a,m)=>a+(Number(m.total)?Number(m.mark)/Number(m.total)*100:0),0)/marks.length : 0;
+    const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))];
+    const classCards=classes.map(cl=>{
+      const ss=db.students.filter(s=>s.class===cl);
+      const p=db.attendance.filter(a=>a.date===todayDate&&a.status==='Present'&&ss.some(s=>s.id===a.studentId)).length;
+      return `<div class="summary-box"><span>Class ${esc(cl)}</span><b>${ss.length} Students</b><small>Present: ${p}</small></div>`;
+    }).join('');
+    const existing=c.querySelector('.cards');
+    if(existing) existing.insertAdjacentHTML('afterend',`
+      <div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <h3 style="margin:0">⚡ Smart Insights</h3>
+          <button class="btn secondary" onclick="showPage('student360')">👨‍🎓 Student 360</button>
+        </div>
+        <div class="summary-cards">
+          <div class="summary-box">Today Absent<b>${absent}</b></div>
+          <div class="summary-box">Fee Pending<b class="danger-text">${money(pending)}</b></div>
+          <div class="summary-box">Mark Average<b>${avg.toFixed(1)}%</b></div>
+        </div>
+        <h4 style="margin:12px 0 7px">🏫 Class Snapshot</h4>
+        <div class="summary-cards">${classCards||'<div class="summary-box">No class data</div>'}</div>
+        <div class="toolbar">
+          <button class="btn" onclick="showPage('testAnalytics')">📈 Test Analytics</button>
+          <button class="btn success" onclick="showPage('feeReceipts')">🧾 Fee Receipts</button>
+          <button class="btn secondary" onclick="showPage('promotion')">🎓 Class Promotion</button>
+          <button class="btn secondary" onclick="showPage('reportCentre')">📄 PDF Report Centre</button>
+          <button class="btn secondary" onclick="showPage('whatsappAuto')">📲 WhatsApp Automation</button>
+        </div>
+      </div>
+    `);
+  }
 
-  /* Smart dashboard after the existing dashboard is rendered. */
-  const oldShowHub=window.showHubMenu;
-  window.showHubMenu=function(){
-    oldShowHub();
+  function renderTeacherMiniDashboard(){
     const c=document.getElementById('content'); if(!c)return;
-    const list=db.students.filter(allowed), month=monthNow();
-    const present=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
-    const absent=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent')).length;
-    const pending=list.reduce((n,s)=>n+calcPending(s.id,month),0);
-    const testsPending=role==='student'?0:(db.tests||[]).filter(t=>!t.class||list.some(s=>s.class===t.class)).filter(t=>!db.onlineMarks.some(m=>m.testName===t.name)).length;
-    const old=c.querySelector('.cards');
-    if(old) old.insertAdjacentHTML('afterend',`<div class="smart-dashboard-strip"><div><b>✨ Smart Overview</b><span>${role==='admin'?'Admin Control Centre':role==='teacher'?'Your Class Dashboard':'Your personal academy dashboard'}</span></div><div class="smart-dash-pills"><span>Present <b>${present}</b></span><span>Absent <b>${absent}</b></span><span>Pending <b>${money(pending)}</b></span>${role!=='student'?`<span>Tests Pending <b>${testsPending}</b></span>`:''}</div></div>`);
-    if(role==='admin'||role==='teacher'){
-      const grid=c.querySelector('.hub-grid'); if(grid&&!grid.querySelector('[data-sms-card]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.smsCard='1';d.onclick=()=>showPage('smsCenter');d.innerHTML='<div class="hub-icon">📱</div><div class="hub-title">SMS Centre</div><div class="hub-desc">Fee & absent reminders</div>';grid.insertBefore(d,grid.firstChild);}
-    }
-    if(role==='student'){
-      const profile=c.querySelector('.hub-grid');
-      if(profile&&!profile.querySelector('[data-student-report]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.studentReport='1';d.onclick=()=>studentReportPDF(currentStudent.id,monthNow());d.innerHTML='<div class="hub-icon">📄</div><div class="hub-title">Monthly PDF</div><div class="hub-desc">Download my report</div>';profile.insertBefore(d,profile.firstChild);}
-    }
-  };
-
-  /* Reports: PDF-first centre. Existing CSV/export functions remain available elsewhere. */
-  window.reportsPage=function(){
-    const list=db.students.filter(allowed), classes=[...new Set(list.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-    document.getElementById('content').innerHTML=`
-      <div class="smart-page-head"><div><div class="smart-kicker">REPORT CENTRE</div><h2>📄 PDF Reports</h2><p>Only the selected information is included in the report.</p></div></div>
-      <div class="card compact-card"><div class="report-filter-grid"><div><label>Student</label><select id="reportStudent">${list.map(s=>`<option value="${esc0(s.id)}">${esc0(s.name)} — ${esc0(s.class)}</option>`).join('')}</select></div><div><label>Month</label><input id="reportMonth" type="month" value="${monthNow()}"></div><div class="report-button"><button class="btn" onclick="studentReportPDF(document.getElementById('reportStudent').value,document.getElementById('reportMonth').value)">📥 Student Monthly PDF</button></div></div></div>
-      <div class="grid2"><div class="card compact-card"><h3>👥 Class Report</h3><label>Class</label><select id="pdfClass"><option value="">All Classes</option>${classes.map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select><label>Month</label><input id="pdfClassMonth" type="month" value="${monthNow()}"><br><button class="btn success" onclick="classReportPDF(document.getElementById('pdfClass').value,document.getElementById('pdfClassMonth').value)">📥 Class PDF</button></div>
-      <div class="card compact-card"><h3>📅 Attendance Report</h3><div class="two"><div><label>From</label><input id="pdfFrom" type="date" value="${today()}"></div><div><label>To</label><input id="pdfTo" type="date" value="${today()}"></div></div><br><button class="btn secondary" onclick="attendanceReportPDF(document.getElementById('pdfFrom').value,document.getElementById('pdfTo').value)">📥 Attendance PDF</button></div></div>`;
-  };
-
-  function pdfDoc(title){
-    if(!window.jspdf?.jsPDF){return null;}
-    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});let y=15;
-    const text=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=15}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
-    text(db.settings.academy||'Academy',18,true); text(title,13,true); text(new Date().toLocaleDateString('en-IN'),9,false); y+=3;
-    return {doc,text};
+    const existing=c.querySelector('.hub-grid');
+    if(existing) existing.insertAdjacentHTML('beforebegin',`
+      <div class="card">
+        <div class="summary-cards">
+          <div class="summary-box">Students<b>${db.students.length}</b></div>
+          <div class="summary-box">Today Present<b>${db.attendance.filter(a=>a.date===today()&&a.status==='Present').length}</b></div>
+          <div class="summary-box">Today's Absent<b>${db.attendance.filter(a=>a.date===today()&&a.status==='Absent').length}</b></div>
+        </div>
+        <div class="toolbar">
+          <button class="btn secondary" onclick="showPage('testAnalytics')">📈 Analytics</button>
+          <button class="btn secondary" onclick="showPage('homeworkTracking')">📚 Homework Tracking</button>
+          <button class="btn secondary" onclick="showPage('student360')">👨‍🎓 Student 360</button>
+        </div>
+      </div>`);
   }
-  window.classReportPDF=function(cls,month){
-    const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls), p=pdfDoc(`Class Report — ${cls||'All Classes'} — ${month}`); if(!p)return printClassReport(cls,month); const {doc,text}=p;
-    list.forEach(s=>{const a=calcAttendanceStats(s.id,month),pending=calcPending(s.id,month);text(`${s.name} | ${s.class||'-'} | Present ${a.present} | Absent ${a.absent} | Attendance ${fmtPct(a.pct)} | Pending ${money(pending)}`)});doc.save(`class-report-${cls||'all'}-${month}.pdf`);
-  };
-  window.attendanceReportPDF=function(from,to){
-    const p=pdfDoc(`Attendance Report — ${from} to ${to}`); if(!p)return printAttendanceReport(from,to); const {doc,text}=p;
-    db.attendance.filter(a=>a.date>=from&&a.date<=to).filter(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)}).forEach(a=>{const s=db.students.find(x=>x.id===a.studentId);text(`${a.date} | ${s.name} | ${s.class||'-'} | ${a.status}`)});doc.save(`attendance-report-${from}-to-${to}.pdf`);
-  };
-  function printClassReport(cls,month){const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls);const html=`<h1>${esc0(db.settings.academy)}</h1><h2>Class Report - ${esc0(cls||'All')} - ${esc0(month)}</h2><table><tr><th>Student</th><th>Class</th><th>Present</th><th>Absent</th><th>Attendance</th><th>Pending</th></tr>${list.map(s=>{const a=calcAttendanceStats(s.id,month);return `<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.present}</td><td>${a.absent}</td><td>${fmtPct(a.pct)}</td><td>${money(calcPending(s.id,month))}</td></tr>`}).join('')}</table>`;pdfPrint('Class Report',html)}
-  function printAttendanceReport(from,to){const rows=db.attendance.filter(a=>a.date>=from&&a.date<=to).map(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)?`<tr><td>${a.date}</td><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.status}</td></tr>`:''}).join('');pdfPrint('Attendance Report',`<h1>${esc0(db.settings.academy)}</h1><h2>${from} to ${to}</h2><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${rows}</table>`)}
 
-  /* Rich monthly student PDF replaces the earlier short report while keeping same function name. */
-  window.studentReportPDF=function(id,month){
+  function renderStudentMiniDashboard(){
+    const c=document.getElementById('content'); if(!c)return;
+    const s=currentStudent; if(!s)return;
+    const st=calcAttendanceStats(s.id,monthNow());
+    const pending=calcPending(s.id,monthNow());
+    const marks=[...db.marks.filter(m=>m.studentId===s.id),...(db.onlineMarks||[]).filter(m=>m.studentId===s.id)];
+    const avg=marks.length?marks.reduce((a,m)=>a+(Number(m.total)?Number(m.mark)/Number(m.total)*100:0),0)/marks.length:0;
+    const existing=c.querySelector('.hub-grid');
+    if(existing) existing.insertAdjacentHTML('beforebegin',`
+      <div class="summary-cards">
+        <div class="summary-box">Attendance<b>${st.pct.toFixed(1)}%</b></div>
+        <div class="summary-box">Fee Pending<b class="${pending?'danger-text':'success-text'}">${money(pending)}</b></div>
+        <div class="summary-box">Mark Average<b>${avg.toFixed(1)}%</b></div>
+      </div>`);
+  }
+
+  /* -------- Student 360 -------- */
+  window.student360Page=function(){
+    const cls=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort();
+    document.getElementById('content').innerHTML=`
+      <div class="card">
+        <div class="toolbar">
+          <select id="s360Class"><option value="">All Classes</option>${cls.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+          <input id="s360Search" placeholder="🔎 Search student name / ID" oninput="renderStudent360()">
+        </div>
+      </div>
+      <div id="student360List"></div>`;
+    renderStudent360();
+  };
+  window.renderStudent360=function(){
+    const q=(document.getElementById('s360Search')?.value||'').toLowerCase();
+    const cl=document.getElementById('s360Class')?.value||'';
+    const list=db.students.filter(s=>(!cl||s.class===cl)&&(s.name+' '+s.id+' '+s.class).toLowerCase().includes(q));
+    document.getElementById('student360List').innerHTML=list.map(s=>{
+      const at=calcAttendanceStats(s.id,monthNow());
+      const pending=calcPending(s.id,monthNow());
+      const ms=[...db.marks.filter(m=>m.studentId===s.id),...(db.onlineMarks||[]).filter(m=>m.studentId===s.id)];
+      const avg=ms.length?ms.reduce((a,m)=>a+(Number(m.total)?Number(m.mark)/Number(m.total)*100:0),0)/ms.length:0;
+      return `<div class="card">
+        <div class="toolbar" style="justify-content:space-between">
+          <div><h3 style="margin:0">👨‍🎓 ${esc(s.name)}</h3><small>ID: ${esc(s.id)} · Class: ${esc(s.class||'-')}</small></div>
+          <div>${s.mobile?`<button class="btn secondary" onclick="callStudent('${esc(s.id)}')">📞</button>`:''} ${s.mobile?`<button class="btn success" onclick="whatsapp('${esc(s.id)}','fee')">💬</button>`:''}</div>
+        </div>
+        <div class="summary-cards">
+          <div class="summary-box">Attendance<b>${at.pct.toFixed(1)}%</b><small>${at.present} P / ${at.absent} A</small></div>
+          <div class="summary-box">Fee Pending<b class="${pending?'danger-text':'success-text'}">${money(pending)}</b></div>
+          <div class="summary-box">Mark Average<b>${avg.toFixed(1)}%</b><small>${ms.length} tests</small></div>
+        </div>
+        <div class="toolbar">
+          <button class="btn secondary" onclick="studentProfilePage('${esc(s.id)}')">👤 Full Profile</button>
+          <button class="btn secondary" onclick="showStudentFeeDetails('${esc(s.id)}')">💰 Fee History</button>
+          <button class="btn secondary" onclick="student360Report('${esc(s.id)}')">📄 Student Report</button>
+        </div>
+      </div>`;
+    }).join('')||'<div class="card">Student இல்லை.</div>';
+  };
+  window.student360Report=function(id){
     const s=db.students.find(x=>x.id===id); if(!s)return;
-    month=month||monthNow();
-    const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
-    const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
-    const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
-    const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
-    const a=calcAttendanceStats(id,month),paid=fees.reduce((n,f)=>n+Number(f.amount||0),0),extra=fees.reduce((n,f)=>n+Number(f.extraAmount||0),0),pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
-    if(window.jspdf?.jsPDF){
-      const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=14;
-      const line=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=14}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
-      line(db.settings.academy,18,true);line(`Student Monthly Report — ${month}`,13,true);y+=2;
-      line(`Name: ${s.name}`,10,true);line(`Student ID: ${s.id}`);line(`Class: ${s.class||'-'}`);line(`Mobile: ${s.mobile||'-'}`);line(`Parent: ${s.parent||'-'}`);line(`Attendance: Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}`);line(`Fees: Monthly ${money(s.monthlyFee)} | Paid ${money(paid)} | Extra ${money(extra)} | Pending ${money(pending)}`);y+=3;line('MARKS',12,true);
-      [...marks.map(m=>({date:m.date,exam:m.exam,subject:m.subject,mark:m.mark,total:m.total})),...online.map(m=>({date:m.date,exam:m.testName,subject:m.subject,mark:m.mark,total:m.total}))].forEach(m=>line(`${m.date||'-'} | ${m.exam||'-'} | ${m.subject||'-'} | ${m.mark}/${m.total}`));
-      y+=3;line('ATTENDANCE',12,true);att.forEach(x=>line(`${x.date} | ${x.status}`));
-      y+=3;line('FEE TRANSACTIONS',12,true);fees.forEach(f=>line(`${f.date} | ${f.type||'Payment'} | ${money(Number(f.amount||0)+Number(f.extraAmount||0))}`));
-      doc.save(`student-report-${s.id}-${month}.pdf`);
-    }else printStudentReportPDF(id,month);
+    const at=calcAttendanceStats(id,'');
+    const pending=calcPending(id,monthNow());
+    const marks=[...db.marks.filter(m=>m.studentId===id),...(db.onlineMarks||[]).filter(m=>m.studentId===id)];
+    const body=`<h2>${esc(s.name)}</h2><div class="meta">ID: ${esc(s.id)} | Class: ${esc(s.class||'-')} | Mobile: ${esc(s.mobile||'-')}</div>
+      <div class="grid"><div class="box">Attendance<br><b>${at.pct.toFixed(1)}%</b></div><div class="box">Fee Pending<br><b>${money(pending)}</b></div><div class="box">Tests<br><b>${marks.length}</b></div></div>
+      <h3>Marks</h3><table><tr><th>Test</th><th>Mark</th><th>Total</th><th>%</th></tr>${marks.map(m=>`<tr><td>${esc(m.exam||m.testName||'-')}</td><td>${m.mark}</td><td>${m.total}</td><td>${m.total?((m.mark/m.total)*100).toFixed(1):0}%</td></tr>`).join('')}</table>`;
+    pdfPrint('Student 360 - '+s.name,body);
   };
 
-  /* Add SMS shortcut to teacher/admin profile cards and keep student full details. */
-  const oldProfile=window.studentProfilePage;
-  window.studentProfilePage=function(id){oldProfile(id);setTimeout(()=>{const h=document.querySelector('#content .card h3');const s=db.students.find(x=>x.id===id)||currentStudent;if(h&&s&&!h.parentElement.querySelector('[data-sms-profile]')){const b=document.createElement('button');b.className='btn sms-btn';b.dataset.smsProfile='1';b.textContent='📱 SMS';b.onclick=()=>smsStudent(s.id);h.parentElement.querySelector('.toolbar')?.appendChild(b);}},0)};
+  /* -------- Teacher Permissions -------- */
+  window.teacherPermissionsPage=function(){
+    document.getElementById('content').innerHTML=`
+      <div class="card"><h3>🔐 Teacher Permissions</h3><p style="color:var(--muted)">Admin can control which modules each teacher can edit.</p>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Teacher</th><th>Attendance</th><th>Fees</th><th>Marks</th><th>Tests</th><th>Homework</th><th>Students</th><th>Save</th></tr></thead>
+      <tbody>${db.teachers.map((t,i)=>{t.permissions=t.permissions||{attendance:true,fees:true,marks:true,tests:true,homework:true,students:false};
+        return `<tr><td><b>${esc(t.name)}</b><br><small>${esc(t.id)}</small></td>
+        ${['attendance','fees','marks','tests','homework','students'].map(k=>`<td><input type="checkbox" id="perm_${i}_${k}" ${t.permissions[k]!==false?'checked':''} style="width:auto"></td>`).join('')}
+        <td><button class="btn success" onclick="saveTeacherPermission(${i})">Save</button></td></tr>`}).join('')||'<tr><td colspan="8">Teachers இல்லை.</td></tr>'}</tbody></table></div></div>`;
+  };
+  window.saveTeacherPermission=function(i){
+    const t=db.teachers[i]; if(!t)return;
+    t.permissions=t.permissions||{};
+    ['attendance','fees','marks','tests','homework','students'].forEach(k=>t.permissions[k]=document.getElementById(`perm_${i}_${k}`).checked);
+    logActivity('Teacher Permission Updated',t.name); save(); alert('Teacher permissions saved.');
+  };
 
-  /* Teacher management remains fully editable/deletable; allowed-class selection is preserved. */
-  const oldTeachers=window.teachersPage;
-  window.teachersPage=function(){oldTeachers();};
+  /* -------- PDF Report Centre -------- */
+  window.reportCentrePage=function(){
+    document.getElementById('content').innerHTML=`
+      <div class="grid2">
+        <div class="card"><h3>👨‍🎓 Student Report</h3>
+          <label>Student</label><select id="pdfStudent">${db.students.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select>
+          <button class="btn pdf-btn" style="width:100%;margin-top:10px" onclick="makeStudentPDF()">🖨️ Print / Save PDF</button>
+        </div>
+        <div class="card"><h3>📊 Class Report</h3>
+          <label>Class</label><select id="pdfClass"><option value="">All Classes</option>${[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort().map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+          <button class="btn pdf-btn" style="width:100%;margin-top:10px" onclick="makeClassPDF()">🖨️ Print / Save PDF</button>
+        </div>
+        <div class="card"><h3>📅 Attendance Report</h3><input id="pdfAttMonth" type="month" value="${monthNow()}">
+          <button class="btn pdf-btn" style="width:100%;margin-top:10px" onclick="makeAttendancePDF()">🖨️ Print / Save PDF</button>
+        </div>
+        <div class="card"><h3>💰 Fee Report</h3><input id="pdfFeeMonth" type="month" value="${monthNow()}">
+          <button class="btn pdf-btn" style="width:100%;margin-top:10px" onclick="makeFeePDF()">🖨️ Print / Save PDF</button>
+        </div>
+      </div>`;
+  };
+  window.makeStudentPDF=function(){
+    const s=db.students.find(x=>x.id===document.getElementById('pdfStudent').value);if(!s)return;
+    const at=calcAttendanceStats(s.id,'');
+    const pending=calcPending(s.id,monthNow());
+    const ms=[...db.marks.filter(m=>m.studentId===s.id),...(db.onlineMarks||[]).filter(m=>m.studentId===s.id)];
+    pdfPrint('Student Report - '+s.name,`<h1>${esc(db.settings.academy)}</h1><h2>${esc(s.name)}</h2><div class="meta">ID: ${esc(s.id)} | Class: ${esc(s.class||'-')} | Parent: ${esc(s.parent||'-')} | Mobile: ${esc(s.mobile||'-')}</div><div class="grid"><div class="box">Attendance<br><b>${at.pct.toFixed(1)}%</b></div><div class="box">Pending Fee<br><b>${money(pending)}</b></div><div class="box">Tests<br><b>${ms.length}</b></div></div><h3>Marks</h3><table><tr><th>Test</th><th>Mark</th><th>Total</th><th>%</th></tr>${ms.map(m=>`<tr><td>${esc(m.exam||m.testName||'-')}</td><td>${m.mark}</td><td>${m.total}</td><td>${m.total?((m.mark/m.total)*100).toFixed(1):0}%</td></tr>`).join('')}</table>`);
+  };
+  window.makeClassPDF=function(){
+    const cl=document.getElementById('pdfClass').value;
+    const ss=db.students.filter(s=>!cl||s.class===cl);
+    pdfPrint('Class Report',`<h1>${esc(db.settings.academy)}</h1><div class="meta">Class: ${esc(cl||'All')}</div><table><tr><th>Student</th><th>Class</th><th>Attendance</th><th>Pending Fee</th></tr>${ss.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${calcAttendanceStats(s.id,monthNow()).pct.toFixed(1)}%</td><td>${money(calcPending(s.id,monthNow()))}</td></tr>`).join('')}</table>`);
+  };
+  window.makeAttendancePDF=function(){
+    const m=document.getElementById('pdfAttMonth').value;
+    const rows=db.attendance.filter(a=>a.date?.startsWith(m)).map(a=>{const s=db.students.find(x=>x.id===a.studentId);return `<tr><td>${a.date}</td><td>${esc(s?.name||a.studentId)}</td><td>${esc(s?.class||'-')}</td><td>${a.status}</td></tr>`}).join('');
+    pdfPrint('Attendance Report - '+m,`<h1>${esc(db.settings.academy)}</h1><h2>Attendance ${m}</h2><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${rows}</table>`);
+  };
+  window.makeFeePDF=function(){
+    const m=document.getElementById('pdfFeeMonth').value;
+    const rows=db.students.map(s=>{const fs=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(m));const ex=fs.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0);const paid=fs.filter(f=>f.type!=='Extra').reduce((a,f)=>a+Number(f.amount||0),0);const pen=Math.max(0,Number(s.monthlyFee||0)+ex-paid);return `<tr><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${money(s.monthlyFee)}</td><td>${money(ex)}</td><td>${money(paid)}</td><td>${money(pen)}</td></tr>`}).join('');
+    pdfPrint('Fee Report - '+m,`<h1>${esc(db.settings.academy)}</h1><h2>Fee Report ${m}</h2><table><tr><th>Student</th><th>Class</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th></tr>${rows}</table>`);
+  };
 
-  /* Login polish */
-  setTimeout(()=>{
-    document.querySelectorAll('#adminLogin,#teacherLogin,#studentLogin').forEach(el=>el.classList.add('smart-login-panel'));
-    const roleButtons=document.querySelectorAll('#adminRole,#teacherRole,#studentRole'); roleButtons.forEach(x=>x.classList.add('smart-role-btn'));
-  },300);
+  /* -------- Fee Receipt -------- */
+  window.feeReceiptsPage=function(){
+    const rows=db.fees.filter(f=>f.type!=='Extra').slice().reverse().slice(0,100);
+    document.getElementById('content').innerHTML=`<div class="card"><h3>🧾 Fee Receipt Centre</h3><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Student</th><th>Amount</th><th>Receipt</th></tr></thead><tbody>${rows.map(f=>{const s=db.students.find(x=>x.id===f.studentId);return `<tr><td>${f.date}</td><td>${esc(s?.name||f.studentId)}</td><td>${money(f.amount)}</td><td><button class="btn pdf-btn" onclick="printReceipt('${esc(f.studentId)}','${esc(f.date)}',${Number(f.amount||0)})">🧾 Receipt</button></td></tr>`}).join('')||'<tr><td colspan="4">Payment records இல்லை.</td></tr>'}</tbody></table></div></div>`;
+  };
+  window.printReceipt=function(id,date,amount){
+    const s=db.students.find(x=>x.id===id);if(!s)return;
+    pdfPrint('Fee Receipt - '+s.name,`<div style="text-align:center"><h1>${esc(db.settings.academy)}</h1><h2>FEE RECEIPT</h2></div><hr><p><b>Receipt Date:</b> ${date}</p><p><b>Student:</b> ${esc(s.name)}</p><p><b>Student ID:</b> ${esc(s.id)}</p><p><b>Class:</b> ${esc(s.class||'-')}</p><div class="box" style="font-size:22px;text-align:center;margin:25px 0">Paid Amount: <b>${money(amount)}</b></div><p>Thank you for your payment.</p>`);
+  };
+
+  /* -------- Test Analytics -------- */
+  window.testAnalyticsPage=function(){
+    const data=[...db.marks.map(m=>({...m,label:m.exam||'Regular Test'})),...(db.onlineMarks||[]).map(m=>({...m,label:m.testName||'Online Test'}))];
+    const groups={};
+    data.forEach(m=>{const k=m.label||'Test';groups[k]??=[];if(Number(m.total))groups[k].push(Number(m.mark)/Number(m.total)*100)});
+    const rows=Object.entries(groups).map(([k,v])=>{const avg=v.reduce((a,x)=>a+x,0)/v.length;const hi=Math.max(...v);return `<tr><td><b>${esc(k)}</b></td><td>${v.length}</td><td>${avg.toFixed(1)}%</td><td>${hi.toFixed(1)}%</td></tr>`}).join('');
+    document.getElementById('content').innerHTML=`<div class="card"><h3>📈 Test Analytics</h3><div class="summary-cards"><div class="summary-box">Total Attempts<b>${data.length}</b></div><div class="summary-box">Tests<b>${Object.keys(groups).length}</b></div><div class="summary-box">Overall Avg<b>${data.length?(data.reduce((a,m)=>a+(m.total?(m.mark/m.total)*100:0),0)/data.length).toFixed(1):'0.0'}%</b></div></div><div class="table-wrap"><table class="table"><thead><tr><th>Test</th><th>Attempts</th><th>Average</th><th>Highest</th></tr></thead><tbody>${rows||'<tr><td colspan="4">Marks இல்லை.</td></tr>'}</tbody></table></div></div>
+    <div class="card"><h3>🏆 Student Performance</h3><div class="table-wrap"><table class="table"><thead><tr><th>Student</th><th>Class</th><th>Tests</th><th>Average</th></tr></thead><tbody>${db.students.map(s=>{const ms=[...db.marks.filter(m=>m.studentId===s.id),...(db.onlineMarks||[]).filter(m=>m.studentId===s.id)];const av=ms.length?ms.reduce((a,m)=>a+(m.total?(m.mark/m.total)*100:0),0)/ms.length:0;return `<tr><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${ms.length}</td><td><span class="badge ${av>=75?'ok':av>=50?'info':'pending'}">${av.toFixed(1)}%</span></td></tr>`}).join('')}</tbody></table></div></div>`;
+  };
+
+  /* -------- Homework Tracking -------- */
+  window.homeworkTrackingPage=function(){
+    const rows=db.homework.slice().reverse();
+    document.getElementById('content').innerHTML=`<div class="card"><h3>📚 Homework Tracking</h3><div class="toolbar"><button class="btn" onclick="showPage('homework')">➕ Add Homework</button></div><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>Class</th><th>Subject</th><th>Task</th><th>Link</th><th>Status</th></tr></thead><tbody>${rows.map((h,i)=>`<tr><td>${h.date}</td><td>${esc(h.class||'All')}</td><td>${esc(h.subject||'-')}</td><td>${esc(h.text||h.title||'-')}</td><td>${h.link?`<a class="btn secondary" target="_blank" href="${esc(h.link)}">Open</a>`:'-'}</td><td><span class="badge info">${esc(h.status||'Assigned')}</span></td></tr>`).join('')||'<tr><td colspan="6">Homework இல்லை.</td></tr>'}</tbody></table></div></div>`;
+  };
+
+  /* -------- WhatsApp Automation -------- */
+  window.whatsappAutoPage=function(){
+    const pending=db.students.filter(s=>calcPending(s.id,monthNow())>0);
+    const absent=db.attendance.filter(a=>a.date===today()&&a.status==='Absent').map(a=>db.students.find(s=>s.id===a.studentId)).filter(Boolean);
+    document.getElementById('content').innerHTML=`<div class="grid2">
+      <div class="card"><h3>💰 Fee Reminders</h3><p>${pending.length} students pending.</p><button class="btn success" onclick="bulkWhatsAppFee()">📲 Open Pending Fee Chats</button><div style="margin-top:10px">${pending.slice(0,30).map(s=>`<div class="toolbar" style="justify-content:space-between"><span>${esc(s.name)} — ${money(calcPending(s.id,monthNow()))}</span>${s.mobile?`<button class="btn secondary" onclick="whatsapp('${esc(s.id)}','fee')">WhatsApp</button>`:'No Mobile'}</div>`).join('')||'No pending fees.'}</div>
+      <div class="card"><h3>📅 Absent Reminders</h3><p>${absent.length} absent today.</p><button class="btn success" onclick="bulkWhatsAppAbsent()">📲 Open Absent Chats</button><div style="margin-top:10px">${absent.map(s=>`<div class="toolbar" style="justify-content:space-between"><span>${esc(s.name)} — ${esc(s.class||'')}</span>${s.mobile?`<button class="btn secondary" onclick="whatsapp('${esc(s.id)}','absent')">WhatsApp</button>`:'No Mobile'}</div>`).join('')||'No absent students.'}</div>
+    </div>`;
+  };
+  window.bulkWhatsAppFee=function(){db.students.filter(s=>s.mobile&&calcPending(s.id,monthNow())>0).forEach((s,i)=>setTimeout(()=>whatsapp(s.id,'fee'),i*700));};
+  window.bulkWhatsAppAbsent=function(){db.attendance.filter(a=>a.date===today()&&a.status==='Absent').map(a=>a.studentId).forEach((id,i)=>setTimeout(()=>whatsapp(id,'absent'),i*700));};
+
+  /* -------- Class Promotion -------- */
+  window.promotionPage=function(){
+    const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    document.getElementById('content').innerHTML=`<div class="card"><h3>🎓 Class Promotion</h3><p style="color:var(--muted)">Promotion changes the student's current class. Old attendance, fees and marks remain in history.</p>
+      <div class="two"><div><label>From Class</label><select id="promoFrom">${classes.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div><div><label>To Class</label><input id="promoTo" placeholder="e.g. 9"></div></div>
+      <div class="toolbar" style="margin-top:12px"><button class="btn" onclick="previewPromotion()">🔎 Preview Students</button><button class="btn success" onclick="promoteClass()">🎓 Promote Class</button></div><div id="promoPreview"></div></div>
+      <div class="card"><h3>🗂️ Promotion History</h3><div class="table-wrap"><table class="table"><thead><tr><th>Date</th><th>From</th><th>To</th><th>Students</th></tr></thead><tbody>${db.promotionHistory.slice().reverse().map(p=>`<tr><td>${p.date}</td><td>${esc(p.from)}</td><td>${esc(p.to)}</td><td>${p.count}</td></tr>`).join('')||'<tr><td colspan="4">Promotion history இல்லை.</td></tr>'}</tbody></table></div></div>`;
+  };
+  window.previewPromotion=function(){
+    const from=document.getElementById('promoFrom').value, ss=db.students.filter(s=>s.class===from);
+    document.getElementById('promoPreview').innerHTML=`<div class="paybox" style="margin-top:12px"><b>${ss.length} students</b> will move from <b>${esc(from)}</b> to <b>${esc(document.getElementById('promoTo').value||'')}</b>.<br><small>${ss.map(s=>esc(s.name)).join(', ')}</small></div>`;
+  };
+  window.promoteClass=function(){
+    if(role!=='admin')return alert('Class Promotion: Admin மட்டுமே செய்ய முடியும்.');
+    const from=document.getElementById('promoFrom').value,to=document.getElementById('promoTo').value.trim();
+    if(!from||!to)return alert('From / To class தேவை.');
+    const ss=db.students.filter(s=>s.class===from);if(!ss.length)return alert('Students இல்லை.');
+    if(!confirm(`${ss.length} students-ஐ ${from} → ${to} promote செய்யவா?`))return;
+    ss.forEach(s=>s.class=to);
+    db.promotionHistory.push({date:today(),from,to,count:ss.length});
+    logActivity('Class Promotion',`${from} → ${to} (${ss.length})`);save();alert('Class promotion completed.');promotionPage();
+  };
+
+  /* -------- Backup enhancement -------- */
+  const oldDownloadBackup=downloadBackup;
+  window.downloadBackup=function(){
+    db.backupMeta={academy:db.settings.academy,createdAt:new Date().toISOString(),version:'feature-pack-1'};
+    oldDownloadBackup();
+  };
+
+  /* -------- Add modules to Admin menu -------- */
+  const oldShowPage=showPage;
+  showPage=function(p){
+    if(p==='student360') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='Student 360',student360Page());
+    if(p==='teacherPermissions') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='Teacher Permissions',teacherPermissionsPage());
+    if(p==='reportCentre') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='PDF Report Centre',reportCentrePage());
+    if(p==='feeReceipts') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='Fee Receipt Centre',feeReceiptsPage());
+    if(p==='testAnalytics') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='Test Analytics',testAnalyticsPage());
+    if(p==='homeworkTracking') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='Homework Tracking',homeworkTrackingPage());
+    if(p==='whatsappAuto') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='WhatsApp Automation',whatsappAutoPage());
+    if(p==='promotion') return (document.getElementById('hubBackBtn').classList.remove('hidden'),document.getElementById('pageTitle').textContent='Class Promotion',promotionPage());
+    oldShowPage(p);
+  };
+
+  /* Add extra admin cards after original home menu renders */
+  const oldRenderFeatureDashboard=renderFeatureDashboard;
+  renderFeatureDashboard=function(){
+    oldRenderFeatureDashboard();
+    const grid=document.querySelector('.hub-grid');
+    if(!grid || role!=='admin')return;
+    grid.insertAdjacentHTML('beforeend',`
+      <div class="hub-card" onclick="showPage('student360')"><div class="hub-icon">🧑‍🎓</div><div class="hub-title">Student 360</div><div class="hub-desc">Complete student timeline</div></div>
+      <div class="hub-card" onclick="showPage('teacherPermissions')"><div class="hub-icon">🔐</div><div class="hub-title">Teacher Permissions</div><div class="hub-desc">Module-wise access</div></div>
+      <div class="hub-card" onclick="showPage('reportCentre')"><div class="hub-icon">📄</div><div class="hub-title">PDF Report Centre</div><div class="hub-desc">Student / Class / Fee / Attendance</div></div>
+      <div class="hub-card" onclick="showPage('feeReceipts')"><div class="hub-icon">🧾</div><div class="hub-title">Fee Receipts</div><div class="hub-desc">Print payment receipts</div></div>
+      <div class="hub-card" onclick="showPage('testAnalytics')"><div class="hub-icon">📈</div><div class="hub-title">Test Analytics</div><div class="hub-desc">Average & performance</div></div>
+      <div class="hub-card" onclick="showPage('homeworkTracking')"><div class="hub-icon">📚</div><div class="hub-title">Homework Tracking</div><div class="hub-desc">Assignment status</div></div>
+      <div class="hub-card" onclick="showPage('whatsappAuto')"><div class="hub-icon">📲</div><div class="hub-title">WhatsApp Automation</div><div class="hub-desc">Fee & absent reminders</div></div>
+      <div class="hub-card" onclick="showPage('promotion')"><div class="hub-icon">🎓</div><div class="hub-title">Class Promotion</div><div class="hub-desc">Move class safely</div></div>
+    `);
+  };
+
+  /* Ensure settings gets a permissions shortcut */
+  const oldSettings=settingsPage;
+  settingsPage=function(){
+    oldSettings();
+    if(role==='admin'){
+      const c=document.getElementById('content');
+      const bar=document.createElement('div');bar.className='card';
+      bar.innerHTML=`<h3>⚙️ Advanced Management</h3><div class="toolbar">
+        <button class="btn secondary" onclick="showPage('teacherPermissions')">🔐 Teacher Permissions</button>
+        <button class="btn secondary" onclick="showPage('promotion')">🎓 Class Promotion</button>
+        <button class="btn secondary" onclick="showPage('backup')">💾 Backup / Restore</button>
+      </div>`;
+      c.appendChild(bar);
+    }
+  };
 })();
-
 </script>
 </body>
 </html>
