@@ -115,14 +115,315 @@ textarea{min-height:90px;resize:vertical}
   .topbar{padding:12px}
   .period-tools{grid-template-columns:1fr}
 }
+
+/* Smart compact UI upgrade - preserves existing modules */
+.login-card{max-width:390px;padding:22px;border-radius:20px}
+.login-card .logo{width:68px;height:68px;margin-bottom:8px}
+.login-card h1{font-size:20px;margin:4px 0}
+.login-card .role-tabs{gap:6px;margin:12px 0}
+.login-card .role-tabs button{padding:8px 7px;font-size:12px}
+.login-card label{margin-top:8px;font-size:12px}
+.login-card input{padding:9px 10px;font-size:13px}
+.login-card .btn{padding:9px 12px;font-size:13px}
+.smart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.compact-card{padding:14px!important}
+.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
+.student-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px}
+.detail-chip{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--card)}
+@media(max-width:700px){.login-card{max-width:340px;padding:18px}.hub-grid{gap:9px}.hub-card{padding:13px}.table-wrap{overflow-x:auto}}
+@media print{body *{visibility:hidden!important}.pdf-report,.pdf-report *{visibility:visible!important}.pdf-report{position:absolute;left:0;top:0;width:100%;padding:20px;background:white;color:#111}.no-print{display:none!important}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+/* ========================================================
+   SMART UPGRADE: CLASS ACCESS + STUDENT SELF REPORT PDF
+   ======================================================== */
+function teacherAllowedClass(cls){
+  if(role!=='teacher') return true;
+  const allowed=window.currentTeacher?.classes;
+  return !allowed || !allowed.length || allowed.includes(cls);
+}
+function teacherAllowedStudent(s){return role!=='teacher'||teacherAllowedClass(s.class)}
+function teacherStudentList(){return db.students.filter(teacherAllowedStudent)}
+
+// Keep existing student data columns; only restrict teacher visibility/access.
+const _oldStudentsPage=studentsPage;
+studentsPage=function(){
+  if(role==='teacher'){
+    const original=db.students; db.students=teacherStudentList();
+    try{_oldStudentsPage();}finally{db.students=original;}
+  }else _oldStudentsPage();
+};
+
+// Teacher class restriction for attendance/fees/marks/tests.
+const _oldAttendancePage=attendancePage;
+attendancePage=function(){
+  if(role==='teacher'){
+    const original=db.students; db.students=teacherStudentList(); try{_oldAttendancePage();}finally{db.students=original;}
+  }else _oldAttendancePage();
+};
+const _oldFeesPage=feesPage;
+feesPage=function(){
+  if(role==='teacher'){
+    const original=db.students; db.students=teacherStudentList(); try{_oldFeesPage();}finally{db.students=original;}
+  }else _oldFeesPage();
+};
+const _oldMarksPage=marksPage;
+marksPage=function(){
+  if(role==='teacher'){
+    const original=db.students; db.students=teacherStudentList(); try{_oldMarksPage();}finally{db.students=original;}
+  }else _oldMarksPage();
+};
+const _oldTestsPage=testsPage;
+testsPage=function(){
+  if(role==='teacher'){
+    const original=db.students; db.students=teacherStudentList(); try{_oldTestsPage();}finally{db.students=original;}
+  }else _oldTestsPage();
+};
+
+// Student portal: compact, no duplicate columns; mark is entered directly from the existing Mark cell.
+studentTestsPage=function(){
+  const tests=(db.tests||[]).filter(t=>!t.class || t.class===currentStudent.class);
+  const submitted=db.onlineMarks.filter(m=>m.studentId===currentStudent.id);
+  document.getElementById('content').innerHTML=`
+  <div class="card compact-card"><div class="toolbar"><div><h3 style="margin:0">🧪 My Tests</h3><small style="color:var(--muted)">${esc(currentStudent.name)} · ${esc(currentStudent.class)}</small></div></div>
+  <div class="table-wrap"><table class="table compact-table"><thead><tr><th>Test</th><th>Subject</th><th>Mark</th><th>Action</th></tr></thead><tbody>
+  ${tests.map(t=>{const m=submitted.find(x=>x.testName===t.name);return `<tr><td><b>${esc(t.name)}</b><br><small>${t.date||''}</small></td><td>${esc(t.subject||'-')}</td><td>${m?`<b>${m.mark}/${m.total}</b>`:`<span class="badge pending">Pending</span>`}</td><td><a href="${esc(t.link)}" target="_blank" class="btn secondary" style="padding:5px 9px">🔗 Test</a> ${m?'<span class="badge ok">Submitted</span>':`<button class="btn success" style="padding:5px 9px" onclick="studentMarkEntryForm('${esc(t.name)}','${esc(t.subject||'')}',${t.total||100})">Enter Mark</button>`}</td></tr>`}).join('')||'<tr><td colspan="4">No tests for your class.</td></tr>'}
+  </tbody></table></div></div>`;
+};
+
+// Student profile: show all useful student information without exposing password.
+const _oldStudentProfilePage=studentProfilePage;
+studentProfilePage=function(id){
+  const s=db.students.find(x=>x.id===id)||currentStudent;if(!s)return;
+  if(role==='student') id=currentStudent.id;
+  const a=calcAttendanceStats(s.id,monthNow()),pending=calcPending(s.id,monthNow());
+  const marks=db.marks.filter(m=>m.studentId===s.id), online=db.onlineMarks.filter(m=>m.studentId===s.id);
+  document.getElementById('content').innerHTML=`
+  <div class="smart-grid">
+    <div class="card stat compact-card"><div class="label">Attendance</div><div class="value">${fmtPct(a.pct)}</div></div>
+    <div class="card stat compact-card"><div class="label">Present</div><div class="value">${a.present}</div></div>
+    <div class="card stat compact-card"><div class="label">Absent</div><div class="value danger-text">${a.absent}</div></div>
+    <div class="card stat compact-card"><div class="label">Pending Fee</div><div class="value danger-text">${money(pending)}</div></div>
+  </div>
+  <div class="card compact-card"><div class="toolbar"><h3 style="margin:0">👨‍🎓 ${esc(s.name)}</h3>${role==='student'?`<button class="btn secondary" onclick="studentReportPDF('${s.id}',monthNow())">📄 Monthly PDF</button>`:''}</div>
+  <div class="student-detail-grid">
+   <div class="detail-chip"><small>ID</small><br><b>${esc(s.id)}</b></div><div class="detail-chip"><small>Class</small><br><b>${esc(s.class)}</b></div>
+   <div class="detail-chip"><small>Mobile</small><br><b>${esc(s.mobile||'-')}</b></div><div class="detail-chip"><small>Parent</small><br><b>${esc(s.parent||'-')}</b></div>
+   <div class="detail-chip"><small>Birthday</small><br><b>${esc(s.birthday||'-')}</b></div><div class="detail-chip"><small>Monthly Fee</small><br><b>${money(s.monthlyFee)}</b></div>
+   <div class="detail-chip" style="grid-column:1/-1"><small>Address</small><br><b>${esc(s.address||'-')}</b></div>
+  </div></div>
+  <div class="card compact-card"><h3>📊 Marks</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Date</th><th>Exam / Test</th><th>Subject</th><th>Mark</th></tr></thead><tbody>${marks.concat(online.map(m=>({...m,exam:m.testName,entryType:'Online'}))).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(m=>`<tr><td>${m.date||'-'}</td><td>${esc(m.exam||'-')}</td><td>${esc(m.subject||'-')}</td><td><b>${m.mark}/${m.total}</b></td></tr>`).join('')||'<tr><td colspan="4">No marks.</td></tr>'}</tbody></table></div></div>`;
+};
+
+// Monthly individual PDF. Uses jsPDF when available; otherwise opens a clean print-ready PDF page.
+function studentReportPDF(id,month){
+  const s=db.students.find(x=>x.id===id); if(!s)return;
+  month=month||monthNow();
+  const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
+  const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+  const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
+  const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
+  const p=att.filter(x=>x.status==='Present').length, ab=att.filter(x=>x.status==='Absent').length;
+  const paid=fees.reduce((a,f)=>a+Number(f.amount||0),0), extra=fees.reduce((a,f)=>a+Number(f.extraAmount||0),0);
+  const pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+  if(window.jspdf?.jsPDF){
+    const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=16;
+    const line=(txt,size=10,bold=false)=>{doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(txt),14,y);y+=6;};
+    line(db.settings.academy||'Academy',18,true);line('Monthly Student Report - '+month,12,true);y+=2;
+    line(`Student: ${s.name}`);line(`ID: ${s.id}`);line(`Class: ${s.class}`);line(`Mobile: ${s.mobile||'-'}`);line(`Attendance: Present ${p} | Absent ${ab}`);line(`Fees: Paid ${paid} | Extra ${extra} | Pending ${pending}`);y+=3;line('MARKS',12,true);
+    [...marks,...online.map(m=>({date:m.date,exam:m.testName,mark:m.mark,total:m.total}))].forEach(m=>{if(y>280){doc.addPage();y=16}line(`${m.date||'-'}  ${m.exam||'-'}  ${m.mark}/${m.total}`)});
+    doc.save(`student-report-${s.id}-${month}.pdf`);
+  }else{printStudentReportPDF(id,month)}
+}
+function printStudentReportPDF(id,month){
+ const s=db.students.find(x=>x.id===id);if(!s)return;const a=calcAttendanceStats(id,month),fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+ const w=window.open('','_blank');if(!w)return alert('Popup block செய்யப்பட்டுள்ளது.');
+ w.document.write(`<html><head><title>Student Report</title><style>body{font-family:Arial;padding:25px;color:#111}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:7px;text-align:left}</style></head><body><div class="pdf-report"><h2>${esc(db.settings.academy)}</h2><h3>Monthly Student Report - ${esc(month)}</h3><p><b>Name:</b> ${esc(s.name)} &nbsp; <b>ID:</b> ${esc(s.id)} &nbsp; <b>Class:</b> ${esc(s.class)}</p><p><b>Attendance:</b> Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}</p><p><b>Fees:</b> Paid ${money(fees.reduce((x,f)=>x+Number(f.amount||0),0))}</p><button class="no-print" onclick="window.print()">Print / Save PDF</button></div>
+<style id="smart-final-css">
+:root{--smart1:#6d5dfc;--smart2:#00b8d9;--smart3:#ff6b8a;--smart4:#22c55e}
+.login-card{border:1px solid rgba(109,93,252,.22)!important;box-shadow:0 20px 60px rgba(31,41,55,.12)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,250,255,.98))!important}
+.smart-login-panel{animation:smartIn .35s ease both}.smart-role-btn{transition:.2s ease}.smart-role-btn:hover{transform:translateY(-2px)}
+.smart-page-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;padding:16px 18px;border-radius:18px;background:linear-gradient(120deg,#eef2ff,#ecfeff,#fff1f2);border:1px solid rgba(109,93,252,.12)}
+.smart-page-head h2{margin:2px 0 4px;font-size:22px}.smart-page-head p{margin:0;color:var(--muted);font-size:12px}.smart-kicker{font-size:10px;letter-spacing:1.5px;font-weight:800;color:var(--smart1)}
+.smart-actions,.smart-toolbar,.row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.smart-toolbar{margin:10px 0}.smart-toolbar input{flex:1;min-width:220px}.smart-toolbar select{min-width:150px}
+.smart-table th{white-space:nowrap}.smart-table td{vertical-align:middle}.empty-cell{text-align:center!important;padding:25px!important;color:var(--muted)}
+.sms-btn{background:linear-gradient(135deg,#0ea5e9,#06b6d4)!important;color:#fff!important;border:0!important}.smart-gradient-card{background:linear-gradient(145deg,#eef2ff,#ecfeff)!important}
+.smart-dashboard-strip{margin:14px 0;padding:14px 16px;border-radius:16px;background:linear-gradient(100deg,#111827,#312e81,#0f766e);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}.smart-dashboard-strip span{display:block;opacity:.78;font-size:11px;margin-top:3px}.smart-dash-pills{display:flex;gap:7px;flex-wrap:wrap}.smart-dash-pills span{display:inline-block;background:rgba(255,255,255,.13);padding:7px 10px;border-radius:999px;color:#fff}.smart-dash-pills b{color:#fff}.smart-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.smart-tile{padding:14px;border-radius:15px;background:linear-gradient(135deg,#fff,#eef2ff);border:1px solid #e5e7eb}.smart-tile b{display:block;font-size:22px}.smart-tile span{font-size:11px;color:var(--muted)}
+.report-filter-grid{display:grid;grid-template-columns:1.4fr .8fr auto;gap:12px;align-items:end}.report-button{display:flex;align-items:end}.compact-card{border-radius:15px!important}.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
+@keyframes smartIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.smart-page-head,.smart-dashboard-strip{flex-direction:column;align-items:stretch}.smart-mini-grid{grid-template-columns:1fr 1fr}.report-filter-grid{grid-template-columns:1fr}.smart-toolbar input{min-width:0;width:100%}.row-actions .btn{padding:5px 7px;font-size:11px}}
+</style>
+<script>
+/* =========================================================
+   ARUL SIRAGUGAL ACADEMY — SMART UI / REPORT / SMS UPGRADE
+   Preserves existing database + Google Sheets sync functions.
+   ========================================================= */
+(function(){
+  const esc0 = window.esc || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+  const allowed = s => role!=='teacher' || !currentTeacher || !(currentTeacher.classes||[]).length || currentTeacher.classes.includes(s.class);
+  window.teacherAllowedStudent = allowed;
+  window.teacherStudentList = ()=>db.students.filter(allowed);
+
+  /* SMS: opens the phone/desktop SMS composer; no data is sent automatically. */
+  window.smsStudent=function(id,text){
+    const s=db.students.find(x=>x.id===id); if(!s)return;
+    if(!s.mobile)return alert('இந்த student-க்கு mobile number இல்லை.');
+    const body=encodeURIComponent(text||`வணக்கம் ${s.name}, ${db.settings.academy} தொடர்பாக தகவல்.`);
+    const n=String(s.mobile).replace(/[^+\d]/g,'');
+    window.location.href=`sms:${n}?body=${body}`;
+  };
+  window.smsFee=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம் ${s.name}, ${db.settings.academy}. உங்கள் fee pending: ${money(calcPending(id,monthNow()))}.`)};
+  window.smsAbsent=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம், ${s.name} இன்று ${db.settings.academy} attendance-ல் Absent. தயவு செய்து கவனிக்கவும்.`)};
+
+  /* Keep teacher identity and permissions. */
+  const oldLoginTeacher=window.loginTeacher;
+  window.loginTeacher=function(){
+    const id=document.getElementById('teacherId')?.value||'', pass=document.getElementById('teacherPass')?.value||'';
+    const t=(db.teachers||[]).find(x=>x.id===id && x.password===pass);
+    if(t){ currentTeacher=t; enterApp('teacher'); return; }
+    if(id===db.settings.teacherId && pass===db.settings.teacherPass){ currentTeacher={name:db.settings.teacher, id, password:pass, classes:[]}; enterApp('teacher'); return; }
+    if(oldLoginTeacher) oldLoginTeacher();
+  };
+
+  /* Teacher filtering helper for all important class-based pages. */
+  function withTeacherStudents(fn){
+    if(role!=='teacher') return fn();
+    const original=db.students;
+    db.students=original.filter(allowed);
+    try{return fn();}finally{db.students=original;}
+  }
+  ['studentsPage','attendancePage','feesPage','marksPage','testsPage','homeworkPage'].forEach(name=>{
+    const old=window[name]; if(typeof old!=='function')return;
+    window[name]=function(){return withTeacherStudents(()=>old.apply(this,arguments));};
+  });
+
+  /* Compact + colourful student manager with full edit/delete + SMS. */
+  window.studentsPage=function(){
+    const list=db.students.filter(allowed);
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">STUDENTS</div><h2>👨‍🎓 Student Management</h2><p>${list.length} students in your access area</p></div>
+      <div class="smart-actions"><button class="btn" onclick="studentForm()">➕ Add Student</button><button class="btn secondary" onclick="showPage('reports')">📄 Reports</button></div></div>
+      <div class="smart-toolbar"><input id="studentSearch" placeholder="🔎 Search name / ID / class..." oninput="smartRenderStudents()"><select id="studentClassFilter" onchange="smartRenderStudents()"><option value="">All Classes</option>${[...new Set(list.map(s=>s.class).filter(Boolean))].sort().map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select></div>
+      <div class="card table-wrap"><table class="table smart-table"><thead><tr><th>Student</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="smartStudentRows"></tbody></table></div>`;
+    smartRenderStudents();
+  };
+  window.smartRenderStudents=function(){
+    const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();
+    const cf=document.getElementById('studentClassFilter')?.value||'';
+    const list=db.students.filter(allowed).filter(s=>(!cf||s.class===cf)&&(s.name+' '+s.id+' '+s.class+' '+s.mobile).toLowerCase().includes(q));
+    const box=document.getElementById('smartStudentRows'); if(!box)return;
+    box.innerHTML=list.map(s=>`<tr><td><b>${esc0(s.name)}</b><br><small>ID: ${esc0(s.id)}</small></td><td><span class="badge info">${esc0(s.class||'-')}</span></td><td>${esc0(s.mobile||'-')}</td><td>${money(s.monthlyFee)}</td><td class="row-actions"><button class="btn secondary" onclick="studentProfilePage('${esc0(s.id)}')">View</button><button class="btn secondary" onclick="studentForm('${esc0(s.id)}')">Edit</button><button class="btn sms-btn" onclick="smsStudent('${esc0(s.id)}')">SMS</button><button class="btn danger" onclick="deleteStudent('${esc0(s.id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell">No students found.</td></tr>';
+  };
+
+  /* SMS Centre */
+  window.smsCenterPage=function(){
+    const month=monthNow();
+    const pending=db.students.filter(allowed).map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
+    const absent=db.students.filter(allowed).filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">COMMUNICATION</div><h2>📱 SMS Centre</h2><p>SMS composer shortcuts — select a student and send from your device.</p></div></div>
+      <div class="smart-mini-grid"><div class="smart-tile"><b>${pending.length}</b><span>Fee Pending</span></div><div class="smart-tile"><b>${absent.length}</b><span>Absent Today</span></div><div class="smart-tile"><b>${db.students.filter(allowed).length}</b><span>Total Students</span></div></div>
+      <div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Pending</th><th>SMS</th></tr></thead><tbody>${pending.map(x=>`<tr><td>${esc0(x.s.name)}</td><td>${money(x.p)}</td><td><button class="btn sms-btn" onclick="smsFee('${esc0(x.s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No pending fees.</td></tr>'}</tbody></table></div></div>
+      <div class="card"><h3>📅 Absent Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Class</th><th>SMS</th></tr></thead><tbody>${absent.map(s=>`<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td><button class="btn sms-btn" onclick="smsAbsent('${esc0(s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No absent students today.</td></tr>'}</tbody></table></div></div></div>`;
+  };
+
+  /* Smart dashboard after the existing dashboard is rendered. */
+  const oldShowHub=window.showHubMenu;
+  window.showHubMenu=function(){
+    oldShowHub();
+    const c=document.getElementById('content'); if(!c)return;
+    const list=db.students.filter(allowed), month=monthNow();
+    const present=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
+    const absent=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent')).length;
+    const pending=list.reduce((n,s)=>n+calcPending(s.id,month),0);
+    const testsPending=role==='student'?0:(db.tests||[]).filter(t=>!t.class||list.some(s=>s.class===t.class)).filter(t=>!db.onlineMarks.some(m=>m.testName===t.name)).length;
+    const old=c.querySelector('.cards');
+    if(old) old.insertAdjacentHTML('afterend',`<div class="smart-dashboard-strip"><div><b>✨ Smart Overview</b><span>${role==='admin'?'Admin Control Centre':role==='teacher'?'Your Class Dashboard':'Your personal academy dashboard'}</span></div><div class="smart-dash-pills"><span>Present <b>${present}</b></span><span>Absent <b>${absent}</b></span><span>Pending <b>${money(pending)}</b></span>${role!=='student'?`<span>Tests Pending <b>${testsPending}</b></span>`:''}</div></div>`);
+    if(role==='admin'||role==='teacher'){
+      const grid=c.querySelector('.hub-grid'); if(grid&&!grid.querySelector('[data-sms-card]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.smsCard='1';d.onclick=()=>showPage('smsCenter');d.innerHTML='<div class="hub-icon">📱</div><div class="hub-title">SMS Centre</div><div class="hub-desc">Fee & absent reminders</div>';grid.insertBefore(d,grid.firstChild);}
+    }
+    if(role==='student'){
+      const profile=c.querySelector('.hub-grid');
+      if(profile&&!profile.querySelector('[data-student-report]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.studentReport='1';d.onclick=()=>studentReportPDF(currentStudent.id,monthNow());d.innerHTML='<div class="hub-icon">📄</div><div class="hub-title">Monthly PDF</div><div class="hub-desc">Download my report</div>';profile.insertBefore(d,profile.firstChild);}
+    }
+  };
+
+  /* Reports: PDF-first centre. Existing CSV/export functions remain available elsewhere. */
+  window.reportsPage=function(){
+    const list=db.students.filter(allowed), classes=[...new Set(list.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">REPORT CENTRE</div><h2>📄 PDF Reports</h2><p>Only the selected information is included in the report.</p></div></div>
+      <div class="card compact-card"><div class="report-filter-grid"><div><label>Student</label><select id="reportStudent">${list.map(s=>`<option value="${esc0(s.id)}">${esc0(s.name)} — ${esc0(s.class)}</option>`).join('')}</select></div><div><label>Month</label><input id="reportMonth" type="month" value="${monthNow()}"></div><div class="report-button"><button class="btn" onclick="studentReportPDF(document.getElementById('reportStudent').value,document.getElementById('reportMonth').value)">📥 Student Monthly PDF</button></div></div></div>
+      <div class="grid2"><div class="card compact-card"><h3>👥 Class Report</h3><label>Class</label><select id="pdfClass"><option value="">All Classes</option>${classes.map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select><label>Month</label><input id="pdfClassMonth" type="month" value="${monthNow()}"><br><button class="btn success" onclick="classReportPDF(document.getElementById('pdfClass').value,document.getElementById('pdfClassMonth').value)">📥 Class PDF</button></div>
+      <div class="card compact-card"><h3>📅 Attendance Report</h3><div class="two"><div><label>From</label><input id="pdfFrom" type="date" value="${today()}"></div><div><label>To</label><input id="pdfTo" type="date" value="${today()}"></div></div><br><button class="btn secondary" onclick="attendanceReportPDF(document.getElementById('pdfFrom').value,document.getElementById('pdfTo').value)">📥 Attendance PDF</button></div></div>`;
+  };
+
+  function pdfDoc(title){
+    if(!window.jspdf?.jsPDF){return null;}
+    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});let y=15;
+    const text=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=15}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
+    text(db.settings.academy||'Academy',18,true); text(title,13,true); text(new Date().toLocaleDateString('en-IN'),9,false); y+=3;
+    return {doc,text};
+  }
+  window.classReportPDF=function(cls,month){
+    const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls), p=pdfDoc(`Class Report — ${cls||'All Classes'} — ${month}`); if(!p)return printClassReport(cls,month); const {doc,text}=p;
+    list.forEach(s=>{const a=calcAttendanceStats(s.id,month),pending=calcPending(s.id,month);text(`${s.name} | ${s.class||'-'} | Present ${a.present} | Absent ${a.absent} | Attendance ${fmtPct(a.pct)} | Pending ${money(pending)}`)});doc.save(`class-report-${cls||'all'}-${month}.pdf`);
+  };
+  window.attendanceReportPDF=function(from,to){
+    const p=pdfDoc(`Attendance Report — ${from} to ${to}`); if(!p)return printAttendanceReport(from,to); const {doc,text}=p;
+    db.attendance.filter(a=>a.date>=from&&a.date<=to).filter(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)}).forEach(a=>{const s=db.students.find(x=>x.id===a.studentId);text(`${a.date} | ${s.name} | ${s.class||'-'} | ${a.status}`)});doc.save(`attendance-report-${from}-to-${to}.pdf`);
+  };
+  function printClassReport(cls,month){const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls);const html=`<h1>${esc0(db.settings.academy)}</h1><h2>Class Report - ${esc0(cls||'All')} - ${esc0(month)}</h2><table><tr><th>Student</th><th>Class</th><th>Present</th><th>Absent</th><th>Attendance</th><th>Pending</th></tr>${list.map(s=>{const a=calcAttendanceStats(s.id,month);return `<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.present}</td><td>${a.absent}</td><td>${fmtPct(a.pct)}</td><td>${money(calcPending(s.id,month))}</td></tr>`}).join('')}</table>`;pdfPrint('Class Report',html)}
+  function printAttendanceReport(from,to){const rows=db.attendance.filter(a=>a.date>=from&&a.date<=to).map(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)?`<tr><td>${a.date}</td><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.status}</td></tr>`:''}).join('');pdfPrint('Attendance Report',`<h1>${esc0(db.settings.academy)}</h1><h2>${from} to ${to}</h2><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${rows}</table>`)}
+
+  /* Rich monthly student PDF replaces the earlier short report while keeping same function name. */
+  window.studentReportPDF=function(id,month){
+    const s=db.students.find(x=>x.id===id); if(!s)return;
+    month=month||monthNow();
+    const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
+    const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+    const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
+    const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
+    const a=calcAttendanceStats(id,month),paid=fees.reduce((n,f)=>n+Number(f.amount||0),0),extra=fees.reduce((n,f)=>n+Number(f.extraAmount||0),0),pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+    if(window.jspdf?.jsPDF){
+      const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=14;
+      const line=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=14}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
+      line(db.settings.academy,18,true);line(`Student Monthly Report — ${month}`,13,true);y+=2;
+      line(`Name: ${s.name}`,10,true);line(`Student ID: ${s.id}`);line(`Class: ${s.class||'-'}`);line(`Mobile: ${s.mobile||'-'}`);line(`Parent: ${s.parent||'-'}`);line(`Attendance: Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}`);line(`Fees: Monthly ${money(s.monthlyFee)} | Paid ${money(paid)} | Extra ${money(extra)} | Pending ${money(pending)}`);y+=3;line('MARKS',12,true);
+      [...marks.map(m=>({date:m.date,exam:m.exam,subject:m.subject,mark:m.mark,total:m.total})),...online.map(m=>({date:m.date,exam:m.testName,subject:m.subject,mark:m.mark,total:m.total}))].forEach(m=>line(`${m.date||'-'} | ${m.exam||'-'} | ${m.subject||'-'} | ${m.mark}/${m.total}`));
+      y+=3;line('ATTENDANCE',12,true);att.forEach(x=>line(`${x.date} | ${x.status}`));
+      y+=3;line('FEE TRANSACTIONS',12,true);fees.forEach(f=>line(`${f.date} | ${f.type||'Payment'} | ${money(Number(f.amount||0)+Number(f.extraAmount||0))}`));
+      doc.save(`student-report-${s.id}-${month}.pdf`);
+    }else printStudentReportPDF(id,month);
+  };
+
+  /* Add SMS shortcut to teacher/admin profile cards and keep student full details. */
+  const oldProfile=window.studentProfilePage;
+  window.studentProfilePage=function(id){oldProfile(id);setTimeout(()=>{const h=document.querySelector('#content .card h3');const s=db.students.find(x=>x.id===id)||currentStudent;if(h&&s&&!h.parentElement.querySelector('[data-sms-profile]')){const b=document.createElement('button');b.className='btn sms-btn';b.dataset.smsProfile='1';b.textContent='📱 SMS';b.onclick=()=>smsStudent(s.id);h.parentElement.querySelector('.toolbar')?.appendChild(b);}},0)};
+
+  /* Teacher management remains fully editable/deletable; allowed-class selection is preserved. */
+  const oldTeachers=window.teachersPage;
+  window.teachersPage=function(){oldTeachers();};
+
+  /* Login polish */
+  setTimeout(()=>{
+    document.querySelectorAll('#adminLogin,#teacherLogin,#studentLogin').forEach(el=>el.classList.add('smart-login-panel'));
+    const roleButtons=document.querySelectorAll('#adminRole,#teacherRole,#studentRole'); roleButtons.forEach(x=>x.classList.add('smart-role-btn'));
+  },300);
+})();
+
+</script>
+</body></html>`);w.document.close();setTimeout(()=>w.print(),300);
+}
+
+</script>
 </head>
 <body>
 
 <div id="loginPage" class="login">
   <div class="login-card">
     <img id="loginLogo" class="logo" alt="Logo">
-    <h1 id="loginAcademy">Arul Siragugal Academy</h1>
+    <h1 id="loginAcademy">Arul Siragugal Academy</h1><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Secure Login</div>
     <p>Management System</p>
     <div id="loginLoading" style="display:none;text-align:center;color:var(--muted);font-size:13px;margin:6px 0">⏳ Shared data ஏற்றப்படுகிறது...</div>
     <div class="role-tabs">
@@ -236,8 +537,16 @@ function loginAdmin(){
   else document.getElementById('loginMsg').textContent='Admin ID / Password தவறாக உள்ளது.';
 }
 function loginTeacher(){
-  if(document.getElementById('teacherId').value===db.settings.teacherId && document.getElementById('teacherPass').value===db.settings.teacherPass){enterApp('teacher')}
-  else document.getElementById('loginMsg').textContent='Teacher ID / Password தவறாக உள்ளது.';
+  const id=String(document.getElementById('teacherId').value||'').trim();
+  const pass=String(document.getElementById('teacherPass').value||'');
+  const extra=(db.teachers||[]).find(t=>t.id===id && t.password===pass);
+  if(id===db.settings.teacherId && pass===db.settings.teacherPass){
+    window.currentTeacher={id,name:db.settings.teacher||'Teacher',classes:db.settings.teacherClasses||[]};
+    enterApp('teacher');
+  }else if(extra){
+    window.currentTeacher=extra;
+    enterApp('teacher');
+  }else document.getElementById('loginMsg').textContent='Teacher ID / Password தவறாக உள்ளது.';
 }
 function loginStudent(){
   const s=db.students.find(x=>x.id===document.getElementById('studentId').value && x.password===document.getElementById('studentPass').value);
@@ -1209,17 +1518,32 @@ function examForm(){
 function teachersPage(){
   document.getElementById('content').innerHTML=`
     <div class="toolbar"><button class="btn" onclick="teacherForm()">➕ Add Teacher</button></div>
-    <div class="card table-wrap"><table class="table"><thead><tr><th>Name</th><th>ID</th><th>Mobile</th><th>Action</th></tr></thead>
-    <tbody>${db.teachers.map((t,i)=>`<tr><td>${esc(t.name)}</td><td>${esc(t.id)}</td><td>${esc(t.mobile)}</td><td><button class="btn danger" onclick="db.teachers.splice(${i},1);save();teachersPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="4">Additional teachers இல்லை.</td></tr>'}</tbody></table></div>`;
+    <div class="card table-wrap compact-card"><table class="table compact-table"><thead><tr><th>Name</th><th>Login ID</th><th>Classes</th><th>Mobile</th><th>Action</th></tr></thead>
+    <tbody>${db.teachers.map((t,i)=>`<tr><td><b>${esc(t.name)}</b></td><td>${esc(t.id)}</td><td>${esc((t.classes||[]).join(', ')||'All')}</td><td>${esc(t.mobile||'-')}</td><td><button class="btn secondary" onclick="editTeacherAccount(${i})">Edit</button> <button class="btn danger" onclick="db.teachers.splice(${i},1);save();teachersPage()">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">Additional teachers இல்லை.</td></tr>'}</tbody></table></div>`;
 }
+function editTeacherAccount(i){
+ const t=db.teachers[i]; if(!t)return;
+ const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+ openModal('Edit Teacher',`<label>Name</label><input id="etName" value="${esc(t.name)}"><div class="two"><div><label>Login ID</label><input id="etId" value="${esc(t.id)}"></div><div><label>Password</label><input id="etPass" value="${esc(t.password||'')}"></div></div><label>Mobile</label><input id="etMobile" value="${esc(t.mobile||'')}"><label>Allowed Classes</label><select id="etClasses" multiple style="min-height:110px">${classes.map(c=>`<option value="${esc(c)}" ${(t.classes||[]).includes(c)?'selected':''}>${esc(c)}</option>`).join('')}</select><br><button class="btn" style="width:100%" onclick="updateTeacherAccount(${i})">Save Changes</button>`);
+}
+function updateTeacherAccount(i){const t=db.teachers[i];t.name=document.getElementById('etName').value.trim();t.id=document.getElementById('etId').value.trim();t.password=document.getElementById('etPass').value;t.mobile=document.getElementById('etMobile').value.trim();t.classes=[...document.getElementById('etClasses').selectedOptions].map(o=>o.value);save();closeModal();teachersPage();}
 function teacherForm(){
+  const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   openModal('Teacher Account',`
     <label>Name</label><input id="trName">
-    <label>Login ID</label><input id="trId">
-    <label>Password</label><input id="trPass" type="password">
+    <div class="two"><div><label>Login ID</label><input id="trId"></div><div><label>Password</label><input id="trPass" type="password"></div></div>
     <label>Mobile</label><input id="trMobile">
-    <br><button class="btn" style="width:100%" onclick="db.teachers.push({name:document.getElementById('trName').value,id:document.getElementById('trId').value,password:document.getElementById('trPass').value,mobile:document.getElementById('trMobile').value,att:true,fees:true,marks:true});save();closeModal();teachersPage()">Save Teacher</button>
+    <label>Allowed Classes</label><select id="trClasses" multiple style="min-height:110px">${classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+    <small style="color:var(--muted)">Teacher login செய்தால் தேர்வு செய்த class மாணவர்கள் மட்டும் access ஆகும்.</small>
+    <br><button class="btn" style="width:100%" onclick="saveTeacherAccount()">Save Teacher</button>
   `);
+}
+function saveTeacherAccount(){
+  const name=document.getElementById('trName').value.trim(),id=document.getElementById('trId').value.trim(),password=document.getElementById('trPass').value;
+  if(!name||!id||!password)return alert('Name, Login ID, Password கட்டாயம்.');
+  const classes=[...document.getElementById('trClasses').selectedOptions].map(o=>o.value);
+  db.teachers.push({name,id,password,mobile:document.getElementById('trMobile').value.trim(),classes,att:true,fees:true,marks:true});
+  save();closeModal();teachersPage();
 }
 
 function financePage(){
@@ -1573,7 +1897,182 @@ autoImportOnLoad();
   function clsOptions(selected=''){return [...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('')}
   function pdfPrint(title,html){
     const w=window.open('','_blank'); if(!w)return alert('Popup blocked. Please allow popups for PDF export.');
-    w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${esc(title)}</title><style>body{font-family:Arial,'Noto Sans Tamil',sans-serif;padding:24px;color:#111}h1{font-size:22px}h2{font-size:18px;margin-top:22px}.meta{color:#555;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box{border:1px solid #ddd;border-radius:10px;padding:10px}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #ddd;padding:7px;font-size:12px;text-align:left}th{background:#f3f4f6}@media print{button{display:none!important}}</style></head><body><h1>${esc(title)}</h1><div class="meta">${new Date().toLocaleString('en-IN')}</div>${html}</body></html>`);w.document.close();setTimeout(()=>{w.print()},400);
+    w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${esc(title)}</title><style>body{font-family:Arial,'Noto Sans Tamil',sans-serif;padding:24px;color:#111}h1{font-size:22px}h2{font-size:18px;margin-top:22px}.meta{color:#555;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box{border:1px solid #ddd;border-radius:10px;padding:10px}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #ddd;padding:7px;font-size:12px;text-align:left}th{background:#f3f4f6}@media print{button{display:none!important}}</style></head><body><h1>${esc(title)}</h1><div class="meta">${new Date().toLocaleString('en-IN')}</div>${html}
+<style id="smart-final-css">
+:root{--smart1:#6d5dfc;--smart2:#00b8d9;--smart3:#ff6b8a;--smart4:#22c55e}
+.login-card{border:1px solid rgba(109,93,252,.22)!important;box-shadow:0 20px 60px rgba(31,41,55,.12)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,250,255,.98))!important}
+.smart-login-panel{animation:smartIn .35s ease both}.smart-role-btn{transition:.2s ease}.smart-role-btn:hover{transform:translateY(-2px)}
+.smart-page-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;padding:16px 18px;border-radius:18px;background:linear-gradient(120deg,#eef2ff,#ecfeff,#fff1f2);border:1px solid rgba(109,93,252,.12)}
+.smart-page-head h2{margin:2px 0 4px;font-size:22px}.smart-page-head p{margin:0;color:var(--muted);font-size:12px}.smart-kicker{font-size:10px;letter-spacing:1.5px;font-weight:800;color:var(--smart1)}
+.smart-actions,.smart-toolbar,.row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.smart-toolbar{margin:10px 0}.smart-toolbar input{flex:1;min-width:220px}.smart-toolbar select{min-width:150px}
+.smart-table th{white-space:nowrap}.smart-table td{vertical-align:middle}.empty-cell{text-align:center!important;padding:25px!important;color:var(--muted)}
+.sms-btn{background:linear-gradient(135deg,#0ea5e9,#06b6d4)!important;color:#fff!important;border:0!important}.smart-gradient-card{background:linear-gradient(145deg,#eef2ff,#ecfeff)!important}
+.smart-dashboard-strip{margin:14px 0;padding:14px 16px;border-radius:16px;background:linear-gradient(100deg,#111827,#312e81,#0f766e);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}.smart-dashboard-strip span{display:block;opacity:.78;font-size:11px;margin-top:3px}.smart-dash-pills{display:flex;gap:7px;flex-wrap:wrap}.smart-dash-pills span{display:inline-block;background:rgba(255,255,255,.13);padding:7px 10px;border-radius:999px;color:#fff}.smart-dash-pills b{color:#fff}.smart-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.smart-tile{padding:14px;border-radius:15px;background:linear-gradient(135deg,#fff,#eef2ff);border:1px solid #e5e7eb}.smart-tile b{display:block;font-size:22px}.smart-tile span{font-size:11px;color:var(--muted)}
+.report-filter-grid{display:grid;grid-template-columns:1.4fr .8fr auto;gap:12px;align-items:end}.report-button{display:flex;align-items:end}.compact-card{border-radius:15px!important}.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
+@keyframes smartIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.smart-page-head,.smart-dashboard-strip{flex-direction:column;align-items:stretch}.smart-mini-grid{grid-template-columns:1fr 1fr}.report-filter-grid{grid-template-columns:1fr}.smart-toolbar input{min-width:0;width:100%}.row-actions .btn{padding:5px 7px;font-size:11px}}
+</style>
+<script>
+/* =========================================================
+   ARUL SIRAGUGAL ACADEMY — SMART UI / REPORT / SMS UPGRADE
+   Preserves existing database + Google Sheets sync functions.
+   ========================================================= */
+(function(){
+  const esc0 = window.esc || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+  const allowed = s => role!=='teacher' || !currentTeacher || !(currentTeacher.classes||[]).length || currentTeacher.classes.includes(s.class);
+  window.teacherAllowedStudent = allowed;
+  window.teacherStudentList = ()=>db.students.filter(allowed);
+
+  /* SMS: opens the phone/desktop SMS composer; no data is sent automatically. */
+  window.smsStudent=function(id,text){
+    const s=db.students.find(x=>x.id===id); if(!s)return;
+    if(!s.mobile)return alert('இந்த student-க்கு mobile number இல்லை.');
+    const body=encodeURIComponent(text||`வணக்கம் ${s.name}, ${db.settings.academy} தொடர்பாக தகவல்.`);
+    const n=String(s.mobile).replace(/[^+\d]/g,'');
+    window.location.href=`sms:${n}?body=${body}`;
+  };
+  window.smsFee=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம் ${s.name}, ${db.settings.academy}. உங்கள் fee pending: ${money(calcPending(id,monthNow()))}.`)};
+  window.smsAbsent=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம், ${s.name} இன்று ${db.settings.academy} attendance-ல் Absent. தயவு செய்து கவனிக்கவும்.`)};
+
+  /* Keep teacher identity and permissions. */
+  const oldLoginTeacher=window.loginTeacher;
+  window.loginTeacher=function(){
+    const id=document.getElementById('teacherId')?.value||'', pass=document.getElementById('teacherPass')?.value||'';
+    const t=(db.teachers||[]).find(x=>x.id===id && x.password===pass);
+    if(t){ currentTeacher=t; enterApp('teacher'); return; }
+    if(id===db.settings.teacherId && pass===db.settings.teacherPass){ currentTeacher={name:db.settings.teacher, id, password:pass, classes:[]}; enterApp('teacher'); return; }
+    if(oldLoginTeacher) oldLoginTeacher();
+  };
+
+  /* Teacher filtering helper for all important class-based pages. */
+  function withTeacherStudents(fn){
+    if(role!=='teacher') return fn();
+    const original=db.students;
+    db.students=original.filter(allowed);
+    try{return fn();}finally{db.students=original;}
+  }
+  ['studentsPage','attendancePage','feesPage','marksPage','testsPage','homeworkPage'].forEach(name=>{
+    const old=window[name]; if(typeof old!=='function')return;
+    window[name]=function(){return withTeacherStudents(()=>old.apply(this,arguments));};
+  });
+
+  /* Compact + colourful student manager with full edit/delete + SMS. */
+  window.studentsPage=function(){
+    const list=db.students.filter(allowed);
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">STUDENTS</div><h2>👨‍🎓 Student Management</h2><p>${list.length} students in your access area</p></div>
+      <div class="smart-actions"><button class="btn" onclick="studentForm()">➕ Add Student</button><button class="btn secondary" onclick="showPage('reports')">📄 Reports</button></div></div>
+      <div class="smart-toolbar"><input id="studentSearch" placeholder="🔎 Search name / ID / class..." oninput="smartRenderStudents()"><select id="studentClassFilter" onchange="smartRenderStudents()"><option value="">All Classes</option>${[...new Set(list.map(s=>s.class).filter(Boolean))].sort().map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select></div>
+      <div class="card table-wrap"><table class="table smart-table"><thead><tr><th>Student</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="smartStudentRows"></tbody></table></div>`;
+    smartRenderStudents();
+  };
+  window.smartRenderStudents=function(){
+    const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();
+    const cf=document.getElementById('studentClassFilter')?.value||'';
+    const list=db.students.filter(allowed).filter(s=>(!cf||s.class===cf)&&(s.name+' '+s.id+' '+s.class+' '+s.mobile).toLowerCase().includes(q));
+    const box=document.getElementById('smartStudentRows'); if(!box)return;
+    box.innerHTML=list.map(s=>`<tr><td><b>${esc0(s.name)}</b><br><small>ID: ${esc0(s.id)}</small></td><td><span class="badge info">${esc0(s.class||'-')}</span></td><td>${esc0(s.mobile||'-')}</td><td>${money(s.monthlyFee)}</td><td class="row-actions"><button class="btn secondary" onclick="studentProfilePage('${esc0(s.id)}')">View</button><button class="btn secondary" onclick="studentForm('${esc0(s.id)}')">Edit</button><button class="btn sms-btn" onclick="smsStudent('${esc0(s.id)}')">SMS</button><button class="btn danger" onclick="deleteStudent('${esc0(s.id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell">No students found.</td></tr>';
+  };
+
+  /* SMS Centre */
+  window.smsCenterPage=function(){
+    const month=monthNow();
+    const pending=db.students.filter(allowed).map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
+    const absent=db.students.filter(allowed).filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">COMMUNICATION</div><h2>📱 SMS Centre</h2><p>SMS composer shortcuts — select a student and send from your device.</p></div></div>
+      <div class="smart-mini-grid"><div class="smart-tile"><b>${pending.length}</b><span>Fee Pending</span></div><div class="smart-tile"><b>${absent.length}</b><span>Absent Today</span></div><div class="smart-tile"><b>${db.students.filter(allowed).length}</b><span>Total Students</span></div></div>
+      <div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Pending</th><th>SMS</th></tr></thead><tbody>${pending.map(x=>`<tr><td>${esc0(x.s.name)}</td><td>${money(x.p)}</td><td><button class="btn sms-btn" onclick="smsFee('${esc0(x.s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No pending fees.</td></tr>'}</tbody></table></div></div>
+      <div class="card"><h3>📅 Absent Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Class</th><th>SMS</th></tr></thead><tbody>${absent.map(s=>`<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td><button class="btn sms-btn" onclick="smsAbsent('${esc0(s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No absent students today.</td></tr>'}</tbody></table></div></div></div>`;
+  };
+
+  /* Smart dashboard after the existing dashboard is rendered. */
+  const oldShowHub=window.showHubMenu;
+  window.showHubMenu=function(){
+    oldShowHub();
+    const c=document.getElementById('content'); if(!c)return;
+    const list=db.students.filter(allowed), month=monthNow();
+    const present=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
+    const absent=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent')).length;
+    const pending=list.reduce((n,s)=>n+calcPending(s.id,month),0);
+    const testsPending=role==='student'?0:(db.tests||[]).filter(t=>!t.class||list.some(s=>s.class===t.class)).filter(t=>!db.onlineMarks.some(m=>m.testName===t.name)).length;
+    const old=c.querySelector('.cards');
+    if(old) old.insertAdjacentHTML('afterend',`<div class="smart-dashboard-strip"><div><b>✨ Smart Overview</b><span>${role==='admin'?'Admin Control Centre':role==='teacher'?'Your Class Dashboard':'Your personal academy dashboard'}</span></div><div class="smart-dash-pills"><span>Present <b>${present}</b></span><span>Absent <b>${absent}</b></span><span>Pending <b>${money(pending)}</b></span>${role!=='student'?`<span>Tests Pending <b>${testsPending}</b></span>`:''}</div></div>`);
+    if(role==='admin'||role==='teacher'){
+      const grid=c.querySelector('.hub-grid'); if(grid&&!grid.querySelector('[data-sms-card]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.smsCard='1';d.onclick=()=>showPage('smsCenter');d.innerHTML='<div class="hub-icon">📱</div><div class="hub-title">SMS Centre</div><div class="hub-desc">Fee & absent reminders</div>';grid.insertBefore(d,grid.firstChild);}
+    }
+    if(role==='student'){
+      const profile=c.querySelector('.hub-grid');
+      if(profile&&!profile.querySelector('[data-student-report]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.studentReport='1';d.onclick=()=>studentReportPDF(currentStudent.id,monthNow());d.innerHTML='<div class="hub-icon">📄</div><div class="hub-title">Monthly PDF</div><div class="hub-desc">Download my report</div>';profile.insertBefore(d,profile.firstChild);}
+    }
+  };
+
+  /* Reports: PDF-first centre. Existing CSV/export functions remain available elsewhere. */
+  window.reportsPage=function(){
+    const list=db.students.filter(allowed), classes=[...new Set(list.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">REPORT CENTRE</div><h2>📄 PDF Reports</h2><p>Only the selected information is included in the report.</p></div></div>
+      <div class="card compact-card"><div class="report-filter-grid"><div><label>Student</label><select id="reportStudent">${list.map(s=>`<option value="${esc0(s.id)}">${esc0(s.name)} — ${esc0(s.class)}</option>`).join('')}</select></div><div><label>Month</label><input id="reportMonth" type="month" value="${monthNow()}"></div><div class="report-button"><button class="btn" onclick="studentReportPDF(document.getElementById('reportStudent').value,document.getElementById('reportMonth').value)">📥 Student Monthly PDF</button></div></div></div>
+      <div class="grid2"><div class="card compact-card"><h3>👥 Class Report</h3><label>Class</label><select id="pdfClass"><option value="">All Classes</option>${classes.map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select><label>Month</label><input id="pdfClassMonth" type="month" value="${monthNow()}"><br><button class="btn success" onclick="classReportPDF(document.getElementById('pdfClass').value,document.getElementById('pdfClassMonth').value)">📥 Class PDF</button></div>
+      <div class="card compact-card"><h3>📅 Attendance Report</h3><div class="two"><div><label>From</label><input id="pdfFrom" type="date" value="${today()}"></div><div><label>To</label><input id="pdfTo" type="date" value="${today()}"></div></div><br><button class="btn secondary" onclick="attendanceReportPDF(document.getElementById('pdfFrom').value,document.getElementById('pdfTo').value)">📥 Attendance PDF</button></div></div>`;
+  };
+
+  function pdfDoc(title){
+    if(!window.jspdf?.jsPDF){return null;}
+    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});let y=15;
+    const text=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=15}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
+    text(db.settings.academy||'Academy',18,true); text(title,13,true); text(new Date().toLocaleDateString('en-IN'),9,false); y+=3;
+    return {doc,text};
+  }
+  window.classReportPDF=function(cls,month){
+    const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls), p=pdfDoc(`Class Report — ${cls||'All Classes'} — ${month}`); if(!p)return printClassReport(cls,month); const {doc,text}=p;
+    list.forEach(s=>{const a=calcAttendanceStats(s.id,month),pending=calcPending(s.id,month);text(`${s.name} | ${s.class||'-'} | Present ${a.present} | Absent ${a.absent} | Attendance ${fmtPct(a.pct)} | Pending ${money(pending)}`)});doc.save(`class-report-${cls||'all'}-${month}.pdf`);
+  };
+  window.attendanceReportPDF=function(from,to){
+    const p=pdfDoc(`Attendance Report — ${from} to ${to}`); if(!p)return printAttendanceReport(from,to); const {doc,text}=p;
+    db.attendance.filter(a=>a.date>=from&&a.date<=to).filter(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)}).forEach(a=>{const s=db.students.find(x=>x.id===a.studentId);text(`${a.date} | ${s.name} | ${s.class||'-'} | ${a.status}`)});doc.save(`attendance-report-${from}-to-${to}.pdf`);
+  };
+  function printClassReport(cls,month){const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls);const html=`<h1>${esc0(db.settings.academy)}</h1><h2>Class Report - ${esc0(cls||'All')} - ${esc0(month)}</h2><table><tr><th>Student</th><th>Class</th><th>Present</th><th>Absent</th><th>Attendance</th><th>Pending</th></tr>${list.map(s=>{const a=calcAttendanceStats(s.id,month);return `<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.present}</td><td>${a.absent}</td><td>${fmtPct(a.pct)}</td><td>${money(calcPending(s.id,month))}</td></tr>`}).join('')}</table>`;pdfPrint('Class Report',html)}
+  function printAttendanceReport(from,to){const rows=db.attendance.filter(a=>a.date>=from&&a.date<=to).map(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)?`<tr><td>${a.date}</td><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.status}</td></tr>`:''}).join('');pdfPrint('Attendance Report',`<h1>${esc0(db.settings.academy)}</h1><h2>${from} to ${to}</h2><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${rows}</table>`)}
+
+  /* Rich monthly student PDF replaces the earlier short report while keeping same function name. */
+  window.studentReportPDF=function(id,month){
+    const s=db.students.find(x=>x.id===id); if(!s)return;
+    month=month||monthNow();
+    const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
+    const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+    const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
+    const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
+    const a=calcAttendanceStats(id,month),paid=fees.reduce((n,f)=>n+Number(f.amount||0),0),extra=fees.reduce((n,f)=>n+Number(f.extraAmount||0),0),pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+    if(window.jspdf?.jsPDF){
+      const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=14;
+      const line=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=14}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
+      line(db.settings.academy,18,true);line(`Student Monthly Report — ${month}`,13,true);y+=2;
+      line(`Name: ${s.name}`,10,true);line(`Student ID: ${s.id}`);line(`Class: ${s.class||'-'}`);line(`Mobile: ${s.mobile||'-'}`);line(`Parent: ${s.parent||'-'}`);line(`Attendance: Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}`);line(`Fees: Monthly ${money(s.monthlyFee)} | Paid ${money(paid)} | Extra ${money(extra)} | Pending ${money(pending)}`);y+=3;line('MARKS',12,true);
+      [...marks.map(m=>({date:m.date,exam:m.exam,subject:m.subject,mark:m.mark,total:m.total})),...online.map(m=>({date:m.date,exam:m.testName,subject:m.subject,mark:m.mark,total:m.total}))].forEach(m=>line(`${m.date||'-'} | ${m.exam||'-'} | ${m.subject||'-'} | ${m.mark}/${m.total}`));
+      y+=3;line('ATTENDANCE',12,true);att.forEach(x=>line(`${x.date} | ${x.status}`));
+      y+=3;line('FEE TRANSACTIONS',12,true);fees.forEach(f=>line(`${f.date} | ${f.type||'Payment'} | ${money(Number(f.amount||0)+Number(f.extraAmount||0))}`));
+      doc.save(`student-report-${s.id}-${month}.pdf`);
+    }else printStudentReportPDF(id,month);
+  };
+
+  /* Add SMS shortcut to teacher/admin profile cards and keep student full details. */
+  const oldProfile=window.studentProfilePage;
+  window.studentProfilePage=function(id){oldProfile(id);setTimeout(()=>{const h=document.querySelector('#content .card h3');const s=db.students.find(x=>x.id===id)||currentStudent;if(h&&s&&!h.parentElement.querySelector('[data-sms-profile]')){const b=document.createElement('button');b.className='btn sms-btn';b.dataset.smsProfile='1';b.textContent='📱 SMS';b.onclick=()=>smsStudent(s.id);h.parentElement.querySelector('.toolbar')?.appendChild(b);}},0)};
+
+  /* Teacher management remains fully editable/deletable; allowed-class selection is preserved. */
+  const oldTeachers=window.teachersPage;
+  window.teachersPage=function(){oldTeachers();};
+
+  /* Login polish */
+  setTimeout(()=>{
+    document.querySelectorAll('#adminLogin,#teacherLogin,#studentLogin').forEach(el=>el.classList.add('smart-login-panel'));
+    const roleButtons=document.querySelectorAll('#adminRole,#teacherRole,#studentRole'); roleButtons.forEach(x=>x.classList.add('smart-role-btn'));
+  },300);
+})();
+
+</script>
+</body></html>`);w.document.close();setTimeout(()=>{w.print()},400);
   }
   window.exportSmartPDF=pdfPrint;
 
@@ -1653,6 +2152,181 @@ autoImportOnLoad();
   const originalEnter=enterApp;
   enterApp=function(r){originalEnter(r);if(r==='admin'){setTimeout(()=>{const header=document.querySelector('.topbar > div:last-child');if(header&&!header.querySelector('[data-smart-pdf]')){const b=document.createElement('button');b.className='btn pdf-btn';b.dataset.smartPdf='1';b.textContent='🖨️ PDF';b.onclick=exportCurrentPagePDF;header.insertBefore(b,header.firstChild)}},0)}};
 })();
+</script>
+
+<style id="smart-final-css">
+:root{--smart1:#6d5dfc;--smart2:#00b8d9;--smart3:#ff6b8a;--smart4:#22c55e}
+.login-card{border:1px solid rgba(109,93,252,.22)!important;box-shadow:0 20px 60px rgba(31,41,55,.12)!important;border-radius:22px!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(248,250,255,.98))!important}
+.smart-login-panel{animation:smartIn .35s ease both}.smart-role-btn{transition:.2s ease}.smart-role-btn:hover{transform:translateY(-2px)}
+.smart-page-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;padding:16px 18px;border-radius:18px;background:linear-gradient(120deg,#eef2ff,#ecfeff,#fff1f2);border:1px solid rgba(109,93,252,.12)}
+.smart-page-head h2{margin:2px 0 4px;font-size:22px}.smart-page-head p{margin:0;color:var(--muted);font-size:12px}.smart-kicker{font-size:10px;letter-spacing:1.5px;font-weight:800;color:var(--smart1)}
+.smart-actions,.smart-toolbar,.row-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.smart-toolbar{margin:10px 0}.smart-toolbar input{flex:1;min-width:220px}.smart-toolbar select{min-width:150px}
+.smart-table th{white-space:nowrap}.smart-table td{vertical-align:middle}.empty-cell{text-align:center!important;padding:25px!important;color:var(--muted)}
+.sms-btn{background:linear-gradient(135deg,#0ea5e9,#06b6d4)!important;color:#fff!important;border:0!important}.smart-gradient-card{background:linear-gradient(145deg,#eef2ff,#ecfeff)!important}
+.smart-dashboard-strip{margin:14px 0;padding:14px 16px;border-radius:16px;background:linear-gradient(100deg,#111827,#312e81,#0f766e);color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center}.smart-dashboard-strip span{display:block;opacity:.78;font-size:11px;margin-top:3px}.smart-dash-pills{display:flex;gap:7px;flex-wrap:wrap}.smart-dash-pills span{display:inline-block;background:rgba(255,255,255,.13);padding:7px 10px;border-radius:999px;color:#fff}.smart-dash-pills b{color:#fff}.smart-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}.smart-tile{padding:14px;border-radius:15px;background:linear-gradient(135deg,#fff,#eef2ff);border:1px solid #e5e7eb}.smart-tile b{display:block;font-size:22px}.smart-tile span{font-size:11px;color:var(--muted)}
+.report-filter-grid{display:grid;grid-template-columns:1.4fr .8fr auto;gap:12px;align-items:end}.report-button{display:flex;align-items:end}.compact-card{border-radius:15px!important}.compact-table th,.compact-table td{padding:7px 8px!important;font-size:12px}
+@keyframes smartIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.smart-page-head,.smart-dashboard-strip{flex-direction:column;align-items:stretch}.smart-mini-grid{grid-template-columns:1fr 1fr}.report-filter-grid{grid-template-columns:1fr}.smart-toolbar input{min-width:0;width:100%}.row-actions .btn{padding:5px 7px;font-size:11px}}
+</style>
+<script>
+/* =========================================================
+   ARUL SIRAGUGAL ACADEMY — SMART UI / REPORT / SMS UPGRADE
+   Preserves existing database + Google Sheets sync functions.
+   ========================================================= */
+(function(){
+  const esc0 = window.esc || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+  const allowed = s => role!=='teacher' || !currentTeacher || !(currentTeacher.classes||[]).length || currentTeacher.classes.includes(s.class);
+  window.teacherAllowedStudent = allowed;
+  window.teacherStudentList = ()=>db.students.filter(allowed);
+
+  /* SMS: opens the phone/desktop SMS composer; no data is sent automatically. */
+  window.smsStudent=function(id,text){
+    const s=db.students.find(x=>x.id===id); if(!s)return;
+    if(!s.mobile)return alert('இந்த student-க்கு mobile number இல்லை.');
+    const body=encodeURIComponent(text||`வணக்கம் ${s.name}, ${db.settings.academy} தொடர்பாக தகவல்.`);
+    const n=String(s.mobile).replace(/[^+\d]/g,'');
+    window.location.href=`sms:${n}?body=${body}`;
+  };
+  window.smsFee=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம் ${s.name}, ${db.settings.academy}. உங்கள் fee pending: ${money(calcPending(id,monthNow()))}.`)};
+  window.smsAbsent=function(id){const s=db.students.find(x=>x.id===id); if(!s)return; smsStudent(id,`வணக்கம், ${s.name} இன்று ${db.settings.academy} attendance-ல் Absent. தயவு செய்து கவனிக்கவும்.`)};
+
+  /* Keep teacher identity and permissions. */
+  const oldLoginTeacher=window.loginTeacher;
+  window.loginTeacher=function(){
+    const id=document.getElementById('teacherId')?.value||'', pass=document.getElementById('teacherPass')?.value||'';
+    const t=(db.teachers||[]).find(x=>x.id===id && x.password===pass);
+    if(t){ currentTeacher=t; enterApp('teacher'); return; }
+    if(id===db.settings.teacherId && pass===db.settings.teacherPass){ currentTeacher={name:db.settings.teacher, id, password:pass, classes:[]}; enterApp('teacher'); return; }
+    if(oldLoginTeacher) oldLoginTeacher();
+  };
+
+  /* Teacher filtering helper for all important class-based pages. */
+  function withTeacherStudents(fn){
+    if(role!=='teacher') return fn();
+    const original=db.students;
+    db.students=original.filter(allowed);
+    try{return fn();}finally{db.students=original;}
+  }
+  ['studentsPage','attendancePage','feesPage','marksPage','testsPage','homeworkPage'].forEach(name=>{
+    const old=window[name]; if(typeof old!=='function')return;
+    window[name]=function(){return withTeacherStudents(()=>old.apply(this,arguments));};
+  });
+
+  /* Compact + colourful student manager with full edit/delete + SMS. */
+  window.studentsPage=function(){
+    const list=db.students.filter(allowed);
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">STUDENTS</div><h2>👨‍🎓 Student Management</h2><p>${list.length} students in your access area</p></div>
+      <div class="smart-actions"><button class="btn" onclick="studentForm()">➕ Add Student</button><button class="btn secondary" onclick="showPage('reports')">📄 Reports</button></div></div>
+      <div class="smart-toolbar"><input id="studentSearch" placeholder="🔎 Search name / ID / class..." oninput="smartRenderStudents()"><select id="studentClassFilter" onchange="smartRenderStudents()"><option value="">All Classes</option>${[...new Set(list.map(s=>s.class).filter(Boolean))].sort().map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select></div>
+      <div class="card table-wrap"><table class="table smart-table"><thead><tr><th>Student</th><th>Class</th><th>Mobile</th><th>Monthly Fee</th><th>Actions</th></tr></thead><tbody id="smartStudentRows"></tbody></table></div>`;
+    smartRenderStudents();
+  };
+  window.smartRenderStudents=function(){
+    const q=(document.getElementById('studentSearch')?.value||'').toLowerCase();
+    const cf=document.getElementById('studentClassFilter')?.value||'';
+    const list=db.students.filter(allowed).filter(s=>(!cf||s.class===cf)&&(s.name+' '+s.id+' '+s.class+' '+s.mobile).toLowerCase().includes(q));
+    const box=document.getElementById('smartStudentRows'); if(!box)return;
+    box.innerHTML=list.map(s=>`<tr><td><b>${esc0(s.name)}</b><br><small>ID: ${esc0(s.id)}</small></td><td><span class="badge info">${esc0(s.class||'-')}</span></td><td>${esc0(s.mobile||'-')}</td><td>${money(s.monthlyFee)}</td><td class="row-actions"><button class="btn secondary" onclick="studentProfilePage('${esc0(s.id)}')">View</button><button class="btn secondary" onclick="studentForm('${esc0(s.id)}')">Edit</button><button class="btn sms-btn" onclick="smsStudent('${esc0(s.id)}')">SMS</button><button class="btn danger" onclick="deleteStudent('${esc0(s.id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5" class="empty-cell">No students found.</td></tr>';
+  };
+
+  /* SMS Centre */
+  window.smsCenterPage=function(){
+    const month=monthNow();
+    const pending=db.students.filter(allowed).map(s=>({s,p:calcPending(s.id,month)})).filter(x=>x.p>0);
+    const absent=db.students.filter(allowed).filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent'));
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">COMMUNICATION</div><h2>📱 SMS Centre</h2><p>SMS composer shortcuts — select a student and send from your device.</p></div></div>
+      <div class="smart-mini-grid"><div class="smart-tile"><b>${pending.length}</b><span>Fee Pending</span></div><div class="smart-tile"><b>${absent.length}</b><span>Absent Today</span></div><div class="smart-tile"><b>${db.students.filter(allowed).length}</b><span>Total Students</span></div></div>
+      <div class="grid2"><div class="card"><h3>💰 Fee Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Pending</th><th>SMS</th></tr></thead><tbody>${pending.map(x=>`<tr><td>${esc0(x.s.name)}</td><td>${money(x.p)}</td><td><button class="btn sms-btn" onclick="smsFee('${esc0(x.s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No pending fees.</td></tr>'}</tbody></table></div></div>
+      <div class="card"><h3>📅 Absent Reminder</h3><div class="table-wrap"><table class="table compact-table"><thead><tr><th>Student</th><th>Class</th><th>SMS</th></tr></thead><tbody>${absent.map(s=>`<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td><button class="btn sms-btn" onclick="smsAbsent('${esc0(s.id)}')">📱 SMS</button></td></tr>`).join('')||'<tr><td colspan="3">No absent students today.</td></tr>'}</tbody></table></div></div></div>`;
+  };
+
+  /* Smart dashboard after the existing dashboard is rendered. */
+  const oldShowHub=window.showHubMenu;
+  window.showHubMenu=function(){
+    oldShowHub();
+    const c=document.getElementById('content'); if(!c)return;
+    const list=db.students.filter(allowed), month=monthNow();
+    const present=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
+    const absent=list.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent')).length;
+    const pending=list.reduce((n,s)=>n+calcPending(s.id,month),0);
+    const testsPending=role==='student'?0:(db.tests||[]).filter(t=>!t.class||list.some(s=>s.class===t.class)).filter(t=>!db.onlineMarks.some(m=>m.testName===t.name)).length;
+    const old=c.querySelector('.cards');
+    if(old) old.insertAdjacentHTML('afterend',`<div class="smart-dashboard-strip"><div><b>✨ Smart Overview</b><span>${role==='admin'?'Admin Control Centre':role==='teacher'?'Your Class Dashboard':'Your personal academy dashboard'}</span></div><div class="smart-dash-pills"><span>Present <b>${present}</b></span><span>Absent <b>${absent}</b></span><span>Pending <b>${money(pending)}</b></span>${role!=='student'?`<span>Tests Pending <b>${testsPending}</b></span>`:''}</div></div>`);
+    if(role==='admin'||role==='teacher'){
+      const grid=c.querySelector('.hub-grid'); if(grid&&!grid.querySelector('[data-sms-card]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.smsCard='1';d.onclick=()=>showPage('smsCenter');d.innerHTML='<div class="hub-icon">📱</div><div class="hub-title">SMS Centre</div><div class="hub-desc">Fee & absent reminders</div>';grid.insertBefore(d,grid.firstChild);}
+    }
+    if(role==='student'){
+      const profile=c.querySelector('.hub-grid');
+      if(profile&&!profile.querySelector('[data-student-report]')){const d=document.createElement('div');d.className='hub-card smart-gradient-card';d.dataset.studentReport='1';d.onclick=()=>studentReportPDF(currentStudent.id,monthNow());d.innerHTML='<div class="hub-icon">📄</div><div class="hub-title">Monthly PDF</div><div class="hub-desc">Download my report</div>';profile.insertBefore(d,profile.firstChild);}
+    }
+  };
+
+  /* Reports: PDF-first centre. Existing CSV/export functions remain available elsewhere. */
+  window.reportsPage=function(){
+    const list=db.students.filter(allowed), classes=[...new Set(list.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    document.getElementById('content').innerHTML=`
+      <div class="smart-page-head"><div><div class="smart-kicker">REPORT CENTRE</div><h2>📄 PDF Reports</h2><p>Only the selected information is included in the report.</p></div></div>
+      <div class="card compact-card"><div class="report-filter-grid"><div><label>Student</label><select id="reportStudent">${list.map(s=>`<option value="${esc0(s.id)}">${esc0(s.name)} — ${esc0(s.class)}</option>`).join('')}</select></div><div><label>Month</label><input id="reportMonth" type="month" value="${monthNow()}"></div><div class="report-button"><button class="btn" onclick="studentReportPDF(document.getElementById('reportStudent').value,document.getElementById('reportMonth').value)">📥 Student Monthly PDF</button></div></div></div>
+      <div class="grid2"><div class="card compact-card"><h3>👥 Class Report</h3><label>Class</label><select id="pdfClass"><option value="">All Classes</option>${classes.map(c=>`<option value="${esc0(c)}">${esc0(c)}</option>`).join('')}</select><label>Month</label><input id="pdfClassMonth" type="month" value="${monthNow()}"><br><button class="btn success" onclick="classReportPDF(document.getElementById('pdfClass').value,document.getElementById('pdfClassMonth').value)">📥 Class PDF</button></div>
+      <div class="card compact-card"><h3>📅 Attendance Report</h3><div class="two"><div><label>From</label><input id="pdfFrom" type="date" value="${today()}"></div><div><label>To</label><input id="pdfTo" type="date" value="${today()}"></div></div><br><button class="btn secondary" onclick="attendanceReportPDF(document.getElementById('pdfFrom').value,document.getElementById('pdfTo').value)">📥 Attendance PDF</button></div></div>`;
+  };
+
+  function pdfDoc(title){
+    if(!window.jspdf?.jsPDF){return null;}
+    const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});let y=15;
+    const text=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=15}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
+    text(db.settings.academy||'Academy',18,true); text(title,13,true); text(new Date().toLocaleDateString('en-IN'),9,false); y+=3;
+    return {doc,text};
+  }
+  window.classReportPDF=function(cls,month){
+    const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls), p=pdfDoc(`Class Report — ${cls||'All Classes'} — ${month}`); if(!p)return printClassReport(cls,month); const {doc,text}=p;
+    list.forEach(s=>{const a=calcAttendanceStats(s.id,month),pending=calcPending(s.id,month);text(`${s.name} | ${s.class||'-'} | Present ${a.present} | Absent ${a.absent} | Attendance ${fmtPct(a.pct)} | Pending ${money(pending)}`)});doc.save(`class-report-${cls||'all'}-${month}.pdf`);
+  };
+  window.attendanceReportPDF=function(from,to){
+    const p=pdfDoc(`Attendance Report — ${from} to ${to}`); if(!p)return printAttendanceReport(from,to); const {doc,text}=p;
+    db.attendance.filter(a=>a.date>=from&&a.date<=to).filter(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)}).forEach(a=>{const s=db.students.find(x=>x.id===a.studentId);text(`${a.date} | ${s.name} | ${s.class||'-'} | ${a.status}`)});doc.save(`attendance-report-${from}-to-${to}.pdf`);
+  };
+  function printClassReport(cls,month){const list=db.students.filter(allowed).filter(s=>!cls||s.class===cls);const html=`<h1>${esc0(db.settings.academy)}</h1><h2>Class Report - ${esc0(cls||'All')} - ${esc0(month)}</h2><table><tr><th>Student</th><th>Class</th><th>Present</th><th>Absent</th><th>Attendance</th><th>Pending</th></tr>${list.map(s=>{const a=calcAttendanceStats(s.id,month);return `<tr><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.present}</td><td>${a.absent}</td><td>${fmtPct(a.pct)}</td><td>${money(calcPending(s.id,month))}</td></tr>`}).join('')}</table>`;pdfPrint('Class Report',html)}
+  function printAttendanceReport(from,to){const rows=db.attendance.filter(a=>a.date>=from&&a.date<=to).map(a=>{const s=db.students.find(x=>x.id===a.studentId);return s&&allowed(s)?`<tr><td>${a.date}</td><td>${esc0(s.name)}</td><td>${esc0(s.class)}</td><td>${a.status}</td></tr>`:''}).join('');pdfPrint('Attendance Report',`<h1>${esc0(db.settings.academy)}</h1><h2>${from} to ${to}</h2><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${rows}</table>`)}
+
+  /* Rich monthly student PDF replaces the earlier short report while keeping same function name. */
+  window.studentReportPDF=function(id,month){
+    const s=db.students.find(x=>x.id===id); if(!s)return;
+    month=month||monthNow();
+    const att=db.attendance.filter(a=>a.studentId===id&&a.date?.startsWith(month));
+    const fees=db.fees.filter(f=>f.studentId===id&&f.date?.startsWith(month));
+    const marks=db.marks.filter(m=>m.studentId===id&&(!m.date||m.date.startsWith(month)));
+    const online=db.onlineMarks.filter(m=>m.studentId===id&&m.date?.startsWith(month));
+    const a=calcAttendanceStats(id,month),paid=fees.reduce((n,f)=>n+Number(f.amount||0),0),extra=fees.reduce((n,f)=>n+Number(f.extraAmount||0),0),pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);
+    if(window.jspdf?.jsPDF){
+      const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'});let y=14;
+      const line=(v,size=10,bold=false)=>{if(y>280){doc.addPage();y=14}doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.text(String(v),14,y);y+=5.5};
+      line(db.settings.academy,18,true);line(`Student Monthly Report — ${month}`,13,true);y+=2;
+      line(`Name: ${s.name}`,10,true);line(`Student ID: ${s.id}`);line(`Class: ${s.class||'-'}`);line(`Mobile: ${s.mobile||'-'}`);line(`Parent: ${s.parent||'-'}`);line(`Attendance: Present ${a.present} | Absent ${a.absent} | ${fmtPct(a.pct)}`);line(`Fees: Monthly ${money(s.monthlyFee)} | Paid ${money(paid)} | Extra ${money(extra)} | Pending ${money(pending)}`);y+=3;line('MARKS',12,true);
+      [...marks.map(m=>({date:m.date,exam:m.exam,subject:m.subject,mark:m.mark,total:m.total})),...online.map(m=>({date:m.date,exam:m.testName,subject:m.subject,mark:m.mark,total:m.total}))].forEach(m=>line(`${m.date||'-'} | ${m.exam||'-'} | ${m.subject||'-'} | ${m.mark}/${m.total}`));
+      y+=3;line('ATTENDANCE',12,true);att.forEach(x=>line(`${x.date} | ${x.status}`));
+      y+=3;line('FEE TRANSACTIONS',12,true);fees.forEach(f=>line(`${f.date} | ${f.type||'Payment'} | ${money(Number(f.amount||0)+Number(f.extraAmount||0))}`));
+      doc.save(`student-report-${s.id}-${month}.pdf`);
+    }else printStudentReportPDF(id,month);
+  };
+
+  /* Add SMS shortcut to teacher/admin profile cards and keep student full details. */
+  const oldProfile=window.studentProfilePage;
+  window.studentProfilePage=function(id){oldProfile(id);setTimeout(()=>{const h=document.querySelector('#content .card h3');const s=db.students.find(x=>x.id===id)||currentStudent;if(h&&s&&!h.parentElement.querySelector('[data-sms-profile]')){const b=document.createElement('button');b.className='btn sms-btn';b.dataset.smsProfile='1';b.textContent='📱 SMS';b.onclick=()=>smsStudent(s.id);h.parentElement.querySelector('.toolbar')?.appendChild(b);}},0)};
+
+  /* Teacher management remains fully editable/deletable; allowed-class selection is preserved. */
+  const oldTeachers=window.teachersPage;
+  window.teachersPage=function(){oldTeachers();};
+
+  /* Login polish */
+  setTimeout(()=>{
+    document.querySelectorAll('#adminLogin,#teacherLogin,#studentLogin').forEach(el=>el.classList.add('smart-login-panel'));
+    const roleButtons=document.querySelectorAll('#adminRole,#teacherRole,#studentRole'); roleButtons.forEach(x=>x.classList.add('smart-role-btn'));
+  },300);
+})();
+
 </script>
 </body>
 </html>
