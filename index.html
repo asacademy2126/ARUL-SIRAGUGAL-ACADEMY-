@@ -1543,5 +1543,116 @@ if(localStorage.getItem('asa_dark')==='true')document.body.classList.add('dark')
 applySettings();
 autoImportOnLoad();
 </script>
+
+<style>
+/* SMART ADMIN UPGRADE */
+.smart-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.smart-filters>div{min-width:150px;flex:1}.click-stat{cursor:pointer}.summary-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}.summary-box{padding:16px;border-radius:16px;border:1px solid var(--border);background:var(--card)}@media(max-width:700px){.summary-cards{grid-template-columns:1fr}}
+.pdf-btn{background:#111827!important;color:#fff!important}
+</style>
+<script>
+/* =========================================================
+   SMART UPGRADE — preserves all old modules and adds requested features
+   ========================================================= */
+(function(){
+  db.teachers=db.teachers||[]; db.homework=db.homework||[]; db.tests=db.tests||[]; db.onlineMarks=db.onlineMarks||[];
+  const oldLoginTeacher=loginTeacher;
+  loginTeacher=function(){
+    const id=document.getElementById('teacherId').value.trim(), pass=document.getElementById('teacherPass').value;
+    const extra=db.teachers.find(t=>t.id===id && t.password===pass);
+    if(extra){ window.currentTeacherAccount=extra; enterApp('teacher'); document.getElementById('welcome').textContent='👨‍🏫 '+extra.name; }
+    else oldLoginTeacher();
+  };
+
+  function classBand(c){
+    const x=String(c||'').trim().toLowerCase();
+    if(/^lkg|^ukg/.test(x)) return 'LKG-5';
+    const m=x.match(/\d+/); if(m){const n=Number(m[0]); if(n>=1&&n<=5)return 'LKG-5'; if(n>=6&&n<=8)return '6-8';}
+    return 'Other';
+  }
+  window.classBand=classBand;
+  function clsOptions(selected=''){return [...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).map(c=>`<option value="${esc(c)}" ${c===selected?'selected':''}>${esc(c)}</option>`).join('')}
+  function pdfPrint(title,html){
+    const w=window.open('','_blank'); if(!w)return alert('Popup blocked. Please allow popups for PDF export.');
+    w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${esc(title)}</title><style>body{font-family:Arial,'Noto Sans Tamil',sans-serif;padding:24px;color:#111}h1{font-size:22px}h2{font-size:18px;margin-top:22px}.meta{color:#555;margin-bottom:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.box{border:1px solid #ddd;border-radius:10px;padding:10px}.box b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #ddd;padding:7px;font-size:12px;text-align:left}th{background:#f3f4f6}@media print{button{display:none!important}}</style></head><body><h1>${esc(title)}</h1><div class="meta">${new Date().toLocaleString('en-IN')}</div>${html}</body></html>`);w.document.close();setTimeout(()=>{w.print()},400);
+  }
+  window.exportSmartPDF=pdfPrint;
+
+  /* Admin dashboard: clickable Total Students with class-wise Present/Absent */
+  window.adminStudentSummary=function(){
+    const classes=[...new Set(db.students.map(s=>s.class).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    const date=today();
+    const bands=[['LKG-5','LKG–5 Std'],['6-8','6–8 Std'],['Other','Other Classes']];
+    const rows=[...classes];
+    document.getElementById('content').innerHTML=`
+      <div class="toolbar"><button class="btn secondary" onclick="showHubMenu()">⬅️ Dashboard</button><button class="btn pdf-btn" onclick="exportAdminSummaryPDF()">🖨️ Export PDF</button></div>
+      <div class="card"><h3>👨‍🎓 Total Students — Class-wise Summary</h3>
+        <div class="smart-filters"><div><label>Date</label><input id="sumDate" type="date" value="${date}" onchange="renderAdminSummary()"></div><div><label>Class Group</label><select id="sumBand" onchange="renderAdminSummary()"><option value="">All Groups</option>${bands.map(x=>`<option value="${x[0]}">${x[1]} (${db.students.filter(s=>classBand(s.class)===x[0]).length})</option>`).join('')}</select></div><div><label>Class</label><select id="sumClass" onchange="renderAdminSummary()"><option value="">All Classes</option>${clsOptions()}</select></div></div>
+        <div id="adminSummaryBody"></div>
+      </div>`;
+    renderAdminSummary();
+  };
+  window.renderAdminSummary=function(){
+    const date=document.getElementById('sumDate')?.value||today(),band=document.getElementById('sumBand')?.value||'',cls=document.getElementById('sumClass')?.value||'';
+    let ss=db.students.filter(s=>(!band||classBand(s.class)===band)&&(!cls||s.class===cls));
+    const p=ss.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===date&&a.status==='Present')).length;
+    const ab=ss.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===date&&a.status==='Absent')).length;
+    const na=ss.length-p-ab;
+    const groups=[...new Set(ss.map(s=>s.class||'No Class'))];
+    document.getElementById('adminSummaryBody').innerHTML=`<div class="summary-cards"><div class="summary-box"><span>Total Students</span><b>${ss.length}</b></div><div class="summary-box"><span>Present — ${date}</span><b class="success-text">${p}</b></div><div class="summary-box"><span>Absent — ${date}</span><b class="danger-text">${ab}</b></div></div><div class="card table-wrap"><table class="table"><thead><tr><th>Class</th><th>Total</th><th>Present</th><th>Absent</th><th>Not Marked</th></tr></thead><tbody>${groups.map(c=>{const x=ss.filter(s=>s.class===c),pr=x.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===date&&a.status==='Present')).length,aa=x.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===date&&a.status==='Absent')).length;return `<tr><td><b>${esc(c)}</b></td><td>${x.length}</td><td><span class="badge ok">${pr}</span></td><td><span class="badge pending">${aa}</span></td><td>${x.length-pr-aa}</td></tr>`}).join('')||'<tr><td colspan="5">Students இல்லை.</td></tr>'}</tbody></table></div><div class="card table-wrap"><h3>Student Details</h3><table class="table"><thead><tr><th>Name</th><th>ID</th><th>Class</th><th>Today</th><th>Action</th></tr></thead><tbody>${ss.map(s=>{const a=db.attendance.find(a=>a.studentId===s.id&&a.date===date);return `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.id)}</td><td>${esc(s.class)}</td><td><span class="badge ${a?.status==='Present'?'ok':a?.status==='Absent'?'pending':'info'}">${a?.status||'Not Marked'}</span></td><td><button class="btn secondary" onclick="studentProfilePage('${esc(s.id)}')">View</button></td></tr>`}).join('')}</tbody></table></div>`;
+  };
+  window.exportAdminSummaryPDF=function(){const date=document.getElementById('sumDate')?.value||today();const band=document.getElementById('sumBand')?.value||'';const cls=document.getElementById('sumClass')?.value||'';let ss=db.students.filter(s=>(!band||classBand(s.class)===band)&&(!cls||s.class===cls));const rows=[...new Set(ss.map(s=>s.class||'No Class'))].map(c=>{const x=ss.filter(s=>s.class===c),p=x.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===date&&a.status==='Present')).length,a=x.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===date&&a.status==='Absent')).length;return `<tr><td>${esc(c)}</td><td>${x.length}</td><td>${p}</td><td>${a}</td><td>${x.length-p-a}</td></tr>`}).join('');pdfPrint('Student Class-wise Summary',`<p>Date: <b>${date}</b> | Group: <b>${esc(band||'All')}</b> | Class: <b>${esc(cls||'All')}</b></p><table><tr><th>Class</th><th>Total</th><th>Present</th><th>Absent</th><th>Not Marked</th></tr>${rows}</table>`)};
+
+  /* Admin total card becomes clickable */
+  const oldShowHub=showHubMenu;
+  showHubMenu=function(){oldShowHub();if(role==='admin'){const cards=document.querySelectorAll('.card.stat');if(cards[0]){cards[0].classList.add('click-stat');cards[0].onclick=adminStudentSummary;cards[0].title='Click for class-wise details';}}};
+
+  /* Teacher gets Students / Add Students without removing old modules */
+  const oldHub=showHubMenu;
+  showHubMenu=function(){oldHub();if(role==='teacher'){const grid=document.querySelector('.hub-grid');if(grid && ![...grid.children].some(x=>x.dataset.smartStudents)){const d=document.createElement('div');d.className='hub-card';d.dataset.smartStudents='1';d.onclick=()=>showPage('students');d.innerHTML='<div class="hub-icon">👨‍🎓</div><div class="hub-title">Students</div><div class="hub-desc">Add / Edit Student Login</div>';grid.insertBefore(d,grid.firstChild);}}};
+
+  /* Students: teacher can add/edit, everyone can view */
+  const oldStudentsPage=studentsPage;
+  studentsPage=function(){oldStudentsPage();const tb=document.querySelector('#content .toolbar');if(tb&&role!=='admin'&&!tb.querySelector('[data-smart-add]')){const b=document.createElement('button');b.className='btn';b.dataset.smartAdd='1';b.textContent='➕ Add Student';b.onclick=()=>studentForm();tb.insertBefore(b,tb.firstChild);} };
+
+  /* Attendance history: class + group + date range */
+  const oldAttendance=attendancePage;
+  attendancePage=function(){oldAttendance();const cards=document.querySelectorAll('#content .card');const h=cards[1];if(h){h.innerHTML=`<h3>📋 Attendance History — Class / Date Filter</h3><div class="smart-filters"><div><label>From Date</label><input id="ahFrom" type="date" value="${defaultFromDate()}"></div><div><label>To Date</label><input id="ahTo" type="date" value="${today()}"></div><div><label>Class Group</label><select id="ahBand"><option value="">All</option><option value="LKG-5">LKG–5 Std</option><option value="6-8">6–8</option></select></div><div><label>Class</label><select id="ahClass"><option value="">All Classes</option>${clsOptions()}</select></div><button class="btn secondary" onclick="renderSmartAttendanceHistory()">🔎 Filter</button><button class="btn pdf-btn" onclick="exportSmartAttendancePDF()">🖨️ PDF</button></div><div id="smartAttHistory"></div>`;renderSmartAttendanceHistory();}};
+  window.renderSmartAttendanceHistory=function(){const f=document.getElementById('ahFrom')?.value||'',t=document.getElementById('ahTo')?.value||'',b=document.getElementById('ahBand')?.value||'',c=document.getElementById('ahClass')?.value||'';const arr=db.attendance.filter(a=>inPeriod(a.date,f,t)).map(a=>({...a,s:db.students.find(s=>s.id===a.studentId)})).filter(x=>(!b||classBand(x.s?.class)===b)&&(!c||x.s?.class===c));document.getElementById('smartAttHistory').innerHTML=`<div class="summary-cards"><div class="summary-box">Total <b>${arr.length}</b></div><div class="summary-box">Present <b class="success-text">${arr.filter(x=>x.status==='Present').length}</b></div><div class="summary-box">Absent <b class="danger-text">${arr.filter(x=>x.status==='Absent').length}</b></div></div><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Class</th><th>Student</th><th>Status</th></tr>${arr.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${esc(x.s?.class||'-')}</td><td>${esc(x.s?.name||x.studentId)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${x.status}</span></td></tr>`).join('')||'<tr><td colspan="4">No records.</td></tr>'}</table></div>`};
+  window.exportSmartAttendancePDF=function(){const e=document.getElementById('smartAttHistory');pdfPrint('Attendance History',e?e.innerHTML:'No records');};
+
+  /* Fees: class-wise + month-wise filter */
+  const oldFees=feesPage;
+  feesPage=function(){oldFees();const first=document.querySelector('#content .card');if(first){const bar=document.createElement('div');bar.className='card';bar.innerHTML=`<h3>🔎 Fees Filter</h3><div class="smart-filters"><div><label>Month</label><input id="feeMonthFilter" type="month" value="${monthNow()}"></div><div><label>Class Group</label><select id="feeBandFilter"><option value="">All</option><option value="LKG-5">LKG–5 Std</option><option value="6-8">6–8</option></select></div><div><label>Class</label><select id="feeClassFilter"><option value="">All Classes</option>${clsOptions()}</select></div><button class="btn secondary" onclick="renderSmartFees()">🔎 Filter</button><button class="btn pdf-btn" onclick="exportSmartFeesPDF()">🖨️ PDF</button></div><div id="smartFees"></div>`;first.parentNode.insertBefore(bar,first);renderSmartFees();}};
+  window.renderSmartFees=function(){const m=document.getElementById('feeMonthFilter')?.value||monthNow(),b=document.getElementById('feeBandFilter')?.value||'',c=document.getElementById('feeClassFilter')?.value||'';const ss=db.students.filter(s=>(!b||classBand(s.class)===b)&&(!c||s.class===c));const rows=ss.map(s=>{const fs=db.fees.filter(f=>f.studentId===s.id&&f.date?.startsWith(m)),extra=fs.filter(f=>f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0),paid=fs.filter(f=>f.type!=='Extra').reduce((a,f)=>a+Number(f.amount||0),0),pending=Math.max(0,Number(s.monthlyFee||0)+extra-paid);return `<tr><td><button class="student-link" onclick="showStudentFeeDetails('${esc(s.id)}')">${esc(s.name)}</button></td><td>${esc(s.class)}</td><td>${money(s.monthlyFee)}</td><td>${money(extra)}</td><td>${money(paid)}</td><td><span class="badge ${pending?'pending':'ok'}">${money(pending)}</span></td></tr>`}).join('');document.getElementById('smartFees').innerHTML=`<div class="summary-cards"><div class="summary-box">Students <b>${ss.length}</b></div><div class="summary-box">Paid <b class="success-text">${money(ss.reduce((a,s)=>a+calcPaid(s.id,m),0))}</b></div><div class="summary-box">Pending <b class="danger-text">${money(ss.reduce((a,s)=>a+calcPending(s.id,m),0))}</b></div></div><div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Monthly</th><th>Extra</th><th>Paid</th><th>Pending</th></tr>${rows||'<tr><td colspan="6">Students இல்லை.</td></tr>'}</table></div>`};
+  window.exportSmartFeesPDF=function(){pdfPrint('Fees Class-wise Month-wise Report',document.getElementById('smartFees')?.innerHTML||'No records');};
+
+  /* Homework link */
+  const oldHwForm=homeworkForm;
+  homeworkForm=function(){openModal('Homework + Link',`<label>Class</label><input id="hwClass"><label>Subject</label><input id="hwSubject"><label>Homework Note</label><textarea id="hwText"></textarea><label>Homework Link (optional)</label><input id="hwLink" placeholder="https://..."><label>Date</label><input id="hwDate" type="date" value="${today()}"><br><button class="btn" style="width:100%" onclick="saveSmartHomework()">Save Homework</button>`)};
+  window.saveSmartHomework=function(){const h={class:document.getElementById('hwClass').value.trim(),subject:document.getElementById('hwSubject').value.trim(),text:document.getElementById('hwText').value.trim(),link:document.getElementById('hwLink').value.trim(),date:document.getElementById('hwDate').value||today(),postedBy:role==='admin'?'Admin':(db.settings.teacher||'Teacher')};if(!h.class||!h.text)return alert('Class மற்றும் Homework தேவை');db.homework.push(h);save();closeModal();homeworkPage()};
+  const oldHw=homeworkPage;
+  homeworkPage=function(){oldHw();document.querySelectorAll('#content table tbody tr').forEach(tr=>{const text=tr.children[3]?.textContent||'';const h=db.homework.find(x=>x.text===text);if(h?.link){tr.children[3].innerHTML+=` <a class="btn secondary" target="_blank" href="${esc(h.link)}" style="padding:4px 8px;font-size:11px">🔗 Link</a>`}})};
+
+  /* Student Login ID / Password Edit from profile */
+  window.editStudentLogin=function(id){const s=db.students.find(x=>x.id===id);if(!s)return;openModal('Edit Student Login',`<p><b>${esc(s.name)}</b> (${esc(s.class)})</p><label>Login ID</label><input id="editLoginId" value="${esc(s.id)}"><label>Password</label><input id="editLoginPass" value="${esc(s.password||'1234')}"><br><button class="btn" style="width:100%" onclick="saveStudentLogin('${esc(id)}')">Save Login</button>`)};
+  window.saveStudentLogin=function(oldId){const s=db.students.find(x=>x.id===oldId);if(!s)return;const nid=document.getElementById('editLoginId').value.trim(),pw=document.getElementById('editLoginPass').value;if(!nid||!pw)return alert('Login ID / Password தேவை');if(nid!==oldId&&db.students.some(x=>x.id===nid))return alert('இந்த Login ID ஏற்கனவே உள்ளது');s.id=nid;s.password=pw;db.attendance.forEach(a=>{if(a.studentId===oldId)a.studentId=nid});db.fees.forEach(a=>{if(a.studentId===oldId)a.studentId=nid});db.marks.forEach(a=>{if(a.studentId===oldId)a.studentId=nid});db.onlineMarks.forEach(a=>{if(a.studentId===oldId)a.studentId=nid});save();closeModal();studentsPage()};
+
+  /* Patch student profile button by overriding profile renderer with extra login button only when needed */
+  const oldProfile=studentProfilePage;
+  studentProfilePage=function(id){oldProfile(id);const body=document.getElementById('modalBody');if(body&&document.getElementById('modal').classList.contains('hidden')===false){const b=document.createElement('button');b.className='btn secondary';b.textContent='🔐 Edit Login ID / Password';b.onclick=()=>editStudentLogin(id);body.querySelector('.toolbar')?.appendChild(b);}};
+
+  /* Tests portal: pending students + complete student view */
+  const oldTests=testsPage;
+  testsPage=function(){oldTests();const c=document.getElementById('content');const pending=db.students.filter(s=>{const target=(db.tests||[]).filter(t=>!t.class||t.class===s.class);return target.some(t=>!db.onlineMarks.some(m=>m.studentId===s.id&&m.testName===t.name));});const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>👨‍🎓 Test Portal — Pending Students (${pending.length})</h3><p style="color:var(--muted)">Pending students மட்டும் இங்கே காட்டப்படும். Student-ஐ click செய்தால் full details பார்க்கலாம்.</p><div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Pending Tests</th><th>View</th></tr>${pending.map(s=>{const n=(db.tests||[]).filter(t=>(!t.class||t.class===s.class)&&!db.onlineMarks.some(m=>m.studentId===s.id&&m.testName===t.name)).length;return `<tr><td><button class="student-link" onclick="showTestStudentDetails('${esc(s.id)}')">${esc(s.name)}</button></td><td>${esc(s.class)}</td><td><span class="badge pending">${n} Pending</span></td><td><button class="btn secondary" onclick="showTestStudentDetails('${esc(s.id)}')">👁 View All Details</button></td></tr>`}).join('')||'<tr><td colspan="4">Pending students இல்லை.</td></tr>'}</table></div>`;c.appendChild(card)};
+  window.showTestStudentDetails=function(id){const s=db.students.find(x=>x.id===id);if(!s)return;const att=calcAttendanceStats(id,'');const fees=db.fees.filter(f=>f.studentId===id),paid=fees.reduce((a,f)=>a+Number(f.amount||0),0),tests=(db.tests||[]).filter(t=>!t.class||t.class===s.class),scores=db.onlineMarks.filter(m=>m.studentId===id);openModal('Student — All Details',`<div class="summary-cards"><div class="summary-box">Attendance <b>${att.present}/${att.total}</b></div><div class="summary-box">Absent <b class="danger-text">${att.absent}</b></div><div class="summary-box">Fee Paid <b class="success-text">${money(paid)}</b></div></div><div class="card"><p><b>Name:</b> ${esc(s.name)}</p><p><b>Student ID:</b> ${esc(s.id)}</p><p><b>Class:</b> ${esc(s.class)}</p><p><b>Mobile:</b> ${esc(s.mobile)}</p><p><b>Parent:</b> ${esc(s.parent||'-')}</p><p><b>Birthday:</b> ${esc(s.birthday||'-')}</p></div><h4>Tests / Marks</h4><table class="table"><tr><th>Test</th><th>Total</th><th>Status</th><th>Mark</th></tr>${tests.map(t=>{const m=scores.find(x=>x.testName===t.name);return `<tr><td>${esc(t.name)}</td><td>${t.total}</td><td><span class="badge ${m?'ok':'pending'}">${m?'Submitted':'Pending'}</span></td><td>${m?m.mark+'/'+m.total:'-'}</td></tr>`}).join('')||'<tr><td colspan="4">Tests இல்லை.</td></tr>'}</table>`)};
+
+  /* Export all relevant visible details as PDF from Reports/History */
+  window.exportCurrentPagePDF=function(){pdfPrint(document.getElementById('pageTitle')?.textContent||'Report',document.getElementById('content')?.innerHTML||'');};
+
+  /* Add a universal PDF button to Admin Home */
+  const originalEnter=enterApp;
+  enterApp=function(r){originalEnter(r);if(r==='admin'){setTimeout(()=>{const header=document.querySelector('.topbar > div:last-child');if(header&&!header.querySelector('[data-smart-pdf]')){const b=document.createElement('button');b.className='btn pdf-btn';b.dataset.smartPdf='1';b.textContent='🖨️ PDF';b.onclick=exportCurrentPagePDF;header.insertBefore(b,header.firstChild)}},0)}};
+})();
+</script>
 </body>
 </html>
