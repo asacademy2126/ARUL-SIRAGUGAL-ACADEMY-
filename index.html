@@ -166,7 +166,7 @@ function groupStudents(){return db.students.filter(s=>classBand(s.class)===curre
 function calcPaid(id,m){return db.fees.filter(f=>f.studentId===id&&String(f.date).startsWith(m)&&f.type!=='Extra').reduce((a,f)=>a+Number(f.amount||0),0)}
 function calcExtra(id,m){return db.fees.filter(f=>f.studentId===id&&String(f.date).startsWith(m)&&f.type==='Extra').reduce((a,f)=>a+Number(f.extraAmount||0),0)}
 function calcPending(id,m){let s=db.students.find(x=>x.id===id);return Math.max(0,Number(s?.monthlyFee||0)+calcExtra(id,m)-calcPaid(id,m))}
-function renderDashboard(){let ss=groupStudents(),m=monthNow(),present=ss.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length,pending=ss.reduce((a,s)=>a+calcPending(s.id,m),0);let tp=(currentTeacher&&currentTeacher.permissions)||{attendance:true,fees:true,marks:true,onlineTests:true};let features=role==='admin'?[['students','👨‍🎓','Students','Add / Edit / Remove'],['attendance','📅','Attendance','Date-wise P / A'],['fees','💰','Fees','Month-wise / Class-wise'],['marks','📝','Marks','Class-wise marks + WhatsApp'],['tests','🧪','Online Test','Post / Edit / Marks'],['reports','📊','Reports','Student / Monthly / History'],['history','🗂️','All History','Date + Class + PDF + Excel'],['finance','📈','Admin Finance','Class-wise Income + Extra'],['teachers','👨‍🏫','Teachers','Add / Edit / Permissions'],['settings','⚙️','Settings','Google Sheets + WhatsApp Group'],['audit','🕵️','Teacher Activity','Who did what + last update']]:[...(tp.students?[['students','👨‍🎓','Students','View / Add / Edit students']]:[]),...(tp.attendance?[['attendance','📅','Attendance','Allowed classes only']]:[]),...(tp.fees?[['fees','💰','Fees','Allowed classes only']]:[]),...(tp.marks?[['marks','📝','Marks','Allowed classes only']]:[]),...(tp.onlineTests?[['tests','🧪','Online Test','Allowed classes only']]:[])];$('pageTitle').textContent=role==='admin'?'Admin Dashboard':'Teacher Dashboard';window.groupButtons=function(){const groups=['LKG-5','6-8'].filter(g=>role!=='teacher'||db.students.some(s=>classBand(s.class)===g&&teacherCanClass(s.class)));return `<div class="group-tabs">${groups.map(g=>`<button class="group-tab ${currentGroup===g?'active':''}" onclick="currentGroup='${g}';renderDashboard()"><div><div class="group-name">${groupLabel(g)}</div><div class="group-sub">Class-wise</div></div><span class="group-count">${db.students.filter(s=>classBand(s.class)===g&&teacherCanClass(s.class)).length}</span></button>`).join('')}</div>`};
+function renderDashboard(){let ss=groupStudents(),m=monthNow(),present=ss.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length,pending=ss.reduce((a,s)=>a+calcPending(s.id,m),0);let tp=(currentTeacher&&currentTeacher.permissions)||{attendance:true,fees:true,marks:true,onlineTests:true};let features=role==='admin'?[['students','👨‍🎓','Students','Add / Edit / Remove'],['attendance','📅','Attendance','Date-wise P / A'],['fees','💰','Fees','Month-wise / Class-wise'],['marks','📝','Marks','Class-wise marks + WhatsApp'],['tests','🧪','Online Test','Post / Edit / Marks'],['reports','📊','Reports','Student / Monthly / History'],['history','🗂️','All History','Date + Class + PDF + Excel'],['finance','📈','Admin Finance','Class-wise Income + Extra'],['teachers','👨‍🏫','Teachers','Add / Edit / Permissions'],['settings','⚙️','Settings','Google Sheets + WhatsApp Group'],['audit','🕵️','Teacher Activity','Who did what + last update'],['adminClear','🧹','History Clear','Admin only • Date period']]:[...(tp.students?[['students','👨‍🎓','Students','View / Add / Edit students']]:[]),...(tp.attendance?[['attendance','📅','Attendance','Allowed classes only']]:[]),...(tp.fees?[['fees','💰','Fees','Allowed classes only']]:[]),...(tp.marks?[['marks','📝','Marks','Allowed classes only']]:[]),...(tp.onlineTests?[['tests','🧪','Online Test','Allowed classes only']]:[])];$('pageTitle').textContent=role==='admin'?'Admin Dashboard':'Teacher Dashboard';window.groupButtons=function(){const groups=['LKG-5','6-8'].filter(g=>role!=='teacher'||db.students.some(s=>classBand(s.class)===g&&teacherCanClass(s.class)));return `<div class="group-tabs">${groups.map(g=>`<button class="group-tab ${currentGroup===g?'active':''}" onclick="currentGroup='${g}';renderDashboard()"><div><div class="group-name">${groupLabel(g)}</div><div class="group-sub">Class-wise</div></div><span class="group-count">${db.students.filter(s=>classBand(s.class)===g&&teacherCanClass(s.class)).length}</span></button>`).join('')}</div>`};
     $('content').innerHTML=groupButtons()+`<div class="cards"><div class="stat"><div class="label">Total Students</div><div class="value">${ss.length}</div></div><div class="stat"><div class="label">Today Present</div><div class="value success">${present}</div></div><div class="stat"><div class="label">Pending Fee</div><div class="value danger">${money(pending)}</div></div><div class="stat"><div class="label">${m} Paid</div><div class="value">${money(ss.reduce((a,s)=>a+calcPaid(s.id,m),0))}</div></div></div><div class="grid">${features.map(f=>`<div class="card feature" onclick="openFeature('${f[0]}')"><div class="icon">${f[1]}</div><b>${f[2]}</b><small>${f[3]}</small></div>`).join('')}</div>`}
 function openFeature(p){$('pageTitle').textContent=groupLabel(currentGroup)+' — '+p; if(p==='students')studentsPage();if(p==='attendance')attendancePage();if(p==='fees')feesPage();if(p==='marks')marksPage();if(p==='tests')testsPage();if(p==='reports')reportsPage();if(p==='finance')financePage();if(p==='settings')settingsPage()}
 function studentsPage(){let ss=groupStudents(),admin=role==='admin',canAdd=admin||(role==='teacher'&&currentTeacher?.permissions?.students===true);if(role==='teacher'&&!canAdd)return alert('Student Add / Edit permission இல்லை');$('content').innerHTML=`<div class="toolbar">${canAdd?'<button class="btn" onclick="studentForm()">➕ Add Student</button>':''}<input id="sq" placeholder="Search student..." oninput="renderStudentRows()"></div><div class="card table-wrap"><table class="table"><thead><tr><th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Fee</th><th>Call</th>${admin?'<th>Action</th>':''}</tr></thead><tbody id="studentRows"></tbody></table></div>`;renderStudentRows()}
@@ -294,7 +294,7 @@ setRole('teacher');loadSheets();
     const present=dashboardStudents.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Present')).length;
     const absent=dashboardStudents.filter(s=>db.attendance.some(a=>a.studentId===s.id&&a.date===today()&&a.status==='Absent')).length;
     const pending=dashboardStudents.reduce((a,s)=>a+calcPending(s.id,m),0),paid=dashboardStudents.reduce((a,s)=>a+calcPaid(s.id,m),0);
-    const tp=(currentTeacher&&currentTeacher.permissions)||{attendance:true,fees:true,marks:true,onlineTests:true};const features=role==='admin'?[['students','👨‍🎓','Students','Add / Edit / Remove'],['attendance','📅','Attendance','Date-wise P / A'],['fees','💰','Fees','Month-wise / Class-wise'],['marks','📝','Marks','Class-wise marks'],['tests','🧪','Online Test','Post / Edit / Marks'],['reports','📊','Reports','Student / Monthly / History'],['history','🗂️','All History','Date + Class + PDF + Excel'],['finance','📈','Finance','Class-wise Income + Extra'],['teachers','👨‍🏫','Teachers','Add / Edit / Permissions'],['settings','⚙️','Settings','Google Sheets + WhatsApp Group'],['audit','🕵️','Teacher Activity','Who did what + last update']]:[...(tp.students?[['students','👨‍🎓','Students','View / Add / Edit students']]:[]),...(tp.attendance?[['attendance','📅','Attendance','Allowed classes only']]:[]),...(tp.fees?[['fees','💰','Fees','Allowed classes only']]:[]),...(tp.marks?[['marks','📝','Marks','Allowed classes only']]:[]),...(tp.onlineTests?[['tests','🧪','Online Test','Allowed classes only']]:[])];
+    const tp=(currentTeacher&&currentTeacher.permissions)||{attendance:true,fees:true,marks:true,onlineTests:true};const features=role==='admin'?[['students','👨‍🎓','Students','Add / Edit / Remove'],['attendance','📅','Attendance','Date-wise P / A'],['fees','💰','Fees','Month-wise / Class-wise'],['marks','📝','Marks','Class-wise marks'],['tests','🧪','Online Test','Post / Edit / Marks'],['reports','📊','Reports','Student / Monthly / History'],['history','🗂️','All History','Date + Class + PDF + Excel'],['finance','📈','Finance','Class-wise Income + Extra'],['teachers','👨‍🏫','Teachers','Add / Edit / Permissions'],['settings','⚙️','Settings','Google Sheets + WhatsApp Group'],['audit','🕵️','Teacher Activity','Who did what + last update'],['adminClear','🧹','History Clear','Admin only • Date period']]:[...(tp.students?[['students','👨‍🎓','Students','View / Add / Edit students']]:[]),...(tp.attendance?[['attendance','📅','Attendance','Allowed classes only']]:[]),...(tp.fees?[['fees','💰','Fees','Allowed classes only']]:[]),...(tp.marks?[['marks','📝','Marks','Allowed classes only']]:[]),...(tp.onlineTests?[['tests','🧪','Online Test','Allowed classes only']]:[])];
     $('pageTitle').textContent=role==='admin'?'Admin Dashboard':'Teacher Dashboard';setSyncTime(db.settings?.lastSyncAt);
     window.groupButtons=function(){const groups=['LKG-5','6-8'].filter(g=>role!=='teacher'||db.students.some(s=>classBand(s.class)===g&&teacherCanClass(s.class)));return `<div class="group-tabs">${groups.map(g=>`<button class="group-tab ${currentGroup===g?'active':''}" onclick="currentGroup='${g}';renderDashboard()"><div><div class="group-name">${groupLabel(g)}</div><div class="group-sub">Class-wise</div></div><span class="group-count">${db.students.filter(s=>classBand(s.class)===g&&teacherCanClass(s.class)).length}</span></button>`).join('')}</div>`};
     const adminTotal=role==='admin'?db.students.length:ss.length;
@@ -310,7 +310,78 @@ setRole('teacher');loadSheets();
       <div class="stat"><div class="label">${m} Pending</div><div class="value danger">${money(pending)}</div></div>
     </div><div class="grid">${features.map(f=>`<div class="card feature" onclick="openFeature('${f[0]}')"><div class="icon">${f[1]}</div><b>${f[2]}</b><small>${f[3]}</small></div>`).join('')}</div>`;
   };
-  window.openFeature=function(p){if(role==='teacher'){const tp=(currentTeacher&&currentTeacher.permissions)||{};const guard={students:'students',attendance:'attendance',fees:'fees',marks:'marks',tests:'onlineTests'}[p];if(guard&&tp[guard]===false)return alert('இந்த Teacher-க்கு இந்த module permission இல்லை. Admin-ஐ தொடர்பு கொள்ளவும்.');if(['finance','teachers','settings','history'].includes(p))return alert('Admin only');}$('pageTitle').textContent=groupLabel(currentGroup)+' — '+p;if(p==='students')studentsPage();if(p==='attendance')attendancePage();if(p==='fees')feesPage();if(p==='marks')marksPage();if(p==='tests')testsPage();if(p==='reports')reportsPage();if(p==='history')historyPage();if(p==='finance')financePage();if(p==='teachers')teachersPage();if(p==='settings')settingsPage();if(p==='audit')auditPage();};
+  
+window.adminHistoryClearPage=function(){
+  if(role!=='admin'){alert('Admin only');return;}
+  $('pageTitle').textContent='Admin • History Clear';
+  $('content').innerHTML=`
+    <div class="card">
+      <div class="toolbar">
+        <div>
+          <h3 style="margin:0">🧹 History Clear</h3>
+          <small class="muted">Only Admin can permanently clear records for a selected date period.</small>
+        </div>
+      </div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:14px">
+        <div>
+          <label>From Date</label>
+          <input type="date" id="clearFrom">
+        </div>
+        <div>
+          <label>To Date</label>
+          <input type="date" id="clearTo">
+        </div>
+        <div>
+          <label>Data</label>
+          <select id="clearType">
+            <option value="all">All History</option>
+            <option value="attendance">Attendance</option>
+            <option value="fees">Fees</option>
+            <option value="marks">Marks</option>
+            <option value="onlineMarks">Online Test Marks</option>
+            <option value="auditLogs">Teacher Activity</option>
+          </select>
+        </div>
+      </div>
+      <div class="notice" style="margin-top:14px">
+        ⚠️ This action deletes matching history records from the current data and syncs the updated data to Google Sheets.
+      </div>
+      <button class="btn red" style="margin-top:14px" onclick="adminClearHistoryByPeriod()">🗑️ Clear Selected Period</button>
+    </div>`;
+};
+
+window.adminClearHistoryByPeriod=function(){
+  if(role!=='admin'){alert('Admin only');return;}
+  const from=$('clearFrom').value, to=$('clearTo').value, type=$('clearType').value;
+  if(!from || !to){alert('From Date மற்றும் To Date select செய்யவும்.');return;}
+  if(from>to){alert('From Date, To Date-க்கு முன்னதாக இருக்க வேண்டும்.');return;}
+  const fields=type==='all'?['attendance','fees','marks','onlineMarks','auditLogs']:[type];
+  let removed=0;
+  fields.forEach(k=>{
+    const arr=Array.isArray(db[k])?db[k]:[];
+    const before=arr.length;
+    db[k]=arr.filter(x=>{
+      const d=String(x.date||x.dateTime||'').slice(0,10);
+      return !(d && d>=from && d<=to);
+    });
+    removed += before-db[k].length;
+  });
+  db.auditLogs=db.auditLogs||[];
+  db.auditLogs.push({
+    action:'History Clear',
+    module:'Admin History Clear',
+    teacherId:'Admin',
+    teacherName:'Admin',
+    dateTime:new Date().toISOString(),
+    recordId:'',
+    details:`Cleared ${type} from ${from} to ${to}; removed ${removed} record(s)`
+  });
+  save();
+  alert(`✅ History Clear completed.\nRemoved: ${removed} record(s)\nPeriod: ${from} → ${to}`);
+  adminHistoryClearPage();
+};
+
+window.openFeature=function(p){if(p==='adminClear'){if(role!=='admin'){alert('Admin only');return;}return adminHistoryClearPage();}if(role==='teacher'){const tp=(currentTeacher&&currentTeacher.permissions)||{};const guard={students:'students',attendance:'attendance',fees:'fees',marks:'marks',tests:'onlineTests'}[p];if(guard&&tp[guard]===false)return alert('இந்த Teacher-க்கு இந்த module permission இல்லை. Admin-ஐ தொடர்பு கொள்ளவும்.');if(['finance','teachers','settings','history'].includes(p))return alert('Admin only');}$('pageTitle').textContent=groupLabel(currentGroup)+' — '+p;if(p==='students')studentsPage();if(p==='attendance')attendancePage();if(p==='fees')feesPage();if(p==='marks')marksPage();if(p==='tests')testsPage();if(p==='reports')reportsPage();if(p==='history')historyPage();if(p==='finance')financePage();if(p==='teachers')teachersPage();if(p==='settings')settingsPage();if(p==='audit')auditPage();};
   window.studentForm=function(id=''){
     const s=db.students.find(x=>String(x.id)===String(id))||{id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234'};
     openModal(id?'Edit Student':'Add Student',`<div class="two"><div><label>Student ID ${id?'<span class="muted">(Editable)</span>':''}</label><input id="fId" value="${esc(s.id)}"></div><div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div><label>Name</label><input id="fName" value="${esc(s.name)}"><div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div><div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div><div><label>Parent</label><input id="fParent" value="${esc(s.parent||'')}"></div><div><label>Monthly Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"></div></div><label>Address</label><input id="fAddress" value="${esc(s.address||'')}"><div class="notice">ℹ️ Student ID change செய்தால் Attendance, Fees, Marks மற்றும் Online Marks history-யும் புதிய ID-க்கு automatically மாற்றப்படும்.</div><button class="btn" style="width:100%" onclick="saveStudent('${esc(id)}')">💾 Save Student</button>`);
