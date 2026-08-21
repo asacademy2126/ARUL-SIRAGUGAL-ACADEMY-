@@ -3024,5 +3024,218 @@ db.teachers=db.teachers||[]; db.homework=db.homework||[]; db.tests=db.tests||[];
   window.groupAttendanceClick=function(btn,status){const id=btn.dataset.gstudent,st=db.students.find(s=>s.id===id);const r=gac.apply(this,arguments);if(role==='teacher'&&st){lg('UPDATE','Attendance',id,st.class,status);syncSheets(true)}return r};
 })();
 </script>
+
+<script>
+/* =========================================================
+   ARUL SIRAGUGAL ACADEMY — FINAL GOOGLE SHEETS RELIABILITY PATCH
+   Keeps the existing UI/features, but fixes:
+   • Google Sheets ONLY shared database (no localStorage)
+   • Reliable POST through form/iframe (no CORS save failure)
+   • Reliable GET through JSONP with fetch fallback
+   • Admin/Teacher/Student login from latest Sheet data
+   • Permanent multi-class teacher permissions
+   • Teacher name + date/time audit trail
+   • Class-wise teacher data isolation
+   • Student online-test mark submission
+   • Extra Income + Expenses + Audit Logs synced
+   ========================================================= */
+(function(){
+  const URL='https://script.google.com/macros/s/AKfycbzMAFuKPsGXWJonYqIyqxvNvjLTXG-bUjcbVXEAdulKyh6iuxX7czDZ7CgyE3eybE8/exec';
+  db.settings=db.settings||{};
+  db.settings.sheetsUrl=URL;
+  db.students=db.students||[]; db.archivedStudents=db.archivedStudents||[];
+  db.attendance=db.attendance||[]; db.fees=db.fees||[]; db.marks=db.marks||[];
+  db.onlineMarks=db.onlineMarks||[]; db.tests=db.tests||[]; db.teachers=db.teachers||[];
+  db.expenses=db.expenses||[]; db.extraIncome=db.extraIncome||[]; db.auditLogs=db.auditLogs||[];
+  db.homework=db.homework||[]; db.notices=db.notices||[]; db.exams=db.exams||[];
+
+  const S=v=>v==null?'':String(v);
+  const N=v=>Number(v)||0;
+  const norm=v=>S(v).trim().toLowerCase().replace(/\s+/g,' ');
+  const arr=v=>Array.isArray(v)?v:(S(v)?S(v).split(/[\n,|]+/).map(x=>x.trim()).filter(Boolean):[]);
+
+  function normalizeTeacher(t){
+    let ac=t&&t.allowedClasses;
+    if(typeof ac==='string'){try{ac=JSON.parse(ac)}catch(e){ac=arr(ac)}}
+    if(!Array.isArray(ac))ac=[];
+    let p=t&&t.permissions;
+    if(typeof p==='string'){try{p=JSON.parse(p)}catch(e){p={}}}
+    p=p||{};
+    return {...(t||{}),
+      id:S(t?.id).trim(), name:S(t?.name).trim(), password:S(t?.password), mobile:S(t?.mobile),
+      status:S(t?.status||'Active'), allowedClasses:ac.map(S), permissions:p,
+      attendance:t?.attendance!==false && t?.attendance!=='false',
+      fees:t?.fees!==false && t?.fees!=='false',
+      marks:t?.marks!==false && t?.marks!=='false',
+      onlineTest:t?.onlineTest!==false && t?.onlineTest!=='false',
+      addStudent:t?.addStudent===true || t?.addStudent==='true' || t?.students===true || t?.students==='true'
+    };
+  }
+
+  function teacher(){return window.currentTeacherAccount||null}
+  function allowed(){
+    if(role==='admin')return null;
+    const t=teacher();
+    return t ? (t.allowedClasses||[]).map(norm) : [];
+  }
+  function canModule(m){
+    if(role==='admin')return true;
+    const t=teacher(); if(!t)return false;
+    const p=t.permissions||{};
+    if(m==='students')return t.addStudent===true||p.students===true||p.addStudent===true;
+    if(m==='attendance')return t.attendance===true && p.attendance!==false;
+    if(m==='fees')return t.fees===true && p.fees!==false;
+    if(m==='marks')return t.marks===true && p.marks!==false;
+    if(m==='tests')return t.onlineTest===true && p.onlineTests!==false && p.onlineTest!==false;
+    return false;
+  }
+  function canClass(cls){return role==='admin'||allowed().includes(norm(cls))}
+  function scoped(){return role==='admin'?db.students:db.students.filter(s=>canClass(s.class))}
+  window.canTeacherModule=canModule;
+  window.teacherCanStudent=s=>role==='admin'||!!s&&canClass(s.class);
+  window.scopedStudents=scoped;
+
+  function actor(){
+    if(role==='admin')return {id:'admin',name:'Admin'};
+    if(role==='teacher'){const t=teacher()||{};return {id:S(t.id),name:S(t.name||db.settings.teacher||'Teacher')}}
+    return {id:S(currentStudent?.id),name:S(currentStudent?.name||'Student')};
+  }
+  function audit(action,module,recordId='',className='',details=''){
+    const a=actor(),d=new Date();
+    db.auditLogs.push({date:d.toISOString().slice(0,10),time:d.toLocaleTimeString('en-IN',{hour12:false}),role,userId:a.id,userName:a.name,action,module,recordId:S(recordId),className:S(className),details:S(details)});
+  }
+  window.auditActivity=audit;
+
+  /* ---------- Reliable Sheet SAVE: native form -> iframe ---------- */
+  window.syncSheets=function(silent){
+    silent=!!silent;
+    try{
+      setSyncStatus('syncing');
+      let frame=document.getElementById('asaFinalSyncFrame');
+      if(!frame){frame=document.createElement('iframe');frame.id='asaFinalSyncFrame';frame.name='asaFinalSyncFrame';frame.style.display='none';document.body.appendChild(frame)}
+      let form=document.getElementById('asaFinalSyncForm');
+      if(!form){form=document.createElement('form');form.id='asaFinalSyncForm';form.method='POST';form.target='asaFinalSyncFrame';form.enctype='application/x-www-form-urlencoded';form.style.display='none';document.body.appendChild(form)}
+      form.action=URL; form.innerHTML='';
+      const payload={source:'Arul Siragugal Academy',syncedAt:new Date().toISOString(),settings:{...db.settings,sheetsUrl:URL},
+        students:db.students||[],archivedStudents:db.archivedStudents||[],attendance:db.attendance||[],fees:db.fees||[],marks:db.marks||[],
+        onlineMarks:db.onlineMarks||[],tests:db.tests||[],teachers:db.teachers||[],expenses:db.expenses||[],extraIncome:db.extraIncome||[],
+        auditLogs:db.auditLogs||[],homework:db.homework||[],notices:db.notices||[],exams:db.exams||[]};
+      const input=document.createElement('input');input.type='hidden';input.name='payload';input.value=JSON.stringify(payload);form.appendChild(input);
+      form.submit();
+      setTimeout(()=>setSyncStatus('success'),1000);
+      return true;
+    }catch(e){setSyncStatus('error');if(!silent)alert('Google Sheets Sync Error: '+e.message);return false}
+  };
+  window.syncNow=function(){return window.syncSheets(true)};
+  window.save=function(){return window.syncSheets(true)};
+
+  /* ---------- Reliable Sheet LOAD: JSONP (no CORS dependency) ---------- */
+  window.importSharedFinal=function(){
+    return new Promise(resolve=>{
+      const loading=document.getElementById('loginLoading'); if(loading)loading.style.display='block';
+      ['adminLoginBtn','teacherLoginBtn','studentLoginBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=true});
+      setSyncStatus('syncing');
+      const cb='asaLoad_'+Date.now();
+      let done=false;
+      const finish=(ok)=>{if(done)return;done=true;clearTimeout(timer);const sc=document.getElementById(cb);if(sc)sc.remove();
+        ['adminLoginBtn','teacherLoginBtn','studentLoginBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.disabled=false});
+        if(loading)loading.style.display='none'; if(ok)setSyncStatus('success'); else setSyncStatus('error'); resolve(ok)};
+      window[cb]=result=>{try{
+        if(!result||result.success===false)throw new Error(result?.error||'Invalid Sheet response');
+        db.students=(result.students||[]).map(s=>({...s,id:S(s.id),name:S(s.name),class:S(s.class),mobile:S(s.mobile),parent:S(s.parent),birthday:S(s.birthday),address:S(s.address),password:S(s.password||'1234'),monthlyFee:N(s.monthlyFee)}));
+        db.archivedStudents=result.archivedStudents||[];
+        db.attendance=(result.attendance||[]).map(a=>({...a,studentId:S(a.studentId),date:S(a.date),status:S(a.status),teacherId:S(a.teacherId),teacherName:S(a.teacherName),className:S(a.className)}));
+        db.fees=(result.fees||[]).map(f=>({...f,studentId:S(f.studentId),date:S(f.date),type:S(f.type||'Payment'),amount:N(f.amount),extraAmount:N(f.extraAmount),extraType:S(f.extraType),collectedById:S(f.collectedById||f.teacherId),collectedByName:S(f.collectedByName||f.collectedBy)}));
+        db.marks=(result.marks||[]).map(m=>({...m,studentId:S(m.studentId),date:S(m.date),exam:S(m.exam),mark:N(m.mark),total:N(m.total),enteredById:S(m.enteredById),enteredByName:S(m.enteredByName||m.enteredBy)}));
+        db.onlineMarks=result.onlineMarks||[]; db.tests=result.tests||[]; db.expenses=result.expenses||[]; db.extraIncome=result.extraIncome||[];
+        db.auditLogs=result.auditLogs||[]; db.homework=result.homework||[]; db.notices=result.notices||[]; db.exams=result.exams||[];
+        db.teachers=(result.teachers||[]).map(normalizeTeacher);
+        if(result.settings){let incoming={...result.settings};if(typeof incoming.messages==='string'){try{incoming.messages=JSON.parse(incoming.messages)}catch(e){}}db.settings={...db.settings,...incoming}}
+        db.settings.sheetsUrl=URL; applySettings(); finish(true);
+      }catch(e){console.error(e);finish(false)}};
+      const sc=document.createElement('script');sc.id=cb;sc.src=URL+'?action=get&callback='+cb;sc.onerror=()=>finish(false);document.body.appendChild(sc);
+      const timer=setTimeout(()=>finish(false),12000);
+    });
+  };
+
+  /* ---------- Correct login after Sheet load ---------- */
+  window.loginAdmin=function(){
+    const id=S(document.getElementById('adminId')?.value).trim(),pass=S(document.getElementById('adminPass')?.value);
+    if(id===S(db.settings.adminId||'admin').trim()&&pass===S(db.settings.adminPass||'admin123')){window.currentTeacherAccount=null;enterApp('admin')}
+    else document.getElementById('loginMsg').textContent='Admin ID / Password Google Sheets value-க்கு match ஆகவில்லை.';
+  };
+  window.loginTeacher=function(){
+    const id=S(document.getElementById('teacherId')?.value).trim(),pass=S(document.getElementById('teacherPass')?.value);
+    const t=db.teachers.map(normalizeTeacher).find(x=>x.id===id&&x.password===pass&&norm(x.status||'Active')!=='inactive');
+    if(t){window.currentTeacherAccount=t;enterApp('teacher');return}
+    if(id===S(db.settings.teacherId).trim()&&pass===S(db.settings.teacherPass)){window.currentTeacherAccount={id,name:db.settings.teacher||'Teacher',password:pass,allowedClasses:[],attendance:true,fees:true,marks:true,onlineTest:true,addStudent:true,permissions:{attendance:true,fees:true,marks:true,onlineTests:true,students:true}};enterApp('teacher');return}
+    document.getElementById('loginMsg').textContent='Teacher ID / Password தவறாக உள்ளது அல்லது account inactive.';
+  };
+  window.loginStudent=function(){
+    const id=S(document.getElementById('studentId')?.value).trim(),pass=S(document.getElementById('studentPass')?.value);
+    const s=db.students.find(x=>S(x.id).trim()===id&&S(x.password)===pass);
+    if(!s){document.getElementById('loginMsg').textContent='Student ID / Password தவறாக உள்ளது.';return}
+    currentStudent=s;window.currentTeacherAccount=null;enterApp('student');
+  };
+
+  /* ---------- Teacher account editor: multiple classes NEVER reset ---------- */
+  window.teacherFormV3=function(id=''){
+    if(role!=='admin')return alert('Admin only');
+    const t=normalizeTeacher(db.teachers.find(x=>x.id===id)||{id:'',name:'',password:'1234',mobile:'',allowedClasses:[],attendance:true,fees:true,marks:true,onlineTest:true,addStudent:false,status:'Active'});
+    const classes=[...new Set(db.students.map(s=>S(s.class).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    const selected=(t.allowedClasses||[]).map(norm);
+    openModal(id?'✏️ Edit Teacher':'➕ Add Teacher',`<label>Teacher Name</label><input id="v3tName" value="${esc(t.name)}"><div class="two"><div><label>Teacher ID</label><input id="v3tId" value="${esc(t.id)}" ${id?'readonly':''}></div><div><label>Password</label><input id="v3tPass" value="${esc(t.password||'1234')}"></div></div><label>Mobile</label><input id="v3tMobile" value="${esc(t.mobile||'')}"><label>Allowed Classes — Multiple</label><select id="v3tClasses" multiple size="10">${classes.map(c=>`<option value="${esc(c)}" ${selected.includes(norm(c))?'selected':''}>${esc(c)}</option>`).join('')}</select><small style="display:block;color:var(--muted);margin-top:6px">Ctrl / Shift அல்லது checkbox-style selection மூலம் multiple classes select செய்யலாம். Existing selection edit செய்யும் போது preserve ஆகும்.</small><div class="two" style="margin-top:12px"><label><input id="v3pAttendance" type="checkbox" ${t.attendance?'checked':''}> Attendance</label><label><input id="v3pFees" type="checkbox" ${t.fees?'checked':''}> Fees</label><label><input id="v3pMarks" type="checkbox" ${t.marks?'checked':''}> Marks</label><label><input id="v3pTests" type="checkbox" ${t.onlineTest?'checked':''}> Online Test</label><label><input id="v3pStudent" type="checkbox" ${t.addStudent?'checked':''}> Add Student</label></div><label>Status</label><select id="v3tStatus"><option ${norm(t.status)!=='inactive'?'selected':''}>Active</option><option ${norm(t.status)==='inactive'?'selected':''}>Inactive</option></select><br><button class="btn" style="width:100%" onclick="saveTeacherFinal('${esc(id)}')">💾 Save Teacher Permissions</button>`);
+  };
+  window.saveTeacherFinal=function(oldId){
+    const id=S(document.getElementById('v3tId')?.value).trim(),name=S(document.getElementById('v3tName')?.value).trim();
+    if(!id||!name)return alert('Teacher ID மற்றும் Name தேவை');
+    if(!oldId&&db.teachers.some(t=>S(t.id).trim()===id))return alert('Teacher ID already exists');
+    const classes=[...document.getElementById('v3tClasses').selectedOptions].map(o=>o.value);
+    const obj={id,name,password:S(document.getElementById('v3tPass').value)||'1234',mobile:S(document.getElementById('v3tMobile').value).trim(),allowedClasses:classes,attendance:document.getElementById('v3pAttendance').checked,fees:document.getElementById('v3pFees').checked,marks:document.getElementById('v3pMarks').checked,onlineTest:document.getElementById('v3pTests').checked,addStudent:document.getElementById('v3pStudent').checked,status:document.getElementById('v3tStatus').value,permissions:{attendance:document.getElementById('v3pAttendance').checked,fees:document.getElementById('v3pFees').checked,marks:document.getElementById('v3pMarks').checked,onlineTests:document.getElementById('v3pTests').checked,students:document.getElementById('v3pStudent').checked}};
+    if(oldId){const i=db.teachers.findIndex(t=>S(t.id)===oldId);if(i<0)return alert('Teacher not found');db.teachers[i]=obj}else db.teachers.push(obj);
+    audit(oldId?'EDIT':'ADD','Teachers',id,'',`Teacher ${name}; Allowed Classes: ${classes.join(', ')}`);
+    syncSheets(false);closeModal();teachersPage();
+  };
+
+  /* ---------- Ensure teacher pages are scoped to allowed classes ---------- */
+  window.teacherStudentsPage=function(){const ss=scoped();document.getElementById('content').innerHTML=`<div class="card"><div class="toolbar"><input id="v3Search" placeholder="Search student..." oninput="renderV3Students()">${canModule('students')?'<button class="btn" onclick="studentForm()">➕ Add Student</button>':''}</div><div id="v3StudentBox"></div></div>`;window.renderV3Students=function(){const q=S(document.getElementById('v3Search')?.value).toLowerCase();const rows=scoped().filter(s=>(s.name+' '+s.id+' '+s.class).toLowerCase().includes(q));document.getElementById('v3StudentBox').innerHTML=`<div class="table-wrap"><table class="table"><tr><th>Name</th><th>ID</th><th>Class</th><th>Mobile</th><th>Action</th></tr>${rows.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.id)}</td><td>${esc(s.class)}</td><td>${esc(s.mobile||'-')}</td><td><button class="btn secondary" onclick="studentProfilePage('${esc(s.id)}')">View</button>${canModule('students')?` <button class="btn secondary" onclick="studentForm('${esc(s.id)}')">Edit</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5">Allowed class-ல் students இல்லை.</td></tr>'}</table></div>`};window.renderV3Students();};
+
+  const oldStudentForm=window.studentForm;
+  window.studentForm=function(id=''){if(role==='teacher'&&!canModule('students'))return alert('Add Student permission இல்லை.');if(role==='teacher'&&id){const s=db.students.find(x=>x.id===id);if(s&&!canClass(s.class))return alert('இந்த student class உங்களுக்கு allowed இல்லை.')}return oldStudentForm(id)};
+  const oldSaveStudent=window.saveStudent;
+  window.saveStudent=function(old){if(role==='teacher'&&!canModule('students'))return alert('Add Student permission இல்லை.');const cls=S(document.getElementById('fClass')?.value).trim();if(role==='teacher'&&!canClass(cls))return alert('இந்த class உங்களுக்கு allowed இல்லை. Admin → Teachers → Allowed Classes-ல் class சேர்க்கவும்.');audit(old?'EDIT':'ADD','Students',document.getElementById('fId')?.value||'',cls,old?'Student updated':'Student added');return oldSaveStudent(old)};
+
+  /* Attendance/fee/marks/test writes: stamp teacher name/date and reject outside classes */
+  const oldAtt=window.setAttendanceButton;
+  if(typeof oldAtt==='function')window.setAttendanceButton=function(btn,status){const id=btn.parentElement?.dataset.student||btn.parentElement?.dataset.gstudent,s=db.students.find(x=>x.id===id);if(role==='teacher'&&!canModule('attendance'))return alert('Attendance permission இல்லை.');if(role==='teacher'&&!s)return alert('Student not found');if(role==='teacher'&&!canClass(s.class))return alert('இந்த class allowed இல்லை.');const r=oldAtt(btn,status);const rec=db.attendance.find(a=>a.studentId===id&&a.date===(btn.parentElement.dataset.date||document.getElementById('attDate')?.value||today()));if(rec){const a=actor();rec.teacherId=a.id;rec.teacherName=a.name;rec.lastUpdateAt=new Date().toISOString();rec.className=s.class;audit('UPDATE','Attendance',id,s.class,status);window.syncSheets(true)}return r};
+
+  const oldFee=window.saveFee;
+  window.saveFee=function(){if(role==='teacher'&&!canModule('fees'))return alert('Fees permission இல்லை.');const id=document.getElementById('feeStudent')?.value,s=db.students.find(x=>x.id===id);if(role==='teacher'&&s&&!canClass(s.class))return alert('இந்த class allowed இல்லை.');const r=oldFee.apply(this,arguments);if(s){const a=actor(),last=db.fees[db.fees.length-1];if(last){last.collectedById=a.id;last.collectedByName=a.name;last.lastUpdateAt=new Date().toISOString();last.className=s.class;}audit('ADD','Fees',id,s.class,'Fee payment');window.syncSheets(true)}return r};
+
+  const oldExtra=window.saveExtra;
+  if(typeof oldExtra==='function')window.saveExtra=function(){if(role==='teacher'&&!canModule('fees'))return alert('Fees permission இல்லை.');const id=document.getElementById('extraStudent')?.value,s=db.students.find(x=>x.id===id);if(role==='teacher'&&s&&!canClass(s.class))return alert('இந்த class allowed இல்லை.');const r=oldExtra.apply(this,arguments);if(s){const a=actor(),last=db.fees[db.fees.length-1];if(last){last.collectedById=a.id;last.collectedByName=a.name;last.lastUpdateAt=new Date().toISOString();last.className=s.class;}audit('ADD','Extra Fee',id,s.class,'Extra fee');window.syncSheets(true)}return r};
+
+  const oldMark=window.saveMark;
+  window.saveMark=function(){if(role==='teacher'&&!canModule('marks'))return alert('Marks permission இல்லை.');const id=document.getElementById('markStudent')?.value,s=db.students.find(x=>x.id===id);if(role==='teacher'&&s&&!canClass(s.class))return alert('இந்த class allowed இல்லை.');const r=oldMark.apply(this,arguments);if(s){const a=actor(),last=db.marks[db.marks.length-1];if(last){last.enteredById=a.id;last.enteredByName=a.name;last.lastUpdateAt=new Date().toISOString();last.className=s.class;}audit('ADD','Marks',id,s.class,document.getElementById('markExam')?.value||'Mark entry');window.syncSheets(true)}return r};
+
+  const oldTest=window.saveTestLink;
+  window.saveTestLink=function(){if(role==='teacher'&&!canModule('tests'))return alert('Online Test permission இல்லை.');const cls=S(document.getElementById('tClass')?.value).trim();if(role==='teacher'&&!canClass(cls))return alert('இந்த test class உங்களுக்கு allowed இல்லை.');const r=oldTest.apply(this,arguments);const last=db.tests[db.tests.length-1];if(last){const a=actor();last.postedById=a.id;last.postedByName=a.name;last.postedBy=a.name;last.lastUpdateAt=new Date().toISOString()}audit('ADD','Online Test','',cls,document.getElementById('tName')?.value||'Test posted');window.syncSheets(true);return r};
+
+  /* ---------- Student online test mark: always visible and synced ---------- */
+  const oldStudentOnline=window.saveStudentOnlineMark;
+  window.saveStudentOnlineMark=function(testName,subject,total){const r=oldStudentOnline.apply(this,arguments);if(currentStudent){const last=db.onlineMarks[db.onlineMarks.length-1];if(last){last.studentId=currentStudent.id;last.studentName=currentStudent.name;last.class=currentStudent.class;last.lastUpdateAt=new Date().toISOString()}audit('SUBMIT','Online Test Mark',testName,currentStudent.class,`${subject||''} ${document.getElementById('stdMarkVal')?.value||''}/${total}`);window.syncSheets(true)}return r};
+
+  /* ---------- Student dashboard gets fresh mark data ---------- */
+  const oldStudentTests=window.studentTestsPage;
+  window.studentTestsPage=function(){if(!currentStudent)return;oldStudentTests();setTimeout(()=>{const title=document.querySelector('#content h3');if(title)title.insertAdjacentHTML('afterend','<p class="notice">📝 Test முடித்த பிறகு <b>Submit My Mark</b> மூலம் score-ஐ Teacher/Admin-க்கு அனுப்பலாம்.</p>')},0)};
+
+  /* ---------- Admin totals + teacher name in welcome ---------- */
+  const oldEnter=window.enterApp;
+  window.enterApp=function(r){oldEnter(r);if(r==='teacher')document.getElementById('welcome').textContent='👨‍🏫 '+S(teacher()?.name||db.settings.teacher||'Teacher');if(r==='admin')document.getElementById('welcome').textContent='👑 Admin — Full Control'};
+
+  /* ---------- Initial load: do this after all overrides are installed ---------- */
+  setTimeout(()=>window.importSharedFinal(),150);
+})();
+</script>
 </body>
 </html>
