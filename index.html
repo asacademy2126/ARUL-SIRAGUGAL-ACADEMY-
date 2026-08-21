@@ -20,7 +20,7 @@
 <div id="login" class="login"><div class="login-card">
 <img id="loginLogo" class="logo" alt="Academy">
 <h1 id="academyTitle">Arul Siragugal Academy</h1><p>Student Management System</p>
-<div id="loading" class="notice" style="display:none;text-align:center">⏳ Google Sheets data loading...</div>
+<div class="notice" style="font-size:12px;text-align:center">☁️ Google Sheets is the only database • Browser LocalStorage is not used for academy data.</div><div id="loading" class="notice" style="display:none;text-align:center">⏳ Google Sheets data loading...</div><div id="adminHint" class="notice" style="font-size:12px;text-align:center">Admin default: <b>admin</b> / <b>admin123</b> (change in Settings)</div>
 <div class="roles"><button id="rAdmin" onclick="setRole('admin')">👑 Admin</button><button id="rTeacher" class="active" onclick="setRole('teacher')">👨‍🏫 Teacher</button><button id="rStudent" onclick="setRole('student')">👨‍🎓 Student</button></div>
 <div id="adminLogin" class="hidden"><label>Admin ID</label><input id="adminId"><label>Password</label><input id="adminPass" type="password"><button class="btn" style="width:100%;margin-top:14px" onclick="loginAdmin()">Login</button></div>
 <div id="teacherLogin"><label>Teacher ID</label><input id="teacherId"><label>Password</label><input id="teacherPass" type="password"><button class="btn" style="width:100%;margin-top:14px" onclick="loginTeacher()">Login</button></div>
@@ -33,7 +33,7 @@
 
 <script>
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbzMAFuKPsGXWJonYqIyqxvNvjLTXG-bUjcbVXEAdulKyh6iuxX7czDZ7CgyE3eybE8/exec';
-let db={settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',whatsappGroup:'',teacherId:'teacher',teacherPass:'1234',adminId:'admin',adminPass:'admin123',sheetsUrl:SHEETS_URL,messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}.',absent:'வணக்கம் {student}, இன்று {academy} வகுப்பிற்கு வரவில்லை. தேதி: {date}.'}},students:[],archivedStudents:[],attendance:[],fees:[],marks:[],onlineMarks:[],tests:[],expenses:[],extraIncome:[],teachers:[],auditLogs:[]};
+let db={settings:{academy:'Arul Siragugal Academy',teacher:'Teacher',mobile:'',fee:1000,logo:'',upi:'',whatsappGroup:'',teacherId:'',teacherPass:'',adminId:'',adminPass:'',sheetsUrl:SHEETS_URL,messages:{fee:'வணக்கம் {student}, உங்கள் {academy} மாத கட்டணம் ₹{amount} நிலுவையில் உள்ளது. தேதி: {date}.',absent:'வணக்கம் {student}, இன்று {academy} வகுப்பிற்கு வரவில்லை. தேதி: {date}.'}},students:[],archivedStudents:[],attendance:[],fees:[],marks:[],onlineMarks:[],tests:[],expenses:[],extraIncome:[],teachers:[],auditLogs:[]};
 let role='teacher',currentStudent=null,currentGroup='LKG-5',loaded=false;
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const today=()=>new Date().toISOString().slice(0,10), monthNow=()=>today().slice(0,7), money=n=>'₹'+Number(n||0).toLocaleString('en-IN');
@@ -137,7 +137,7 @@ async function loadSheets(){
   }
 }
 async function syncSheets(silent=false){
-  if(!loaded){if(!silent)alert('Google Sheets data இன்னும் load ஆகவில்லை.');return;}
+  if(!loaded){await getSheetsData();loaded=true;}
   setSyncStatus('syncing');
   const payload={source:'Arul Siragugal Academy',syncedAt:new Date().toISOString(),settings:{...db.settings,sheetsUrl:SHEETS_URL},students:db.students||[],archivedStudents:db.archivedStudents||[],attendance:db.attendance||[],fees:db.fees||[],marks:db.marks||[],onlineMarks:db.onlineMarks||[],tests:db.tests||[],expenses:db.expenses||[],extraIncome:db.extraIncome||[],auditLogs:db.auditLogs||[],teachers:(db.teachers||[]).map(t=>({...t,allowedClasses:Array.isArray(t.allowedClasses)?t.allowedClasses:t.allowedClasses||[],permissions:t.permissions||{},studentPermission:!!t.permissions?.students,studentsPermission:!!t.permissions?.students,attendancePermission:!!t.permissions?.attendance,feesPermission:!!t.permissions?.fees,marksPermission:!!t.permissions?.marks,onlineTestPermission:!!t.permissions?.onlineTests,permissionJson:JSON.stringify(t.permissions||{})})),};
   try{
@@ -153,9 +153,66 @@ async function syncSheets(silent=false){
     if(!silent)alert('✅ Google Sheets-ல் data save செய்யப்பட்டது.');
   }catch(e){setSyncStatus('error');if(!silent)alert('❌ Google Sheets Sync failed: '+e.message);}
 }
-function save(){syncSheets(true)}
+async function save(){
+  try{
+    await getSheetsData();
+    loaded=true;
+    await syncSheets(true);
+  }catch(e){
+    console.error('Save/Sync failed:',e);
+    setSyncStatus('error');
+  }
+}
+async function checkSheetsConnection(){
+  try{
+    const r=await fetch(SHEETS_URL+'?action=get&_='+Date.now(),{cache:'no-store'});
+    const text=await r.text();
+    console.log('Google Sheets response:',r.status,text);
+    alert('Google Sheets HTTP '+r.status+'\n\n'+text.slice(0,500));
+  }catch(e){
+    alert('Google Sheets connection failed:\n'+e.message);
+  }
+}
 function openModal(t,b){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modal').classList.remove('hidden')}function closeModal(){$('modal').classList.add('hidden')}
-function loginAdmin(){const id=$('adminId').value.trim(),p=String($('adminPass').value||'').trim();const sid=String(db.settings.adminId||'admin').trim(),sp=String(db.settings.adminPass||'admin123').trim();if(id===sid&&p===sp)enter('admin');else $('loginMsg').textContent='Admin ID / Password Google Sheets-ல் உள்ள value-க்கு match ஆகவில்லை.'}
+async function loginAdmin(){
+  const id=$('adminId').value.trim();
+  const p=String($('adminPass').value||'').trim();
+
+  if(!id || !p){
+    $('loginMsg').textContent='Admin ID மற்றும் Password கொடுக்கவும்.';
+    return;
+  }
+
+  $('loginMsg').textContent='⏳ Google Sheets-ல் Admin credentials check செய்கிறது...';
+
+  try{
+    await getSheetsData();
+    loaded=true;
+    setSyncStatus('ok');
+  }catch(e){
+    loaded=false;
+    setSyncStatus('error');
+    $('loginMsg').textContent='❌ Google Sheets connect ஆகவில்லை. Apps Script deployment / URL check செய்யவும்.';
+    console.error(e);
+    return;
+  }
+
+  // IMPORTANT: credentials must come ONLY from Google Sheets Settings.
+  const sid=String(db.settings?.adminId ?? '').trim();
+  const sp=String(db.settings?.adminPass ?? '').trim();
+
+  if(!sid || !sp){
+    $('loginMsg').textContent='❌ Settings sheet-ல் adminId / adminPass இல்லை.';
+    return;
+  }
+
+  if(id===sid && p===sp){
+    enter('admin');
+    return;
+  }
+
+  $('loginMsg').textContent='❌ Admin ID / Password Google Sheets Settings-ல் உள்ள value-க்கு match ஆகவில்லை.';
+}
 function loginTeacher(){const id=$('teacherId').value.trim(),p=String($('teacherPass').value||'').trim();const t=db.teachers.find(x=>String(x.id||'').trim()===id&&String(x.password||'').trim()===p);if(t){currentTeacher={...t,allowedClasses:Array.isArray(t.allowedClasses)?t.allowedClasses.slice():[]};enter('teacher');return}if(id===String(db.settings.teacherId||'').trim()&&p===String(db.settings.teacherPass||'').trim()){let ac=db.settings.teacherAllowedClasses||['ALL'];if(typeof ac==='string')ac=ac.split(',').map(x=>x.trim()).filter(Boolean);currentTeacher={id,name:db.settings.teacher||'Teacher',password:p,allowedClasses:Array.isArray(ac)&&ac.length?ac:['ALL'],permissions:{students:db.settings.teacherStudentPermission!==false,attendance:db.settings.teacherAttendancePermission!==false,fees:db.settings.teacherFeesPermission!==false,marks:db.settings.teacherMarksPermission!==false,onlineTests:db.settings.teacherOnlineTestPermission!==false}};enter('teacher');return}$('loginMsg').textContent='Teacher ID / Password Google Sheets-ல் உள்ள value-க்கு match ஆகவில்லை.'}
 function loginStudent(){let s=db.students.find(x=>x.id===$('studentId').value.trim()&&x.password===$('studentPass').value);if(s){currentStudent=s;enter('student')}else $('loginMsg').textContent='Student ID / Password தவறாக உள்ளது.'}
 function enter(r){role=r;$('login').classList.add('hidden');$('app').classList.remove('hidden');$('syncBtn').classList.toggle('hidden',r==='student');$('welcome').textContent=r==='admin'?'👑 Admin':r==='teacher'?'👨‍🏫 '+(currentTeacher?.name||db.settings.teacher||'Teacher'):'👨‍🎓 '+currentStudent.name;applySettings();home()}
