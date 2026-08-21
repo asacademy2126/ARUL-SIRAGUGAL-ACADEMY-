@@ -12,7 +12,7 @@
 .group-tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.group-tab{padding:17px;border-radius:17px;border:2px solid #bae6fd;background:#fff;text-align:left;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--shadow)}.group-tab.active{background:linear-gradient(135deg,#075985,#0ea5e9);color:#fff;border-color:#075985}.group-name{font-weight:800;font-size:17px}.group-sub{font-size:12px;opacity:.8;margin-top:4px}.group-count{font-size:22px;font-weight:800}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}.stat{background:#fff;border-radius:17px;padding:16px;border:1px solid var(--line);box-shadow:var(--shadow)}.stat:nth-child(1){border-top:4px solid var(--blue)}.stat:nth-child(2){border-top:4px solid var(--green)}.stat:nth-child(3){border-top:4px solid var(--red)}.stat:nth-child(4){border-top:4px solid var(--purple)}.stat .label{font-size:12px;color:var(--muted)}.stat .value{font-size:24px;font-weight:800;margin-top:6px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}.feature{min-height:125px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}.feature:hover{transform:translateY(-2px)}.icon{font-size:31px;margin-bottom:8px}.feature b{font-size:15px}.feature small{color:var(--muted);margin-top:4px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}.toolbar>div{min-width:130px;flex:1}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:9px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap;font-size:13px}.table th{background:#f0f9ff}.badge{padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}.ok{background:#dcfce7;color:#166534}.pending{background:#fee2e2;color:#991b1b}.info{background:#e0f2fe;color:#075985}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal{position:fixed;inset:0;background:rgba(2,6,23,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}.modal-box{width:100%;max-width:650px;max-height:92vh;overflow:auto;background:#fff;border-radius:20px;padding:20px}.modal-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:10px}.notice{padding:12px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;margin:8px 0}.danger{color:var(--red)}.success{color:var(--green)}.muted{color:var(--muted)}.p-a{display:flex;gap:6px}.p-a button{padding:7px 10px;border-radius:9px;border:2px solid #cbd5e1;background:#fff;font-weight:800}.p-a .p.active{background:#16a34a;color:#fff;border-color:#16a34a}.p-a .a.active{background:#dc2626;color:#fff;border-color:#dc2626}.mini{font-size:11px}.analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.bar{height:10px;background:#e2e8f0;border-radius:20px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#075985,#0ea5e9)}
 @media(max-width:800px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,1fr)}.analysis-grid{grid-template-columns:1fr}.top-actions .btn{padding:8px 10px;font-size:12px}}
 @media(max-width:480px){.app{padding:8px}.cards{grid-template-columns:repeat(2,1fr);gap:8px}.stat{padding:12px}.stat .value{font-size:19px}.grid{grid-template-columns:repeat(2,1fr);gap:8px}.feature{min-height:105px;padding:10px}.two{grid-template-columns:1fr}.group-tabs{gap:7px}.group-tab{padding:12px}.group-name{font-size:14px}.group-count{font-size:18px}.table th,.table td{font-size:12px;padding:7px}}
-</style>
+.student-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}.student-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);cursor:pointer}.student-card .sc-icon{font-size:28px}.student-card .sc-label{font-size:12px;color:var(--muted);margin-top:8px}.student-card .sc-value{font-size:22px;font-weight:800;margin-top:4px}@media(max-width:800px){.student-cards{grid-template-columns:repeat(2,1fr)}}</style>
 </head>
 <body>
 <div id="login" class="login"><div class="login-card">
@@ -42,23 +42,69 @@ function setRole(r){role=r;['admin','teacher','student'].forEach(x=>$(x==='admin
 function applySettings(){document.title=db.settings.academy+' - Management';$('academyTitle').textContent=db.settings.academy;$('brandLogo').src=$('loginLogo').src=db.settings.logo||'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#075985"/><text x="50" y="63" text-anchor="middle" fill="white" font-size="34">AS</text></svg>')}
 function normalize(d){
   if(!d||typeof d!=='object')return false;
+  // Apps Script versions may wrap the database in db/data/result.
   if(d.db&&typeof d.db==='object')d=d.db;
-  db.students=(d.students||[]).map(s=>({...s,id:String(s.id??''),name:String(s.name??''),class:String(s.class??''),mobile:String(s.mobile??''),parent:String(s.parent??''),address:String(s.address??''),birthday:String(s.birthday??''),password:String(s.password??'1234'),monthlyFee:Number(s.monthlyFee)||0}));
-  db.archivedStudents=d.archivedStudents||[];
-  db.attendance=(d.attendance||[]).map(x=>({...x,studentId:String(x.studentId??''),date:String(x.date??''),status:String(x.status??'')}));
-  db.fees=(d.fees||[]).map(x=>({...x,studentId:String(x.studentId??''),date:String(x.date??''),amount:Number(x.amount)||0,extraAmount:x.extraAmount===''||x.extraAmount==null?0:Number(x.extraAmount)||0,type:String(x.type||'Payment')}));
-  db.marks=(d.marks||[]).map((x,i)=>({...x,_id:String(x._id||('M'+i+'_'+String(x.date||''))),studentId:String(x.studentId??''),date:String(x.date||'')}));
-  db.onlineMarks=(d.onlineMarks||[]).map((x,i)=>({...x,_id:String(x._id||('OM'+i+'_'+String(x.date||''))),studentId:String(x.studentId??'')}));
-  db.tests=(d.tests||[]).map((x,i)=>({...x,_id:String(x._id||('T'+i+'_'+String(x.date||'')))}));
-  db.expenses=(d.expenses||[]).map((x,i)=>({...x,_id:String(x._id||('E'+i+'_'+String(x.date||'')))}));
-  db.teachers=d.teachers||[];
-  db.settings={...db.settings,...(d.settings||{}),sheetsUrl:SHEETS_URL,...((d.settings||{}).messages?{messages:d.settings.messages}:{})};
-  if(!db.settings.messages)db.settings.messages={fee:'',absent:''};
+  else if(d.data&&typeof d.data==='object'&&!Array.isArray(d.data))d=d.data;
+  else if(d.result&&typeof d.result==='object'&&!Array.isArray(d.result))d=d.result;
+
+  const clean=(v,def='')=>v===undefined||v===null?def:String(v).trim();
+  let incomingSettings=d.settings;
+  if(Array.isArray(incomingSettings)) incomingSettings=incomingSettings[0]||{};
+  if(typeof incomingSettings==='string'){try{incomingSettings=JSON.parse(incomingSettings)}catch(e){incomingSettings={}}}
+  incomingSettings=incomingSettings&&typeof incomingSettings==='object'?incomingSettings:{};
+
+  // Accept credentials whether Apps Script returns them under settings,
+  // auth/admin/teacher, or as top-level fields.
+  if(d.auth&&typeof d.auth==='object') incomingSettings={...incomingSettings,...d.auth};
+  if(d.admin&&typeof d.admin==='object') incomingSettings={...incomingSettings,adminId:d.admin.id??d.admin.adminId,adminPass:d.admin.password??d.admin.adminPass};
+  if(d.teacher&&typeof d.teacher==='object') incomingSettings={...incomingSettings,teacherId:d.teacher.id??d.teacher.teacherId,teacherPass:d.teacher.password??d.teacher.teacherPass,teacher:d.teacher.name??incomingSettings.teacher};
+  ['adminId','adminPass','teacherId','teacherPass','academy','teacher','mobile','upi','whatsappGroup'].forEach(k=>{
+    if(d[k]!==undefined && d[k]!==null) incomingSettings[k]=d[k];
+  });
+
+  db.students=(d.students||[]).map(s=>({...s,
+    id:clean(s.id),name:clean(s.name),class:clean(s.class),mobile:clean(s.mobile),
+    parent:clean(s.parent),address:clean(s.address),birthday:clean(s.birthday),
+    password:clean(s.password,'1234'),monthlyFee:Number(s.monthlyFee)||0
+  }));
+  db.archivedStudents=Array.isArray(d.archivedStudents)?d.archivedStudents:[];
+  db.attendance=(d.attendance||[]).map(x=>({...x,studentId:clean(x.studentId),date:clean(x.date),status:clean(x.status)}));
+  db.fees=(d.fees||[]).map(x=>({...x,studentId:clean(x.studentId),date:clean(x.date),amount:Number(x.amount)||0,extraAmount:x.extraAmount===''||x.extraAmount==null?0:Number(x.extraAmount)||0,type:clean(x.type,'Payment')}));
+  db.marks=(d.marks||[]).map((x,i)=>({...x,_id:clean(x._id,'M'+i+'_'+clean(x.date)),studentId:clean(x.studentId),date:clean(x.date)}));
+  db.onlineMarks=(d.onlineMarks||[]).map((x,i)=>({...x,_id:clean(x._id,'OM'+i+'_'+clean(x.date)),studentId:clean(x.studentId)}));
+  db.tests=(d.tests||[]).map((x,i)=>({...x,_id:clean(x._id,'T'+i+'_'+clean(x.date))}));
+  db.expenses=(d.expenses||[]).map((x,i)=>({...x,_id:clean(x._id,'E'+i+'_'+clean(x.date))}));
+
+  db.teachers=(d.teachers||[]).map(t=>({...t,
+    id:clean(t.id||t.teacherId),name:clean(t.name||t.teacher),
+    password:clean(t.password||t.pass||t.teacherPass),mobile:clean(t.mobile)
+  }));
+
+  const old=db.settings||{};
+  const msgs=incomingSettings.messages||old.messages||{};
+  db.settings={...old,...incomingSettings,
+    academy:clean(incomingSettings.academy,old.academy||'Arul Siragugal Academy'),
+    teacher:clean(incomingSettings.teacher,old.teacher||'Teacher'),
+    mobile:clean(incomingSettings.mobile,old.mobile),
+    upi:clean(incomingSettings.upi,old.upi),
+    whatsappGroup:clean(incomingSettings.whatsappGroup,old.whatsappGroup),
+    teacherId:clean(incomingSettings.teacherId,old.teacherId||'teacher'),
+    teacherPass:clean(incomingSettings.teacherPass,old.teacherPass||'1234'),
+    adminId:clean(incomingSettings.adminId,old.adminId||'admin'),
+    adminPass:clean(incomingSettings.adminPass,old.adminPass||'admin123'),
+    fee:Number(incomingSettings.fee??old.fee)||0,
+    messages:{fee:clean(msgs.fee,old.messages?.fee||''),absent:clean(msgs.absent,old.messages?.absent||'')},
+    sheetsUrl:SHEETS_URL
+  };
+
+  // If the main teacher account is stored only in teachers[], allow it for login.
+  if(!db.settings.teacherId && db.teachers[0]) db.settings.teacherId=db.teachers[0].id;
+  if(!db.settings.teacherPass && db.teachers[0]) db.settings.teacherPass=db.teachers[0].password;
   applySettings();
   return true;
 }
 async function getSheetsData(){
-  const actions=['get','getData'];
+  const actions=['get','getData','read','load'];
   let last='';
   for(const action of actions){
     try{
@@ -105,8 +151,8 @@ async function syncSheets(silent=false){
 }
 function save(){syncSheets(true)}
 function openModal(t,b){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modal').classList.remove('hidden')}function closeModal(){$('modal').classList.add('hidden')}
-function loginAdmin(){if($('adminId').value.trim()===(db.settings.adminId||'admin')&&$('adminPass').value===(db.settings.adminPass||'admin123'))enter('admin');else $('loginMsg').textContent='Admin ID / Password தவறாக உள்ளது.'}
-function loginTeacher(){let id=$('teacherId').value.trim(),p=$('teacherPass').value,ok=id===db.settings.teacherId&&p===db.settings.teacherPass||db.teachers.some(t=>String(t.id)===id&&String(t.password)===p);if(ok)enter('teacher');else $('loginMsg').textContent='Teacher ID / Password தவறாக உள்ளது.'}
+function loginAdmin(){const id=$('adminId').value.trim(),p=String($('adminPass').value||'').trim();const sid=String(db.settings.adminId||'admin').trim(),sp=String(db.settings.adminPass||'admin123').trim();if(id===sid&&p===sp)enter('admin');else $('loginMsg').textContent='Admin ID / Password Google Sheets-ல் உள்ள value-க்கு match ஆகவில்லை.'}
+function loginTeacher(){const id=$('teacherId').value.trim(),p=String($('teacherPass').value||'').trim();const ok=id===String(db.settings.teacherId||'').trim()&&p===String(db.settings.teacherPass||'').trim()||db.teachers.some(t=>String(t.id||'').trim()===id&&String(t.password||'').trim()===p);if(ok)enter('teacher');else $('loginMsg').textContent='Teacher ID / Password Google Sheets-ல் உள்ள value-க்கு match ஆகவில்லை.'}
 function loginStudent(){let s=db.students.find(x=>x.id===$('studentId').value.trim()&&x.password===$('studentPass').value);if(s){currentStudent=s;enter('student')}else $('loginMsg').textContent='Student ID / Password தவறாக உள்ளது.'}
 function enter(r){role=r;$('login').classList.add('hidden');$('app').classList.remove('hidden');$('syncBtn').classList.toggle('hidden',r==='student');$('welcome').textContent=r==='admin'?'👑 Admin':r==='teacher'?'👨‍🏫 Teacher':'👨‍🎓 '+currentStudent.name;applySettings();home()}
 function logout(){currentStudent=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');setRole('teacher')}
@@ -166,8 +212,21 @@ function settingsPage(){if(role!=='admin')return alert('Admin only');let m=db.se
 function saveSettings(){db.settings={...db.settings,academy:$('sa').value,teacher:$('st').value,mobile:$('sm').value,fee:Number($('sf').value)||0,adminId:$('sid').value,adminPass:$('sp').value,teacherId:$('tid').value,teacherPass:$('tp').value,whatsappGroup:$('wg').value,messages:{fee:$('fm').value,absent:$('am').value}};applySettings();save();alert('Settings saved to Google Sheets')}
 function submitOnlineMark(testId){let t=db.tests.find(x=>x._id===testId);if(!t)return;openModal('Submit Online Test Mark',`<p><b>${esc(t.name)}</b> — Total ${t.total}</p><label>Mark Scored</label><input id="som" type="number" min="0" max="${t.total}"><br><button class="btn green" style="width:100%" onclick="saveOnlineSubmission('${esc(testId)}')">Submit Mark</button>`)}
 function saveOnlineSubmission(testId){let t=db.tests.find(x=>x._id===testId),mark=Number($('som').value);if(!t||mark<0||mark>t.total)return alert('Mark சரியாக கொடுக்கவும்');db.onlineMarks.push({_id:'OM'+Date.now(),studentId:currentStudent.id,testId,testName:t.name,mark,total:t.total,date:today(),entryType:'Student Submission'});closeModal();save();alert('✅ Online mark submitted')}
-function studentHome(){let s=currentStudent,m=monthNow(),a=db.attendance.filter(x=>x.studentId===s.id&&x.date.startsWith(m)),p=calcPaid(s.id,m),pending=calcPending(s.id,m);$('pageTitle').textContent='Student Dashboard';$('content').innerHTML=`<div class="card"><h3>👨‍🎓 ${esc(s.name)}</h3><p>Class: <b>${esc(s.class)}</b> | ID: <b>${esc(s.id)}</b></p><div class="toolbar"><div><label>Select Month</label><input id="smMonth" type="month" value="${m}" onchange="renderStudentMonth()"></div></div></div><div id="studentMonth"></div>`;renderStudentMonth()}
-function renderStudentMonth(){let s=currentStudent,m=$('smMonth').value,a=db.attendance.filter(x=>x.studentId===s.id&&x.date.startsWith(m)),p=calcPaid(s.id,m),pending=calcPending(s.id,m),fs=db.fees.filter(x=>x.studentId===s.id&&x.date.startsWith(m)),marks=db.marks.filter(x=>x.studentId===s.id&&x.date.startsWith(m));$('studentMonth').innerHTML=`<div class="cards"><div class="stat"><div class="label">Present</div><div class="value success">${a.filter(x=>x.status==='Present').length}</div></div><div class="stat"><div class="label">Absent</div><div class="value danger">${a.filter(x=>x.status==='Absent').length}</div></div><div class="stat"><div class="label">Paid Fee</div><div class="value">${money(p)}</div></div><div class="stat"><div class="label">Pending Fee</div><div class="value danger">${money(pending)}</div></div></div><div class="analysis-grid"><div class="card"><h3>📅 Attendance — ${m}</h3><table class="table"><tr><th>Date</th><th>Status</th></tr>${a.map(x=>`<tr><td>${x.date}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${x.status}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance</td></tr>'}</table></div><div class="card"><h3>💰 Fee History — ${m}</h3><table class="table"><tr><th>Date</th><th>Type</th><th>Amount</th></tr>${fs.map(x=>`<tr><td>${x.date}</td><td>${x.type}</td><td>${money(x.amount+x.extraAmount)}</td></tr>`).join('')||'<tr><td colspan="3">No fee history</td></tr>'}</table></div><div class="card"><h3>📝 Marks — ${m}</h3><table class="table"><tr><th>Date</th><th>Exam</th><th>Mark</th></tr>${marks.map(x=>`<tr><td>${x.date}</td><td>${esc(x.exam)}</td><td>${x.mark}/${x.total}</td></tr>`).join('')||'<tr><td colspan="3">No marks</td></tr>'}</table></div><div class="card"><h3>🧪 Online Tests</h3><table class="table"><tr><th>Test</th><th>Class</th><th>Link</th></tr>${db.tests.filter(t=>!t.class||t.class===s.class||classBand(t.class)===classBand(s.class)).map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.class||'All')}</td><td><a class="btn light" target="_blank" href="${esc(t.link)}">Attend</a> <button class="btn green" onclick="submitOnlineMark('${esc(t._id||'')}')">Submit Mark</button></td></tr>`).join('')||'<tr><td colspan="3">No tests</td></tr>'}</table></div></div><div class="card"><button class="btn" onclick="studentPDFForCurrent()">⬇️ Month PDF</button><button class="btn light" onclick="studentProfileView()">👤 Full Profile</button></div>`}
+function studentHome(){
+  const s=currentStudent,m=monthNow();
+  $('pageTitle').textContent='Student Dashboard';
+  $('content').innerHTML=`
+  <div class="card" style="background:linear-gradient(135deg,#075985,#0ea5e9);color:#fff;border:0">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:32px">👨‍🎓</div>
+      <div><div style="font-size:12px;opacity:.8">WELCOME</div><h2 style="margin:4px 0">${esc(s.name)}</h2><div>Class: <b>${esc(s.class)}</b> &nbsp; • &nbsp; ID: <b>${esc(s.id)}</b></div></div>
+    </div>
+  </div>
+  <div class="toolbar"><div><label>Select Month</label><input id="smMonth" type="month" value="${m}" onchange="renderStudentMonth()"></div></div>
+  <div id="studentMonth"></div>`;
+  renderStudentMonth();
+}
+function renderStudentMonth(){let s=currentStudent,m=$('smMonth').value,a=db.attendance.filter(x=>x.studentId===s.id&&x.date.startsWith(m)),p=calcPaid(s.id,m),pending=calcPending(s.id,m),fs=db.fees.filter(x=>x.studentId===s.id&&x.date.startsWith(m)),marks=db.marks.filter(x=>x.studentId===s.id&&x.date.startsWith(m));$('studentMonth').innerHTML=`<div class="student-cards"><div class="student-card"><div class="sc-icon">📅</div><div class="sc-label">Present</div><div class="sc-value success">${a.filter(x=>x.status==='Present').length}</div></div><div class="student-card"><div class="sc-icon">⚠️</div><div class="sc-label">Absent</div><div class="sc-value danger">${a.filter(x=>x.status==='Absent').length}</div></div><div class="student-card"><div class="sc-icon">💰</div><div class="sc-label">Paid Fee</div><div class="sc-value">${money(p)}</div></div><div class="student-card"><div class="sc-icon">⏳</div><div class="sc-label">Pending Fee</div><div class="sc-value danger">${money(pending)}</div></div></div><div class="analysis-grid"><div class="card"><h3>📅 Attendance — ${m}</h3><table class="table"><tr><th>Date</th><th>Status</th></tr>${a.map(x=>`<tr><td>${x.date}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${x.status}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance</td></tr>'}</table></div><div class="card"><h3>💰 Fee History — ${m}</h3><table class="table"><tr><th>Date</th><th>Type</th><th>Amount</th></tr>${fs.map(x=>`<tr><td>${x.date}</td><td>${x.type}</td><td>${money(x.amount+x.extraAmount)}</td></tr>`).join('')||'<tr><td colspan="3">No fee history</td></tr>'}</table></div><div class="card"><h3>📝 Marks — ${m}</h3><table class="table"><tr><th>Date</th><th>Exam</th><th>Mark</th></tr>${marks.map(x=>`<tr><td>${x.date}</td><td>${esc(x.exam)}</td><td>${x.mark}/${x.total}</td></tr>`).join('')||'<tr><td colspan="3">No marks</td></tr>'}</table></div><div class="card"><h3>🧪 Online Tests</h3><table class="table"><tr><th>Test</th><th>Class</th><th>Link</th></tr>${db.tests.filter(t=>!t.class||t.class===s.class||classBand(t.class)===classBand(s.class)).map(t=>`<tr><td>${esc(t.name)}</td><td>${esc(t.class||'All')}</td><td><a class="btn light" target="_blank" href="${esc(t.link)}">Attend</a> <button class="btn green" onclick="submitOnlineMark('${esc(t._id||'')}')">Submit Mark</button></td></tr>`).join('')||'<tr><td colspan="3">No tests</td></tr>'}</table></div></div><div class="card"><button class="btn" onclick="studentPDFForCurrent()">⬇️ Month PDF</button><button class="btn light" onclick="studentProfileView()">👤 Full Profile</button></div>`}
 function studentPDFForCurrent(){let s=currentStudent;openFeature('reports');setTimeout(()=>{if($('rpStudent'))$('rpStudent').value=s.id;if($('rpMonth'))$('rpMonth').value=$('smMonth')?.value||monthNow();studentPDF()},0)}
 function studentProfileView(){let s=currentStudent;openModal('My Profile',`<p>Name: <b>${esc(s.name)}</b></p><p>ID: <b>${esc(s.id)}</b></p><p>Class: <b>${esc(s.class)}</b></p><p>Mobile: <b>${esc(s.mobile||'-')}</b></p><p>Parent: <b>${esc(s.parent||'-')}</b></p><p>Address: <b>${esc(s.address||'-')}</b></p>`)}
 setRole('teacher');loadSheets();
