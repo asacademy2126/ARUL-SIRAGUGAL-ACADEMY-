@@ -111,6 +111,14 @@ body{background:linear-gradient(135deg,#eef9ff 0%,#f8fbff 45%,#eef7ff 100%)}
 .table tbody tr:nth-child(even){background:#f8fcff}.table tbody tr:hover{background:#e6f7ff;box-shadow:inset 4px 0 0 #0ea5e9}
 .badge.info{background:#dff6ff;color:#075985}.badge.ok{background:#dcfce7;color:#166534}.badge.pending{background:#ffe4e6;color:#be123c}
 .btn{box-shadow:0 4px 10px rgba(7,89,133,.10)}
+
+/* Added only for compact Fee Details + separate Fee Reminder */
+.fee-compact-card{padding-bottom:12px}
+.fee-compact-card .table td,.fee-compact-card .table th{padding:8px 10px}
+.fee-reminder-card{border-top:4px solid #0ea5e9;background:linear-gradient(135deg,#fff,#effaff)}
+.fee-reminder-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.fee-reminder-row .p-a{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:600px){.fee-reminder-row{flex-direction:column;align-items:flex-start}.fee-reminder-row .p-a{justify-content:flex-start;width:100%}}
 </style>
 </head>
 <body>
@@ -181,19 +189,29 @@ function normalize(d){
 
   const old=db.settings||{};
   const msgs=incomingSettings.messages||old.messages||{};
-  db.settings={...old,...incomingSettings,
-    academy:clean(incomingSettings.academy,old.academy||'Arul Siragugal Academy'),
-    teacher:clean(incomingSettings.teacher,old.teacher||'Teacher'),
-    mobile:clean(incomingSettings.mobile,old.mobile),
-    upi:clean(incomingSettings.upi,old.upi),
-    whatsappGroup:clean(incomingSettings.whatsappGroup,old.whatsappGroup),
-    teacherId:clean(incomingSettings.teacherId,old.teacherId||'teacher'),
-    teacherPass:clean(incomingSettings.teacherPass,old.teacherPass||'1234'),
-    adminId:clean(incomingSettings.adminId,old.adminId||'admin'),
-    adminPass:clean(incomingSettings.adminPass,old.adminPass||'admin123'),
+  const keep=(v,fallback='')=>{
+    if(v===undefined||v===null)return fallback;
+    const s=String(v);
+    return s.trim()===''?fallback:s;
+  };
+  db.settings={
+    ...old,
+    ...incomingSettings,
+    academy:keep(incomingSettings.academy,old.academy||'Arul Siragugal Academy'),
+    teacher:keep(incomingSettings.teacher,old.teacher||'Teacher'),
+    mobile:keep(incomingSettings.mobile,old.mobile||''),
+    upi:keep(incomingSettings.upi,old.upi||''),
+    whatsappGroup:keep(incomingSettings.whatsappGroup,old.whatsappGroup||''),
+    teacherId:keep(incomingSettings.teacherId,old.teacherId||'teacher'),
+    teacherPass:keep(incomingSettings.teacherPass,old.teacherPass||'1234'),
+    adminId:keep(incomingSettings.adminId,old.adminId||'admin'),
+    adminPass:keep(incomingSettings.adminPass,old.adminPass||'admin123'),
     fee:Number(incomingSettings.fee??old.fee)||0,
-    messages:{fee:clean(msgs.fee,old.messages?.fee||''),absent:clean(msgs.absent,old.messages?.absent||'')},
-    lastSyncAt:clean(incomingSettings.lastSyncAt,incomingSettings.syncedAt||old.lastSyncAt||''),
+    messages:{
+      fee:keep(msgs.fee,old.messages?.fee||''),
+      absent:keep(msgs.absent,old.messages?.absent||'')
+    },
+    lastSyncAt:keep(incomingSettings.lastSyncAt,incomingSettings.syncedAt||old.lastSyncAt||''),
     sheetsUrl:SHEETS_URL
   };
 
@@ -204,11 +222,19 @@ function normalize(d){
 }
 
 async function getSheetsData(){
-  const actions=['get','getData','read','load'];
+  // Fast path: the deployed Apps Script normally responds to ?action=get.
+  // Keep one fallback only so login does not wait through several sequential requests.
+  const actions=['get','getData'];
   let last='';
   for(const action of actions){
     try{
-      const r=await fetch(SHEETS_URL+'?action='+action+'&_='+Date.now(),{cache:'no-store'});
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),9000);
+      const r=await fetch(SHEETS_URL+'?action='+action+'&_='+Date.now(),{
+        cache:'no-store',
+        signal:controller.signal
+      });
+      clearTimeout(timer);
       const t=await r.text(); last=t;
       let d; try{d=JSON.parse(t)}catch(e){d=null}
       if(d && typeof d==='object' && normalize(d))return d;
@@ -217,43 +243,127 @@ async function getSheetsData(){
   throw new Error(last.slice(0,250)||'No response');
 }
 
+let sheetsLoadingPromise=null;
 async function loadSheets(){
+  if(sheetsLoadingPromise)return sheetsLoadingPromise;
+  sheetsLoadingPromise=(async()=>{
+    setSyncStatus('syncing');
+    $('loading').style.display='block';
+    $('loading').textContent='⏳ Google Sheets data loading...';
+    try{
+      await getSheetsData();
+      loaded=true;
+      setSyncStatus('ok');
+      $('loading').textContent='✅ Google Sheets connected';
+      setTimeout(()=>{$('loading').style.display='none'},500);
+    }catch(e){
+      loaded=false;
+      setSyncStatus('error');
+      $('loading').textContent='❌ Google Sheets connection failed — check Apps Script deployment / URL';
+      console.error(e);
+    }finally{
+      sheetsLoadingPromise=null;
+    }
+  })();
+  return sheetsLoadingPromise;
+}
+
+let syncInProgress=false;
+let syncTimer=null;
+async function syncSheets(silent=false){
+  if(!loaded){if(!silent)alert('Google Sheets data இன்னும் load ஆகவில்லை.');return false;}
+  if(syncInProgress)return true;
+  syncInProgress=true;
   setSyncStatus('syncing');
-  $('loading').style.display='block';
-  $('loading').textContent='⏳ Google Sheets data loading...';
+
+  const settingsSnapshot={
+    academy:String(db.settings?.academy||''),
+    teacher:String(db.settings?.teacher||''),
+    mobile:String(db.settings?.mobile||''),
+    fee:Number(db.settings?.fee||0),
+    adminId:String(db.settings?.adminId||''),
+    adminPass:String(db.settings?.adminPass||''),
+    teacherId:String(db.settings?.teacherId||''),
+    teacherPass:String(db.settings?.teacherPass||''),
+    whatsappGroup:String(db.settings?.whatsappGroup||''),
+    logo:String(db.settings?.logo||''),
+    messages:{
+      fee:String(db.settings?.messages?.fee||''),
+      absent:String(db.settings?.messages?.absent||'')
+    }
+  };
+
+  const payload={
+    source:'Arul Siragugal Academy',
+    syncedAt:new Date().toISOString(),
+    settings:{...settingsSnapshot,sheetsUrl:SHEETS_URL},
+    // Also expose settings at top-level for Apps Script versions that save flat keys.
+    ...settingsSnapshot,
+    students:db.students||[],
+    archivedStudents:db.archivedStudents||[],
+    attendance:db.attendance||[],
+    fees:db.fees||[],
+    marks:db.marks||[],
+    onlineMarks:db.onlineMarks||[],
+    tests:db.tests||[],
+    expenses:db.expenses||[],
+    extraIncome:db.extraIncome||[],
+    auditLogs:db.auditLogs||[],
+    teachers:(db.teachers||[]).map(t=>({...t,
+      allowedClasses:Array.isArray(t.allowedClasses)?t.allowedClasses:t.allowedClasses||[],
+      permissions:t.permissions||{},
+      studentPermission:!!t.permissions?.students,
+      studentsPermission:!!t.permissions?.students,
+      attendancePermission:!!t.permissions?.attendance,
+      feesPermission:!!t.permissions?.fees,
+      marksPermission:!!t.permissions?.marks,
+      onlineTestPermission:!!t.permissions?.onlineTests,
+      permissionJson:JSON.stringify(t.permissions||{})
+    }))
+  };
+
   try{
-    await getSheetsData();
-    loaded=true;
+    let frame=document.getElementById('asaSyncFrame');
+    if(!frame){
+      frame=document.createElement('iframe');
+      frame.id='asaSyncFrame'; frame.name='asaSyncFrame';
+      frame.style.display='none'; document.body.appendChild(frame);
+    }
+    let form=document.getElementById('asaSyncForm');
+    if(!form){
+      form=document.createElement('form');
+      form.id='asaSyncForm'; form.method='POST'; form.target='asaSyncFrame';
+      form.enctype='application/x-www-form-urlencoded';
+      form.style.display='none'; document.body.appendChild(form);
+    }
+    form.action=SHEETS_URL;
+    form.innerHTML='';
+    const input=document.createElement('input');
+    input.type='hidden'; input.name='payload'; input.value=JSON.stringify(payload);
+    form.appendChild(input);
+    form.submit();
+
+    const now=new Date().toISOString();
+    db.settings.lastSyncAt=now;
+    setSyncTime(now);
     setSyncStatus('ok');
-    $('loading').textContent='✅ Google Sheets connected';
-    setTimeout(()=>{$('loading').style.display='none'},900);
+    if(!silent)alert('✅ Google Sheets sync request sent.');
+    return true;
   }catch(e){
-    loaded=false;
     setSyncStatus('error');
-    $('loading').textContent='❌ Google Sheets connection failed — check Apps Script deployment / URL';
-    console.error(e);
+    if(!silent)alert('❌ Google Sheets Sync failed: '+e.message);
+    return false;
+  }finally{
+    syncInProgress=false;
   }
 }
 
-async function syncSheets(silent=false){
-  if(!loaded){if(!silent)alert('Google Sheets data இன்னும் load ஆகவில்லை.');return;}
-  setSyncStatus('syncing');
-  const payload={source:'Arul Siragugal Academy',syncedAt:new Date().toISOString(),settings:{...db.settings,sheetsUrl:SHEETS_URL},students:db.students||[],archivedStudents:db.archivedStudents||[],attendance:db.attendance||[],fees:db.fees||[],marks:db.marks||[],onlineMarks:db.onlineMarks||[],tests:db.tests||[],expenses:db.expenses||[],extraIncome:db.extraIncome||[],auditLogs:db.auditLogs||[],teachers:(db.teachers||[]).map(t=>({...t,allowedClasses:Array.isArray(t.allowedClasses)?t.allowedClasses:t.allowedClasses||[],permissions:t.permissions||{},studentPermission:!!t.permissions?.students,studentsPermission:!!t.permissions?.students,attendancePermission:!!t.permissions?.attendance,feesPermission:!!t.permissions?.fees,marksPermission:!!t.permissions?.marks,onlineTestPermission:!!t.permissions?.onlineTests,permissionJson:JSON.stringify(t.permissions||{})}))};
-  try{
-    let frame=document.getElementById('asaSyncFrame');
-    if(!frame){frame=document.createElement('iframe');frame.id='asaSyncFrame';frame.name='asaSyncFrame';frame.style.display='none';document.body.appendChild(frame)}
-    let form=document.getElementById('asaSyncForm');
-    if(!form){form=document.createElement('form');form.id='asaSyncForm';form.method='POST';form.target='asaSyncFrame';form.enctype='application/x-www-form-urlencoded';form.style.display='none';document.body.appendChild(form)}
-    form.action=SHEETS_URL;
-    form.innerHTML='';
-    const input=document.createElement('input');input.type='hidden';input.name='payload';input.value=JSON.stringify(payload);form.appendChild(input);
-    form.submit();
-    setSyncStatus('ok');
-    if(!silent)alert('✅ Google Sheets sync request sent.');
-  }catch(e){setSyncStatus('error');if(!silent)alert('❌ Google Sheets Sync failed: '+e.message);}
+function save(){
+  clearTimeout(syncTimer);
+  // Coalesce rapid edits into one Google Sheets POST for better speed.
+  syncTimer=setTimeout(()=>syncSheets(true),80);
 }
 
-function save(){syncSheets(true)}
 function openModal(t,b){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modal').classList.remove('hidden')}
 function closeModal(){$('modal').classList.add('hidden')}
 function loginAdmin(){const id=$('adminId').value.trim(),p=String($('adminPass').value||'').trim();const sid=String(db.settings.adminId||'admin').trim(),sp=String(db.settings.adminPass||'admin123').trim();if(id===sid&&p===sp)enter('admin');else $('loginMsg').textContent='Admin ID / Password Google Sheets-ல் உள்ள value-க்கு match ஆகவில்லை.'}
@@ -294,8 +404,112 @@ function markAtt(id,date,status){if(role==='teacher'&&currentTeacher?.permission
 function waPhone(p){let n=String(p||'').replace(/\D/g,'');return n.length===10?'91'+n:n}
 function fillAbsent(s){return db.settings.messages.absent.replaceAll('{student}',s.name).replaceAll('{academy}',db.settings.academy).replaceAll('{date}',new Date().toLocaleDateString('en-IN'))}
 
-function feesPage(){let m=monthNow(),cls=[...new Set(groupStudents().map(s=>s.class).filter(Boolean))].sort();$('content').innerHTML=`<div class="card"><div class="toolbar"><div><label>Month</label><input id="feeMonth" type="month" value="${m}" onchange="renderFees()"></div><div><label>Class</label><select id="feeClass" onchange="renderFees()"><option value="">All Classes</option>${cls.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div><button class="btn" onclick="feeForm()">➕ Add Payment</button><button class="btn amber" onclick="extraForm()">➕ Extra Fee</button></div><div id="feeBox"></div></div>`;renderFees()}
-function renderFees(){let m=$('feeMonth').value,c=$('feeClass').value,ss=groupStudents().filter(s=>!c||s.class===c);let paid=ss.reduce((a,s)=>a+calcPaid(s.id,m),0),pending=ss.reduce((a,s)=>a+calcPending(s.id,m),0),extraPending=ss.reduce((a,s)=>a+calcExtraPending(s.id,m),0),extraPaid=ss.reduce((a,s)=>a+calcExtraPaid(s.id,m),0);const groupFeeSummary=['LKG-5','6-8'].map(g=>{const gs=db.students.filter(s=>classBand(s.class)===g&&(role!=='teacher'||teacherCanClass(s.class)));return {g,n:gs.length,paid:gs.reduce((a,s)=>a+calcPaid(s.id,m),0),pending:gs.reduce((a,s)=>a+calcPending(s.id,m),0),extraPending:gs.reduce((a,s)=>a+calcExtraPending(s.id,m),0)};});$('feeBox').innerHTML=`<div class="cards"><div class="stat"><div class="label">Students</div><div class="value">${ss.length}</div></div>${role==='admin'?`<div class="stat"><div class="label">Tuition Paid</div><div class="value success">${money(paid)}</div></div><div class="stat"><div class="label">Tuition Pending</div><div class="value danger">${money(pending)}</div></div><div class="stat"><div class="label">Extra Fee Pending</div><div class="value danger">${money(extraPending)}</div></div>`:''}</div><div class="card"><h3 style="margin-top:0">📊 Group-wise Fees Summary — ${m}</h3><div class="table-wrap"><table class="table"><tr><th>Group</th><th>Students</th><th>Tuition Paid</th><th>Tuition Pending</th><th>Extra Pending</th></tr>${groupFeeSummary.map(x=>`<tr><td><b>${groupLabel(x.g)}</b></td><td>${x.n}</td><td class="success"><b>${money(x.paid)}</b></td><td class="danger"><b>${money(x.pending)}</b></td><td class="danger"><b>${money(x.extraPending)}</b></td></tr>`).join('')}</table></div></div><div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Monthly Tuition</th><th>Extra Fee Pending</th><th>Tuition Paid</th><th>Tuition Pending</th><th>Last Collected By</th><th>Action</th></tr>${ss.map(s=>{let p=calcPaid(s.id,m),ep=calcExtraPending(s.id,m),pen=calcPending(s.id,m);return `<tr><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${money(s.monthlyFee)}</td><td><span class="badge ${ep?'pending':'ok'}">${money(ep)}</span></td><td>${money(p)}</td><td><span class="badge ${pen?'pending':'ok'}">${money(pen)}</span></td><td>${esc((db.fees.filter(f=>f.studentId===s.id&&String(f.date).startsWith(m)).slice().sort((a,b)=>String(b.updatedAt||b.date).localeCompare(String(a.updatedAt||a.date)))[0]||{}).teacherName||'-')}</td><td>${pen?`<button class="btn green" onclick="feeForm('${esc(s.id)}')">💳 Tuition Paid</button>`:''} ${ep?`<button class="btn amber" onclick="extraPaymentForm('${esc(s.id)}')">💳 Extra Paid</button>`:''} ${(pen||ep)&&s.mobile?`<a class="btn light" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent(fillFee(s,pen,ep))}">💬 Reminder</a> <a class="btn light" target="_blank" href="sms:${esc(s.mobile)}?body=${encodeURIComponent(fillFee(s,pen,ep))}">💬 SMS</a>`:''} <button class="btn light" onclick="studentFeeHistory('${esc(s.id)}')">History</button></td></tr>`}).join('')||'<tr><td colspan="8">Students இல்லை.</td></tr>'}</table></div>`}
+function feesPage(){
+  let m=monthNow(),cls=[...new Set(groupStudents().map(s=>s.class).filter(Boolean))].sort();
+  $('content').innerHTML=`<div class="card">
+    <div class="toolbar">
+      <div><label>Month</label><input id="feeMonth" type="month" value="${m}" onchange="renderFees()"></div>
+      <div><label>Class</label><select id="feeClass" onchange="renderFees()"><option value="">All Classes</option>${cls.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+      <button class="btn" onclick="feeForm()">➕ Add Payment</button>
+      <button class="btn amber" onclick="extraForm()">➕ Extra Fee</button>
+    </div>
+    <div id="feeBox"></div>
+  </div>`;
+  renderFees();
+}
+
+function renderFees(){
+  let m=$('feeMonth').value,c=$('feeClass').value;
+  let ss=groupStudents().filter(s=>!c||s.class===c);
+  let paid=ss.reduce((a,s)=>a+calcPaid(s.id,m),0);
+  let pending=ss.reduce((a,s)=>a+calcPending(s.id,m),0);
+  let pendingStudents=ss.filter(s=>calcPending(s.id,m)>0);
+
+  $('feeBox').innerHTML=`
+    <div class="cards">
+      <div class="stat"><div class="label">Students</div><div class="value">${ss.length}</div></div>
+      <div class="stat stat-click" onclick="showFeePendingStudents()"><div class="label">Pending Students</div><div class="value danger">${pendingStudents.length}</div></div>
+      <div class="stat stat-click" onclick="showFeePendingStudents()"><div class="label">Total Pending</div><div class="value danger">${money(pending)}</div></div>
+    </div>
+
+    <div class="card fee-compact-card">
+      <h3 style="margin-top:0">💰 Fee Details — ${m}</h3>
+      <div class="notice mini">Student name-ஐ click செய்தால் அந்த student-ன் முழு fee details வரும்.</div>
+      <div class="table-wrap"><table class="table">
+        <tr><th>Student</th><th>Class</th><th>Pending</th></tr>
+        ${ss.map(s=>{
+          const pen=calcPending(s.id,m);
+          return `<tr onclick="studentFeeDetails('${esc(s.id)}','${m}')" style="cursor:pointer">
+            <td><button class="btn light" onclick="event.stopPropagation();studentFeeDetails('${esc(s.id)}','${m}')">${esc(s.name)}</button></td>
+            <td>${esc(s.class||'-')}</td>
+            <td><span class="badge ${pen?'pending':'ok'}">${money(pen)}</span></td>
+          </tr>`;
+        }).join('')||'<tr><td colspan="3">Students இல்லை.</td></tr>'}
+      </table></div>
+    </div>
+
+    <div class="card fee-reminder-card">
+      <div class="section-title"><span>📲</span><div><h3 style="margin:0">Fee Reminder</h3><small class="muted">Attendance-ல் Absent Reminder இருப்பது போல Fees-க்கு தனி Reminder</small></div></div>
+      <div id="feeReminderBox"></div>
+    </div>`;
+  renderFeeReminders();
+}
+
+function renderFeeReminders(){
+  const m=$('feeMonth')?.value||monthNow(),c=$('feeClass')?.value||'';
+  const rows=groupStudents().filter(s=>(!c||String(s.class)===c)&&calcPending(s.id,m)>0);
+  const box=$('feeReminderBox'); if(!box)return;
+  box.innerHTML=rows.map(s=>{
+    const pen=calcPending(s.id,m);
+    return `<div class="notice fee-reminder-row">
+      <div><b>${esc(s.name)}</b> — ${esc(s.class||'-')}<br><small class="danger">Pending: ${money(pen)}</small></div>
+      <div class="p-a">
+        ${s.mobile?`<a class="btn light" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent(fillFee(s,pen,0))}">💬 WhatsApp</a><a class="btn light" target="_blank" href="sms:${esc(s.mobile)}?body=${encodeURIComponent(fillFee(s,pen,0))}">💬 SMS</a>`:'<span class="muted mini">Mobile இல்லை</span>'}
+        <button class="btn light" onclick="studentFeeDetails('${esc(s.id)}','${m}')">Details</button>
+      </div>
+    </div>`;
+  }).join('')||'<span class="muted">இந்த month-க்கு pending fee students இல்லை.</span>';
+}
+
+window.showFeePendingStudents=function(){
+  const m=$('feeMonth')?.value||monthNow(),c=$('feeClass')?.value||'';
+  const rows=groupStudents().filter(s=>(!c||String(s.class)===c)&&calcPending(s.id,m)>0);
+  openModal('💰 Pending Fee Students — '+m,`
+    <div class="notice"><b>Pending Students: ${rows.length}</b><br>Total Pending: <b class="danger">${money(rows.reduce((a,s)=>a+calcPending(s.id,m),0))}</b></div>
+    <div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Pending</th></tr>
+    ${rows.map(s=>`<tr><td><button class="btn light" onclick="studentFeeDetails('${esc(s.id)}','${m}')">${esc(s.name)}</button></td><td>${esc(s.class||'-')}</td><td class="danger"><b>${money(calcPending(s.id,m))}</b></td></tr>`).join('')||'<tr><td colspan="3">No pending students</td></tr>'}
+    </table></div>`);
+};
+
+window.studentFeeDetails=function(id,m){
+  const s=db.students.find(x=>String(x.id)===String(id));
+  if(!s)return;
+  m=m||monthNow();
+  const paid=calcPaid(id,m),discount=calcDiscount(id,m),pending=calcPending(id,m);
+  const extra=calcExtra(id,m),extraPaid=calcExtraPaid(id,m),extraPending=calcExtraPending(id,m);
+  const rows=db.fees.map((x,i)=>({...x,_i:i})).filter(x=>String(x.studentId)===String(id)&&String(x.date).startsWith(m)).slice().reverse();
+  openModal('💰 Fee Details — '+s.name,`
+    <div class="cards">
+      <div class="stat"><div class="label">Monthly Fee</div><div class="value">${money(s.monthlyFee)}</div></div>
+      <div class="stat"><div class="label">Paid</div><div class="value success">${money(paid)}</div></div>
+      <div class="stat"><div class="label">Pending</div><div class="value danger">${money(pending)}</div></div>
+    </div>
+    <div class="notice">
+      <b>👨‍🎓 ${esc(s.name)}</b> — ${esc(s.class||'-')}<br>
+      Monthly Fee: <b>${money(s.monthlyFee)}</b> &nbsp; Paid: <b class="success">${money(paid)}</b> &nbsp; Discount: <b>${money(discount)}</b> &nbsp; Pending: <b class="danger">${money(pending)}</b><br>
+      Extra Fee: <b>${money(extra)}</b> &nbsp; Extra Paid: <b>${money(extraPaid)}</b> &nbsp; Extra Pending: <b class="danger">${money(extraPending)}</b>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+      ${pending&&s.mobile?`<a class="btn light" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent(fillFee(s,pending,0))}">💬 Fee Reminder</a>`:''}
+      ${pending?`<button class="btn green" onclick="closeModal();feeForm('${esc(s.id)}')">💳 Add Payment</button>`:''}
+      ${extraPending?`<button class="btn amber" onclick="closeModal();extraPaymentForm('${esc(s.id)}')">💳 Extra Payment</button>`:''}
+    </div>
+    <h4>📋 ${m} Fee History</h4>
+    <div class="table-wrap"><table class="table"><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th><th>Discount</th><th>Amount</th><th>Action</th></tr>
+    ${rows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.type)}</td><td>${esc(x.extraType||'Monthly Fee')}</td><td>${money(x.amount||0)}</td><td>${money(x.discount||0)}</td><td>${money((x.amount||0)+(x.extraAmount||0))}</td><td><button class="btn light" onclick="editFeeRecord(${x._i})">✏️ Edit</button><button class="btn red" onclick="deleteFeeRecord(${x._i},'${esc(id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="7">No fee history</td></tr>'}
+    </table></div>`);
+};
+
 function fillFee(s,a,extraPending=0){let amount=Number(a||0)+Number(extraPending||0);return db.settings.messages.fee.replaceAll('{student}',s.name).replaceAll('{amount}',amount).replaceAll('{academy}',db.settings.academy).replaceAll('{date}',new Date().toLocaleDateString('en-IN'))}
 function feeForm(id=''){let m=$('feeMonth')?.value||monthNow();openModal('Record Tuition Fee Payment',`<label>Student</label><select id="feeStudent">${groupStudents().map(s=>`<option value="${esc(s.id)}" ${s.id===id?'selected':''}>${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select><div class="two"><div><label>Paid Tuition Amount</label><input id="feeAmount" type="number"></div><div><label>Discount Amount</label><input id="feeDiscount" type="number" value="0" min="0"></div></div><div class="notice mini">This payment is only for Tuition Fee. Extra Fees are separate.</div><label>Date</label><input id="feeDate" type="date" value="${today()}"><br><button class="btn green" style="width:100%" onclick="saveFee()">Save Tuition Payment</button>`)}
 function saveFee(){if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');let id=$('feeStudent').value,a=Number($('feeAmount').value),discount=Number($('feeDiscount').value)||0,d=$('feeDate').value;if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');let pendingBefore=calcPending(id,d.slice(0,7));if(a+discount>pendingBefore)return alert('Tuition Paid + Discount amount pending-ஐ விட அதிகமாக இருக்க முடியாது.');const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||''); db.fees.push({studentId:id,amount:a,discount,extraAmount:0,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor}); addAudit('Fees','Save',id,`Payment ₹${a} • ${d}`);closeModal();feesPage();save()}
@@ -429,7 +643,7 @@ loadSheets();
   window.setSyncTime=function(iso){const el=$('syncTime');if(!el)return;if(!iso){el.textContent='';return}const d=new Date(iso);el.textContent='🕒 '+(isNaN(d.getTime())?String(iso):d.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}));};
   const originalSyncSheets=window.syncSheets;
   window.syncSheets=async function(silent=false){db.settings=db.settings||{};const now=new Date().toISOString();db.settings.lastSyncAt=now;setSyncTime(now);return originalSyncSheets(silent);};
-  setInterval(()=>{if(loaded&&document.visibilityState!=='hidden')loadSheets();},30000);
+  setInterval(()=>{if(loaded&&document.visibilityState!=='hidden'&&!sheetsLoadingPromise&&!syncInProgress)loadSheets();},120000);
   
   function allGroupSummary(){
     return ['LKG-5','6-8'].map(g=>{
@@ -697,7 +911,36 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     if(role!=='admin')return alert('Admin only');let m=db.settings.messages||{};$('content').innerHTML=`<div class="card"><h3>⚙️ Admin Settings</h3><div class="two"><div><label>Academy Name</label><input id="sa" value="${esc(db.settings.academy)}"></div><div><label>Academy Logo URL</label><input id="slogo" value="${esc(db.settings.logo||'')}" placeholder="https://.../logo.png"><input id="slogoFile" type="file" accept="image/*" style="margin-top:7px"><small class="muted">URL அல்லது image upload. Save செய்ததும் login + dashboard logo update ஆகும்.</small></div><div><label>Teacher Name</label><input id="st" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="sm" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="sf" type="number" value="${db.settings.fee}"></div><div><label>Admin ID</label><input id="sid" value="${esc(db.settings.adminId)}"></div><div><label>Admin Password</label><input id="sp" type="password" value="${esc(db.settings.adminPass)}"></div><div><label>Teacher ID</label><input id="tid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="tp" value="${esc(db.settings.teacherPass)}"></div><div><label>WhatsApp Group Link</label><input id="wg" value="${esc(db.settings.whatsappGroup||'')}" placeholder="https://chat.whatsapp.com/..."> </div></div><label>Fee Reminder Message</label><textarea id="fm">${esc(m.fee||'')}</textarea><label>Absent Reminder Message</label><textarea id="am">${esc(m.absent||'')}</textarea><br><button class="btn" onclick="saveSettings()">💾 Save & Sync</button><button class="btn light" onclick="loadSheets()">↻ Reload Sheets</button></div><div class="card"><b>Database:</b> Google Sheets only. Browser localStorage is not used for student/attendance/fee/marks data.</div>`;
   };
 
-  window.saveSettings=async function(){const file=$('slogoFile')?.files?.[0];let logo=$('slogo')?.value.trim()||'';if(file){if(file.size>1500000)return alert('Logo image 1.5MB-க்கு கீழே இருக்க வேண்டும்.');logo=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)});}$('slogo').value=logo;db.settings={...db.settings,academy:$('sa').value,teacher:$('st').value,mobile:$('sm').value,fee:Number($('sf').value)||0,adminId:$('sid').value,adminPass:$('sp').value,teacherId:$('tid').value,teacherPass:$('tp').value,whatsappGroup:$('wg').value,logo,messages:{fee:$('fm').value,absent:$('am').value}};applySettings();save();alert('Settings saved to Google Sheets')};
+  window.saveSettings=async function(){
+  const file=$('slogoFile')?.files?.[0];
+  let logo=$('slogo')?.value.trim()||'';
+  if(file){
+    if(file.size>1500000)return alert('Logo image 1.5MB-க்கு கீழே இருக்க வேண்டும்.');
+    logo=await new Promise((resolve,reject)=>{
+      const r=new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file);
+    });
+  }
+  const feeMsg=$('fm').value;
+  const absentMsg=$('am').value;
+  db.settings={
+    ...db.settings,
+    academy:$('sa').value.trim(),
+    teacher:$('st').value.trim(),
+    mobile:$('sm').value.trim(),
+    fee:Number($('sf').value)||0,
+    adminId:$('sid').value.trim(),
+    adminPass:String($('sp').value||'').trim(),
+    teacherId:$('tid').value.trim(),
+    teacherPass:String($('tp').value||'').trim(),
+    whatsappGroup:$('wg').value.trim(),
+    logo,
+    messages:{fee:feeMsg,absent:absentMsg}
+  };
+  applySettings();
+  await syncSheets(true);
+  setSyncTime(db.settings.lastSyncAt);
+  alert('✅ Settings saved. Google Sheets sync request sent.\n\nஇந்த settings-ஐ நீங்கள் மாற்றும் வரை app மீண்டும் தானாக மாற்றாது.');
+};
 
   setSyncTime(db.settings?.lastSyncAt);
 })();
