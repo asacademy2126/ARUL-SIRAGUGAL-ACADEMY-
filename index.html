@@ -244,12 +244,12 @@ async function getSheetsData(){
   // instead of immediately showing a sync error on a temporary network delay.
   const actions=['get','getData'];
   let last='';
-  for(let attempt=0;attempt<4;attempt++){
+  for(let attempt=0;attempt<3;attempt++){
     for(const action of actions){
       let controller=null,timer=null;
       try{
         controller=new AbortController();
-        timer=setTimeout(()=>controller.abort(),12000);
+        timer=setTimeout(()=>controller.abort(),7000);
         const url=SHEETS_URL+'?action='+encodeURIComponent(action)+'&_='+Date.now()+'_'+attempt;
         const r=await fetch(url,{method:'GET',cache:'no-store',redirect:'follow',signal:controller.signal,headers:{'Accept':'application/json,text/plain,*/*'}});
         const t=await r.text(); last=t;
@@ -259,7 +259,7 @@ async function getSheetsData(){
       }catch(e){last=e?.name==='AbortError'?'Request timeout':String(e?.message||e)}
       finally{if(timer)clearTimeout(timer)}
     }
-    if(attempt<3)await new Promise(r=>setTimeout(r,Math.min(1200*(attempt+1),3000)));
+    if(attempt<2)await new Promise(r=>setTimeout(r,Math.min(500*(attempt+1),1200)));
   }
   throw new Error(last.slice(0,250)||'Google Sheets did not return valid data');
 }
@@ -356,9 +356,14 @@ async function syncSheets(silent=false){
 function save(){
   syncPending=true;
   clearTimeout(syncTimer);
-  // Coalesce rapid edits into one request; this prevents overlapping POSTs and speeds up the UI.
-  syncTimer=setTimeout(()=>syncSheets(true),450);
+  // Immediate/near-immediate queue; the 1-second background sync below sends it.
+  syncTimer=setTimeout(()=>syncSheets(true),80);
 }
+// Auto-sync queue: check every second, but only send when data actually changed.
+// This avoids duplicate writes while keeping Google Sheets almost real-time.
+setInterval(()=>{
+  if(loaded && syncPending && !syncInProgress) syncSheets(true);
+},1000);
 
 function openModal(t,b){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modal').classList.remove('hidden')}
 function closeModal(){$('modal').classList.add('hidden')}
@@ -1150,7 +1155,16 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
       $('feeTransferBox').style.display='block';
       const months=[];
       for(let i=1;i<=24;i++)months.push(monthAdd(source,i));
-      $('feeTransferBox').innerHTML=`<label>Transfer to Month</label><select id="feeTargetMonth" onchange="refreshFeePayInfo()">${months.map(m=>`<option value="${m}">${m}</option>`).join('')}</select>`;
+      if(!$('feeTargetMonth')){
+        $('feeTransferBox').innerHTML=`<label>Transfer to Month</label><select id="feeTargetMonth" onchange="refreshFeePayInfo()"></select>`;
+        const sel=$('feeTargetMonth');
+        for(let i=1;i<=24;i++){const m=monthAdd(source,i);const op=document.createElement('option');op.value=m;op.textContent=m;sel.appendChild(op);}
+        sel.value=monthAdd(source,1);
+      }else{
+        const sel=$('feeTargetMonth'),old=sel.value;
+        if(!sel.options.length){for(let i=1;i<=24;i++){const m=monthAdd(source,i);const op=document.createElement('option');op.value=m;op.textContent=m;sel.appendChild(op);}}
+        if(old)sel.value=old;
+      }
       const target=$('feeTargetMonth')?.value||monthAdd(source,1),pending=Math.max(0,Number(calcPending(id,source)||0)),existing=Math.max(0,Number(calcPending(id,target)||0));
       $('feePayInfo').innerHTML=`<b>${source} Pending → ${target}</b><div class="pending-breakdown" style="margin-top:8px"><div>${source} Pending<br><b class="danger">${money(pending)}</b></div><div>${target} Existing Pending<br><b>${money(existing)}</b></div><div>${target} After Transfer<br><b class="danger">${money(existing+pending)}</b></div></div>`;
       if($('feeAmount')&&(!Number($('feeAmount').value)||Number($('feeAmount').value)>pending))$('feeAmount').value=pending||'';
@@ -1208,7 +1222,16 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     if(action==='transfer'){
       $('extraTransferBox').style.display='block';
       const months=[];for(let i=1;i<=24;i++)months.push(monthAdd(source,i));
-      $('extraTransferBox').innerHTML=`<label>Transfer to Month</label><select id="extraTargetMonth" onchange="refreshExtraTransferInfo()">${months.map(m=>`<option value="${m}">${m}</option>`).join('')}</select>`;
+      if(!$('extraTargetMonth')){
+        $('extraTransferBox').innerHTML=`<label>Transfer to Month</label><select id="extraTargetMonth" onchange="refreshExtraTransferInfo()"></select>`;
+        const sel=$('extraTargetMonth');
+        for(let i=1;i<=24;i++){const m=monthAdd(source,i);const op=document.createElement('option');op.value=m;op.textContent=m;sel.appendChild(op);}
+        sel.value=monthAdd(source,1);
+      }else{
+        const sel=$('extraTargetMonth'),old=sel.value;
+        if(!sel.options.length){for(let i=1;i<=24;i++){const m=monthAdd(source,i);const op=document.createElement('option');op.value=m;op.textContent=m;sel.appendChild(op);}}
+        if(old)sel.value=old;
+      }
       const target=$('extraTargetMonth')?.value||monthAdd(source,1),pending=Math.max(0,Number(calcExtraPending(id||'',source)||0)),existing=Math.max(0,Number(calcExtraPending(id||'',target)||0));
       $('extraPayInfo').innerHTML=`${source} Extra Pending: <b>${money(pending)}</b><br>${target} Existing: <b>${money(existing)}</b><br>${target} After Transfer: <b>${money(existing+amount)}</b>`;
     }else{
