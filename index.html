@@ -120,6 +120,21 @@ body{background:linear-gradient(135deg,#eef9ff 0%,#f8fbff 45%,#eef7ff 100%)}
 .fee-reminder-row .p-a{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:600px){.fee-reminder-row{flex-direction:column;align-items:flex-start}.fee-reminder-row .p-a{justify-content:flex-start;width:100%}}
 </style>
+<style>
+/* vNext requested upgrades */
+.student-portal-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.student-portal-card{border-radius:20px;padding:18px;min-height:125px;cursor:pointer;border:1px solid #cceaf4;box-shadow:0 10px 24px rgba(7,89,133,.10);transition:.18s}
+.student-portal-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(7,89,133,.16)}
+.student-portal-card.att{background:linear-gradient(135deg,#effcf8,#d1fae5);border-top:4px solid #14b8a6}
+.student-portal-card.fee{background:linear-gradient(135deg,#eff8ff,#dbeafe);border-top:4px solid #0ea5e9}
+.student-portal-card.mark{background:linear-gradient(135deg,#f7f3ff,#ede9fe);border-top:4px solid #8b5cf6}
+.student-portal-card .big{font-size:28px}.student-portal-card b{display:block;margin-top:8px;font-size:17px}.student-portal-card small{display:block;margin-top:4px;color:#64748b}
+.portal-section{scroll-margin-top:12px}
+.receipt-box{background:linear-gradient(135deg,#f0fdf4,#ecfeff);border:1px solid #a7f3d0;border-radius:16px;padding:14px}
+.pending-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.pending-breakdown>div{padding:10px;border-radius:12px;background:#f8fbff;border:1px solid #dbeafe}
+@media(max-width:700px){.student-portal-cards{grid-template-columns:1fr}.pending-breakdown{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div id="login" class="login"><div class="login-card">
@@ -991,6 +1006,336 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
 
   setSyncTime(db.settings?.lastSyncAt);
 })();
+
+/* ===== Requested vNext functional upgrades ===== */
+(function(){
+  const VDEFAULT_SUBJECTS=['Maths','English','Tamil','Science','Social Science'];
+  const escH=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+  function ymOfDate(d){return String(d||'').slice(0,7)}
+  function joinMonth(s){
+    return String(s?.joinMonth||s?.admissionMonth||s?.joinedMonth||s?.joiningMonth||'').slice(0,7);
+  }
+  function studentActiveForMonth(s,m){
+    const j=joinMonth(s);
+    return !j || String(m)>=j;
+  }
+  function monthAdd(m,n){
+    let [y,mo]=String(m).split('-').map(Number); if(!y||!mo)return m;
+    const d=new Date(y,mo-1+n,1); return d.toISOString().slice(0,7);
+  }
+  function monthsFromTo(a,b){
+    const out=[]; let x=a; let guard=0;
+    while(x<=b&&guard++<240){out.push(x);x=monthAdd(x,1)}
+    return out;
+  }
+  function tuitionDueForMonth(id,m){
+    const s=db.students.find(x=>String(x.id)===String(id))||db.archivedStudents?.find(x=>String(x.id)===String(id));
+    if(!s||!studentActiveForMonth(s,m))return 0;
+    return Math.max(0,Number(s.monthlyFee||0));
+  }
+  function tuitionDueThrough(id,m){
+    const s=db.students.find(x=>String(x.id)===String(id))||db.archivedStudents?.find(x=>String(x.id)===String(id));
+    if(!s)return 0;
+    let start=joinMonth(s)||String(db.settings?.feeStartMonth||m);
+    if(start>m)return 0;
+    return monthsFromTo(start,m).reduce((sum,x)=>sum+tuitionDueForMonth(id,x),0);
+  }
+  function tuitionPaidThrough(id,m){
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='Payment'&&ymOfDate(f.date)<=m)
+      .reduce((a,f)=>a+Number(f.amount||0)+Number(f.discount||0),0);
+  }
+  function cumulativeTuitionPending(id,m){
+    return Math.max(0,tuitionDueThrough(id,m)-tuitionPaidThrough(id,m));
+  }
+  function previousTuitionPending(id,m){
+    const prev=monthAdd(m,-1);
+    return cumulativeTuitionPending(id,prev);
+  }
+  function currentMonthTuitionPending(id,m){
+    return Math.max(0,cumulativeTuitionPending(id,m)-previousTuitionPending(id,m));
+  }
+  function pendingInfo(id,m){
+    const prev=previousTuitionPending(id,m);
+    const cur=currentMonthTuitionPending(id,m);
+    const extra=typeof calcExtraPending==='function'?calcExtraPending(id,m):0;
+    return {previous:prev,current:cur,tuition:prev+cur,extra,total:prev+cur+extra};
+  }
+  window.tuitionDueForMonth=tuitionDueForMonth;
+  window.cumulativeTuitionPending=cumulativeTuitionPending;
+  window.pendingInfo=pendingInfo;
+
+  /* Override tuition pending calculations so previous dues roll forward into current month. */
+  window.calcPending=function(id,m){return pendingInfo(id,m).tuition};
+  window.calcTotalPending=function(id,m){return pendingInfo(id,m).total};
+
+  /* New student: admission month is the first billable month. Never create previous-month dues. */
+  window.studentForm=function(id=''){
+    const s=db.students.find(x=>String(x.id)===String(id))||{
+      id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234',joinMonth:monthNow()
+    };
+    openModal(id?'Edit Student':'Add Student',`
+      <div class="two">
+        <div><label>Student ID</label><input id="fId" value="${escH(s.id)}" ${id?'readonly':''}></div>
+        <div><label>Password</label><input id="fPass" value="${escH(s.password)}"></div>
+      </div>
+      <label>Name</label><input id="fName" value="${escH(s.name)}">
+      <div class="two">
+        <div><label>Class</label><input id="fClass" value="${escH(s.class)}"></div>
+        <div><label>Mobile</label><input id="fMobile" value="${escH(s.mobile)}"></div>
+        <div><label>Parent</label><input id="fParent" value="${escH(s.parent||'')}"></div>
+        <div><label>Monthly Fee</label><input id="fFee" type="number" value="${Number(s.monthlyFee||0)}"></div>
+      </div>
+      <label>Admission / Billing Start Month</label>
+      <input id="fJoinMonth" type="month" value="${escH(joinMonth(s)||monthNow())}">
+      <small class="muted">Student fee starts only from this month. Previous months will not be charged.</small>
+      <label>Address</label><input id="fAddress" value="${escH(s.address||'')}">
+      <br><button class="btn" style="width:100%" onclick="saveStudent('${escH(id)}')">💾 Save Student</button>
+    `);
+  };
+  window.saveStudent=function(old){
+    let id=$('fId').value.trim(),name=$('fName').value.trim();
+    if(!id||!name)return alert('Student ID மற்றும் Name தேவை');
+    if(!old&&db.students.some(s=>String(s.id)===id))return alert('Student ID already exists');
+    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher');
+    const o={
+      id,name,class:$('fClass').value.trim(),mobile:$('fMobile').value.trim(),
+      parent:$('fParent').value.trim(),address:$('fAddress').value.trim(),
+      monthlyFee:Number($('fFee').value)||0,password:$('fPass').value||'1234',
+      joinMonth:$('fJoinMonth').value||monthNow(),admissionMonth:$('fJoinMonth').value||monthNow(),
+      updatedAt:new Date().toISOString(),lastUpdatedBy:actor
+    };
+    if(old){
+      const idx=db.students.findIndex(s=>String(s.id)===String(old)); if(idx>=0)db.students[idx]={...db.students[idx],...o};
+    }else db.students.push(o);
+    if(typeof addAudit==='function')addAudit('Students',old?'Update':'Add',id,`${name} • Class ${o.class||'-'}`);
+    closeModal();studentsPage();save();
+  };
+
+  /* Payment allocation: oldest pending month first, then current month. */
+  window.feeForm=function(id=''){
+    const m=$('feeMonth')?.value||monthNow();
+    const options=groupStudents().filter(s=>studentActiveForMonth(s,m));
+    const chosen=db.students.find(s=>String(s.id)===String(id));
+    openModal('Record Tuition Fee Payment',`
+      <label>Student</label><select id="feeStudent">
+      ${options.map(s=>`<option value="${escH(s.id)}" ${String(s.id)===String(id)?'selected':''}>${escH(s.name)} — ${escH(s.class||'')}</option>`).join('')}
+      </select>
+      <div id="feePayInfo" class="notice"></div>
+      <div class="two">
+        <div><label>Paid Tuition Amount</label><input id="feeAmount" type="number" min="0" oninput="refreshFeePayInfo()"></div>
+        <div><label>Discount Amount</label><input id="feeDiscount" type="number" value="0" min="0" oninput="refreshFeePayInfo()"></div>
+      </div>
+      <label>Date</label><input id="feeDate" type="date" value="${today()}" onchange="refreshFeePayInfo()">
+      <div class="notice mini">Payment will be adjusted <b>Previous Month Pending first → Current Month</b>. Extra Fee is separate.</div>
+      <button class="btn green" style="width:100%" onclick="saveFee()">💾 Save Payment</button>
+    `);
+    $('feeStudent').addEventListener('change',refreshFeePayInfo); refreshFeePayInfo();
+  };
+  window.refreshFeePayInfo=function(){
+    const id=$('feeStudent')?.value,m=ymOfDate($('feeDate')?.value)||($('feeMonth')?.value||monthNow());
+    if(!id||!$('feePayInfo'))return;
+    const pi=pendingInfo(id,m);
+    $('feePayInfo').innerHTML=`<b>Pending before payment</b><div class="pending-breakdown" style="margin-top:8px">
+      <div>Previous Pending<br><b class="danger">${money(pi.previous)}</b></div>
+      <div>Current Month<br><b class="danger">${money(pi.current)}</b></div>
+      <div>Total Tuition<br><b class="danger">${money(pi.tuition)}</b></div>
+    </div>`;
+  };
+
+  function paymentReceiptText(s,row,info){
+    return `${db.settings.academy||'Academy'}\n🧾 FEE PAYMENT RECEIPT\nStudent: ${s.name}\nClass: ${s.class||'-'}\nDate: ${row.date}\nPaid: ₹${Number(row.amount||0)}\nDiscount: ₹${Number(row.discount||0)}\nPrevious Pending Paid First: ₹${info.previousPaid||0}\nCurrent Month Adjusted: ₹${info.currentPaid||0}\nRemaining Tuition Pending: ₹${pendingInfo(s.id,row.date.slice(0,7)).tuition}\nTotal Pending (Tuition + Extra): ₹${pendingInfo(s.id,row.date.slice(0,7)).total}\nThank you.`;
+  }
+  function showPaidReceipt(s,row,info){
+    const text=paymentReceiptText(s,row,info);
+    const phone=s.mobile?waPhone(s.mobile):'';
+    openModal('🧾 Paid Fee Bill',`<div class="receipt-box"><h3 style="margin-top:0">Payment Successful</h3><p><b>${escH(s.name)}</b> — ${escH(s.class||'-')}</p><p>Paid: <b class="success">${money(row.amount)}</b> &nbsp; Discount: <b>${money(row.discount||0)}</b></p><p>Previous Pending First: <b>${money(info.previousPaid||0)}</b><br>Current Month Adjusted: <b>${money(info.currentPaid||0)}</b></p><p>Remaining Pending: <b class="danger">${money(pendingInfo(s.id,row.date.slice(0,7)).total)}</b></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    ${phone?`<a class="btn green" target="_blank" href="https://wa.me/${phone}?text=${encodeURIComponent(text)}">💬 WhatsApp Paid Bill</a><a class="btn light" href="sms:${escH(s.mobile)}?body=${encodeURIComponent(text)}">✉️ SMS Paid Bill</a>`:'<span class="muted">Student mobile number not set.</span>'}</div></div>`);
+  }
+  window.saveFee=function(){
+    if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
+    const id=$('feeStudent')?.value,a=Number($('feeAmount')?.value)||0,discount=Number($('feeDiscount')?.value)||0,d=$('feeDate')?.value||today();
+    const m=d.slice(0,7),pi=pendingInfo(id,m),pay=a+discount;
+    if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
+    if(!studentActiveForMonth(db.students.find(s=>String(s.id)===String(id)),m))return alert('இந்த student-க்கு இந்த month billing இல்லை.');
+    if(pay>pi.tuition)return alert(`Previous + Current Tuition Pending ₹${pi.tuition}. அதைவிட அதிகமாக payment செய்ய முடியாது.`);
+    if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
+    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'),actorId=role==='admin'?'admin':(currentTeacher?.id||'');
+    /* Determine how this payment consumes oldest outstanding dues. */
+    let remaining=pay,prevPaid=Math.min(remaining,pi.previous);remaining-=prevPaid;
+    let currentPaid=Math.min(remaining,pi.current);
+    const row={studentId:id,amount:a,discount,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor,paymentAllocation:{previousPending:prevPaid,currentMonth:currentPaid}};
+    db.fees.push(row);
+    if(typeof addAudit==='function')addAudit('Fees','Payment',id,`${db.students.find(s=>String(s.id)===String(id))?.name||id} • ₹${a} • Previous ₹${prevPaid} first • Current ₹${currentPaid}`);
+    closeModal();save();feesPage();
+    const st=db.students.find(s=>String(s.id)===String(id)); if(st)setTimeout(()=>showPaidReceipt(st,row,{previousPaid:prevPaid,currentPaid}),250);
+  };
+
+  /* Fees page shows previous + current pending together. */
+  window.renderFees=function(){
+    const m=$('feeMonth').value,c=$('feeClass').value,ss=groupStudents().filter(s=>(!c||s.class===c)&&studentActiveForMonth(s,m));
+    const rows=ss.map(s=>({s,pi:pendingInfo(s.id,m)})),pendingRows=rows.filter(x=>x.pi.total>0);
+    const totalPending=pendingRows.reduce((a,x)=>a+x.pi.total,0);
+    $('feeBox').innerHTML=`<div class="cards">
+      <div class="stat"><div class="label">Students</div><div class="value">${ss.length}</div></div>
+      <div class="stat stat-click" onclick="showFeePendingStudents()"><div class="label">Pending Students</div><div class="value danger">${pendingRows.length}</div></div>
+      <div class="stat stat-click" onclick="showFeePendingStudents()"><div class="label">Previous + Current Pending</div><div class="value danger">${money(totalPending)}</div></div>
+    </div>
+    <div class="card fee-compact-card"><h3 style="margin-top:0">💰 Fee Details — ${m}</h3>
+    <div class="notice mini">Payment order: <b>Previous month pending first → Current month</b>.</div>
+    <div class="table-wrap"><table class="table"><tr><th>Student</th><th>Class</th><th>Previous Pending</th><th>Current Pending</th><th>Extra Pending</th><th>Total Pending</th></tr>
+    ${rows.map(({s,pi})=>`<tr onclick="studentFeeDetails('${escH(s.id)}','${m}')" style="cursor:pointer"><td><button class="btn light" onclick="event.stopPropagation();studentFeeDetails('${escH(s.id)}','${m}')">${escH(s.name)}</button></td><td>${escH(s.class||'-')}</td><td class="danger"><b>${money(pi.previous)}</b></td><td class="danger"><b>${money(pi.current)}</b></td><td class="danger"><b>${money(pi.extra)}</b></td><td><span class="badge ${pi.total?'pending':'ok'}">${money(pi.total)}</span></td></tr>`).join('')||'<tr><td colspan="6">Students இல்லை.</td></tr>'}</table></div></div>
+    <div class="card fee-reminder-card"><div class="section-title"><span>📲</span><div><h3 style="margin:0">Fee Reminder</h3><small class="muted">Previous + Current + Extra pending</small></div></div><div id="feeReminderBox"></div></div>`;
+    renderFeeReminders();
+  };
+  window.renderFeeReminders=function(){
+    const m=$('feeMonth')?.value||monthNow(),c=$('feeClass')?.value||'',box=$('feeReminderBox');if(!box)return;
+    const rows=groupStudents().filter(s=>(!c||String(s.class)===c)&&studentActiveForMonth(s,m)&&pendingInfo(s.id,m).total>0);
+    box.innerHTML=rows.map(s=>{const p=pendingInfo(s.id,m);return `<div class="notice fee-reminder-row"><div><b>${escH(s.name)}</b> — ${escH(s.class||'-')}<br><small class="danger">Previous: ${money(p.previous)} • Current: ${money(p.current)} • Extra: ${money(p.extra)} • Total: ${money(p.total)}</small></div><div class="p-a">${s.mobile?`<a class="btn light" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent(fillFee(s,p.tuition,p.extra))}">💬 WhatsApp</a><a class="btn light" target="_blank" href="sms:${escH(s.mobile)}?body=${encodeURIComponent(fillFee(s,p.tuition,p.extra))}">💬 SMS</a>`:''}<button class="btn light" onclick="studentFeeDetails('${escH(s.id)}','${m}')">Details</button></div></div>`}).join('')||'<span class="muted">இந்த month-க்கு pending fee students இல்லை.</span>';
+  };
+
+  window.studentFeeDetails=function(id,m){
+    const s=db.students.find(x=>String(x.id)===String(id));if(!s)return;m=m||monthNow();const p=pendingInfo(id,m);
+    const rows=db.fees.map((x,i)=>({...x,_i:i})).filter(x=>String(x.studentId)===String(id)&&ymOfDate(x.date)<=m).slice().reverse();
+    const monthPaid=calcPaid(id,m),discount=calcDiscount(id,m),extra=calcExtra(id,m),extraPaid=calcExtraPaid(id,m);
+    openModal('💰 Fee Details — '+s.name,`<div class="cards"><div class="stat"><div class="label">Previous Pending</div><div class="value danger">${money(p.previous)}</div></div><div class="stat"><div class="label">Current Pending</div><div class="value danger">${money(p.current)}</div></div><div class="stat"><div class="label">Total Pending</div><div class="value danger">${money(p.total)}</div></div></div>
+    <div class="notice"><b>${escH(s.name)}</b> — ${escH(s.class||'-')}<br>Monthly Fee: <b>${money(s.monthlyFee)}</b><br>Previous Pending: <b>${money(p.previous)}</b> → Current Month: <b>${money(p.current)}</b> → Extra: <b>${money(p.extra)}</b><br>Payment rule: <b>Previous pending is paid first.</b></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">${p.total&&s.mobile?`<a class="btn light" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent(fillFee(s,p.tuition,p.extra))}">💬 Fee Reminder</a><a class="btn light" href="sms:${escH(s.mobile)}?body=${encodeURIComponent(fillFee(s,p.tuition,p.extra))}">✉️ SMS</a>`:''}${p.tuition?`<button class="btn green" onclick="closeModal();feeForm('${escH(s.id)}')">💳 Add Payment</button>`:''}${p.extra?`<button class="btn amber" onclick="closeModal();extraPaymentForm('${escH(s.id)}')">💳 Extra Payment</button>`:''}</div>
+    <h4>📋 Fee History</h4><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th><th>Discount</th><th>Amount</th><th>Bill</th><th>Action</th></tr>
+    ${rows.map(x=>`<tr><td>${escH(x.date)}</td><td>${escH(x.type)}</td><td>${escH(x.extraType||'Monthly Fee')}</td><td>${money(x.amount||0)}</td><td>${money(x.discount||0)}</td><td>${money((x.amount||0)+(x.extraAmount||0))}</td><td>${x.type==='Payment'&&s.mobile?`<button class="btn light" onclick='showPaidReceipt(db.students.find(z=>String(z.id)===String(${JSON.stringify(id)})),${JSON.stringify(x)},${JSON.stringify(x.paymentAllocation||{previousPaid:0,currentPaid:0})})'>🧾 Bill</button>`:'-'}</td><td><button class="btn light" onclick="editFeeRecord(${x._i})">✏️ Edit</button><button class="btn red" onclick="deleteFeeRecord(${x._i},'${escH(id)}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="8">No fee history</td></tr>'}</table></div>`);
+  };
+
+  /* Student portal: only 3 cards; each opens its own details. Marks are overall. Attendance is month-wise. */
+  window.studentHome=function(){
+    const s=currentStudent;$('pageTitle').textContent='Student Dashboard';
+    $('content').innerHTML=`<div class="card" style="background:linear-gradient(135deg,#075985,#0ea5e9);color:#fff;border:0"><div style="display:flex;align-items:center;gap:14px"><div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:32px">👨‍🎓</div><div><div style="font-size:12px;opacity:.8">WELCOME</div><h2 style="margin:4px 0">${escH(s.name)}</h2><div>Class: <b>${escH(s.class)}</b> • ID: <b>${escH(s.id)}</b></div></div></div></div>
+    <div class="student-portal-cards">
+      <div class="student-portal-card att" onclick="studentPortalOpen('attendance')"><div class="big">📅</div><b>Attendance</b><small>Month-wise attendance</small></div>
+      <div class="student-portal-card fee" onclick="studentPortalOpen('fees')"><div class="big">💰</div><b>Fees</b><small>Previous + current pending & history</small></div>
+      <div class="student-portal-card mark" onclick="studentPortalOpen('marks')"><div class="big">📝</div><b>Marks</b><small>Overall marks & online tests</small></div>
+    </div>
+    <div id="studentPortalDetails"></div>
+    <div class="card"><h3>📞 ${escH(db.settings.adminName||'Admin')}</h3><div class="notice">Academy Admin: <b>${escH(db.settings.adminName||'Admin')}</b><br>Mobile: <b>${escH(db.settings.mobile||'Not set')}</b></div>${db.settings.mobile?`<div class="toolbar"><a class="btn" href="tel:${escH(db.settings.mobile)}">📞 Call</a><a class="btn light" href="sms:${escH(db.settings.mobile)}">✉️ SMS</a><a class="btn green" target="_blank" href="https://wa.me/${waPhone(db.settings.mobile)}">💬 WhatsApp</a></div>`:''}</div>`;
+    studentPortalOpen('attendance');
+  };
+  window.studentPortalOpen=function(type){
+    const s=currentStudent,box=$('studentPortalDetails');if(!box)return;
+    if(type==='attendance'){
+      const m=monthNow();
+      box.innerHTML=`<div class="card portal-section"><div class="toolbar"><div><label>Attendance Month</label><input id="spAttMonth" type="month" value="${m}" onchange="renderStudentPortalAttendance()"></div></div><div id="spAtt"></div></div>`;
+      renderStudentPortalAttendance();
+    }else if(type==='fees'){
+      const m=monthNow(),p=pendingInfo(s.id,m);
+      box.innerHTML=`<div class="card portal-section"><h3>💰 Fees</h3><div class="pending-breakdown"><div>Previous Pending<br><b class="danger">${money(p.previous)}</b></div><div>Current Month Pending<br><b class="danger">${money(p.current)}</b></div><div>Total Pending<br><b class="danger">${money(p.total)}</b></div></div><div class="notice mini" style="margin-top:10px">Payment order: Previous pending first → Current month.</div><h4>Fee History</h4><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th><th>Discount</th></tr>${db.fees.filter(x=>String(x.studentId)===String(s.id)).slice().reverse().map(x=>`<tr><td>${escH(x.date)}</td><td>${escH(x.type)}</td><td>${escH(x.extraType||'Monthly Fee')}</td><td>${money(x.amount||0)}</td><td>${money(x.discount||0)}</td></tr>`).join('')||'<tr><td colspan="5">No fee history</td></tr>'}</table></div></div>`;
+    }else{
+      const marks=db.marks.filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      const online=(db.onlineMarks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      box.innerHTML=`<div class="card portal-section"><h3>📝 Marks — Overall</h3><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Subject / Exam</th><th>Mark</th><th>Total</th></tr>${marks.map(x=>`<tr><td>${escH(x.date)}</td><td>${escH(x.exam)}</td><td><b>${escH(x.mark)}</b></td><td>${escH(x.total)}</td></tr>`).join('')||'<tr><td colspan="4">No marks</td></tr>'}</table></div><h3>🧪 Online Test Marks — Overall</h3><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Test</th><th>Mark</th><th>Total</th></tr>${online.map(x=>`<tr><td>${escH(x.date)}</td><td>${escH(x.testName||x.exam||'-')}</td><td><b>${escH(x.mark)}</b></td><td>${escH(x.total)}</td></tr>`).join('')||'<tr><td colspan="4">No online marks</td></tr>'}</table></div></div>`;
+    }
+  };
+  window.renderStudentPortalAttendance=function(){
+    const s=currentStudent,m=$('spAttMonth')?.value||monthNow(),a=db.attendance.filter(x=>String(x.studentId)===String(s.id)&&String(x.date).startsWith(m));
+    $('spAtt').innerHTML=`<h3>📅 Attendance — ${m}</h3><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Status</th></tr>${a.map(x=>`<tr><td>${escH(x.date)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${escH(x.status)}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance</td></tr>'}</table></div>`;
+  };
+
+  /* Default subjects + optional Other; not required. */
+  window.markForm=function(editId=''){
+    const old=db.marks.find(x=>x._id===editId)||{},ss=groupStudents();
+    openModal(editId?'Edit Mark':'Add Mark',`<label>Student</label><select id="mkStudent">${ss.map(s=>`<option value="${escH(s.id)}" ${String(s.id)===String(old.studentId)?'selected':''}>${escH(s.name)} — ${escH(s.class)}</option>`).join('')}</select>
+    <label>Subject</label><select id="mkSubject" onchange="toggleOtherSubject()"><option>Maths</option><option>English</option><option>Tamil</option><option>Science</option><option>Social Science</option><option>Other</option></select>
+    <div id="otherSubjectWrap" class="hidden"><label>Other Subject</label><input id="mkOtherSubject" placeholder="Type subject name"></div>
+    <div class="two"><div><label>Mark</label><input id="mkMark" type="number" value="${old.mark??''}"></div><div><label>Total</label><input id="mkTotal" type="number" value="${old.total||100}"></div></div>
+    <label>Date</label><input id="mkDate" type="date" value="${old.date||today()}"><br><button class="btn" style="width:100%" onclick="saveMark('${escH(editId)}')">💾 Save Mark</button>`);
+    const ex=String(old.exam||''); const sel=$('mkSubject'); if([...sel.options].some(o=>o.value===ex))sel.value=ex;else if(ex){sel.value='Other';$('mkOtherSubject').value=ex;toggleOtherSubject()}
+  };
+  window.toggleOtherSubject=function(){$('otherSubjectWrap')?.classList.toggle('hidden',$('mkSubject')?.value!=='Other')};
+  window.saveMark=function(id=''){
+    if(role==='teacher'&&currentTeacher?.permissions?.marks===false)return alert('Marks permission இல்லை');
+    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'),actorId=role==='admin'?'admin':(currentTeacher?.id||'');
+    const studentId=$('mkStudent').value,subject=$('mkSubject').value==='Other'?$('mkOtherSubject').value.trim():$('mkSubject').value;
+    if(role==='teacher'&&!teacherCanStudent(studentId))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
+    if(!subject)return alert('Other subject name கொடுக்கவும். Subject required இல்லை; ஆனால் Other தேர்வு செய்தால் name கொடுக்க வேண்டும்.');
+    const o={_id:id||('M'+Date.now()),studentId,exam:subject,mark:Number($('mkMark').value),total:Number($('mkTotal').value)||100,date:$('mkDate').value,enteredBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
+    if(id){const i=db.marks.findIndex(x=>x._id===id);if(i>=0)db.marks[i]=o}else db.marks.push(o);
+    if(typeof addAudit==='function')addAudit('Marks',id?'Update':'Save',studentId,`${db.students.find(s=>String(s.id)===String(studentId))?.name||studentId} • ${subject} • ${o.mark}/${o.total}`);
+    closeModal();marksPage();save();
+  };
+
+  /* Student name in Teacher Activity. */
+  const oldAddAudit=window.addAudit;
+  window.addAudit=function(module,action,recordId,details){
+    const student=db.students.find(s=>String(s.id)===String(recordId))||db.archivedStudents?.find(s=>String(s.id)===String(recordId));
+    if(oldAddAudit)oldAddAudit(module,action,recordId,details);
+    if(db.auditLogs?.length){
+      const x=db.auditLogs[db.auditLogs.length-1];
+      if(x&&String(x.recordId)===String(recordId)&&student){x.studentName=student.name;x.details=String(details||x.details||'')}
+    }
+  };
+
+  /* Student Details now includes WhatsApp. */
+  const oldStudentDetails=window.studentDetails;
+  window.studentDetails=function(id){
+    const s=db.students.find(x=>String(x.id)===String(id));if(!s)return;
+    const m=monthNow(),p=pendingInfo(id,m);
+    openModal('Student Profile',`<div class="card admin-profile-card"><h3>👨‍🎓 ${escH(s.name)}</h3><p><span class="profile-chip">ID ${escH(s.id)}</span> <span class="profile-chip">Class ${escH(s.class||'-')}</span></p><p>📱 Mobile: <b>${escH(s.mobile||'-')}</b></p><p>👪 Parent: <b>${escH(s.parent||'-')}</b></p><p>🏠 Address: <b>${escH(s.address||'-')}</b></p><p>💰 Monthly Tuition: <b>${money(s.monthlyFee)}</b></p>${s.mobile?`<p><a class="btn" href="tel:${escH(s.mobile)}">📞 Call</a> <a class="btn light" href="sms:${escH(s.mobile)}">✉️ SMS</a> <a class="btn green" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent('Hello '+s.name+', '+db.settings.academy)}">💬 WhatsApp</a></p>`:''}<hr><p>📅 ${m} — Previous Pending: <b class="danger">${money(p.previous)}</b> • Current Pending: <b class="danger">${money(p.current)}</b> • Total Pending: <b class="danger">${money(p.total)}</b></p></div>`);
+  };
+
+  /* Settings: admin name + stable message persistence + immediate sync. */
+  window.settingsPage=function(){
+    if(role!=='admin')return alert('Admin only');const m=db.settings.messages||{};
+    $('content').innerHTML=`<div class="card"><h3>⚙️ Admin Settings</h3><div class="two">
+      <div><label>Academy Name</label><input id="sa" value="${escH(db.settings.academy)}"></div>
+      <div><label>Admin Name</label><input id="san" value="${escH(db.settings.adminName||'Admin')}" placeholder="Example: Arul Sir"></div>
+      <div><label>Academy Logo URL</label><input id="slogo" value="${escH(db.settings.logo||'')}" placeholder="https://.../logo.png"><input id="slogoFile" type="file" accept="image/*" style="margin-top:7px"></div>
+      <div><label>Teacher Name</label><input id="st" value="${escH(db.settings.teacher)}"></div>
+      <div><label>Mobile</label><input id="sm" value="${escH(db.settings.mobile)}"></div>
+      <div><label>Default Monthly Fee</label><input id="sf" type="number" value="${Number(db.settings.fee||0)}"></div>
+      <div><label>Admin ID</label><input id="sid" value="${escH(db.settings.adminId||'')}"></div>
+      <div><label>Admin Password</label><input id="sp" type="password" value="${escH(db.settings.adminPass||'')}"></div>
+      <div><label>Teacher ID</label><input id="tid" value="${escH(db.settings.teacherId||'')}"></div>
+      <div><label>Teacher Password</label><input id="tp" value="${escH(db.settings.teacherPass||'')}"></div>
+      <div><label>WhatsApp Group Link</label><input id="wg" value="${escH(db.settings.whatsappGroup||'')}"></div>
+    </div>
+    <label>Fee Reminder Message</label><textarea id="fm">${escH(m.fee||'')}</textarea><small class="muted">Placeholders: {student} {tuitionPending} {extraPending} {totalPending} {amount} {academy} {date}</small>
+    <label>Absent Reminder Message</label><textarea id="am">${escH(m.absent||'')}</textarea>
+    <br><button class="btn" onclick="saveSettings()">💾 Save & Sync</button> <button class="btn light" onclick="loadSheets()">↻ Reload Sheets</button>
+    <div class="notice mini">Settings Google Sheets-க்கு save செய்யப்பட்டு, மீண்டும் reload செய்தாலும் மாற்றம் இருக்க வேண்டும். Student Portal-ல் <b>Admin Name</b> மட்டுமே காட்டப்படும்.</div></div>`;
+  };
+  window.saveSettings=async function(){
+    const file=$('slogoFile')?.files?.[0];let logo=$('slogo')?.value.trim()||'';
+    if(file){if(file.size>1500000)return alert('Logo image 1.5MB-க்கு கீழே இருக்க வேண்டும்.');logo=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+    db.settings={...db.settings,academy:$('sa').value.trim(),adminName:$('san').value.trim()||'Admin',teacher:$('st').value.trim(),mobile:$('sm').value.trim(),fee:Number($('sf').value)||0,adminId:$('sid').value.trim(),adminPass:String($('sp').value||'').trim(),teacherId:$('tid').value.trim(),teacherPass:String($('tp').value||'').trim(),whatsappGroup:$('wg').value.trim(),logo,messages:{...(db.settings.messages||{}),fee:$('fm').value,absent:$('am').value}};
+    applySettings();setSyncTime(new Date().toISOString());setSyncStatus('syncing');
+    const ok=await syncSheets(true);setSyncTime(new Date().toISOString());setSyncStatus(ok?'ok':'error');
+    alert(ok?'✅ Settings saved and sync request sent.':'⚠️ Settings saved locally in current session, but Google Sheets sync failed.');
+  };
+
+  /* Faster, quieter sync: no-cors POST + retry. Time always shows last request. */
+  const oldSync=window.syncSheets;
+  window.syncSheets=async function(silent=false){
+    if(!loaded){if(!silent)alert('Google Sheets data இன்னும் load ஆகவில்லை.');return false}
+    if(syncInProgress)return true;
+    syncInProgress=true;setSyncStatus('syncing');
+    const snap=db.settings||{};snap.lastSyncAt=new Date().toISOString();setSyncTime(snap.lastSyncAt);
+    const settingsSnapshot={academy:String(snap.academy||''),adminName:String(snap.adminName||'Admin'),teacher:String(snap.teacher||''),mobile:String(snap.mobile||''),fee:Number(snap.fee||0),adminId:String(snap.adminId||''),adminPass:String(snap.adminPass||''),teacherId:String(snap.teacherId||''),teacherPass:String(snap.teacherPass||''),whatsappGroup:String(snap.whatsappGroup||''),logo:String(snap.logo||''),messages:{fee:String(snap.messages?.fee||''),absent:String(snap.messages?.absent||'')}};
+    const payload={source:'Arul Siragugal Academy',syncedAt:new Date().toISOString(),settings:{...settingsSnapshot,sheetsUrl:SHEETS_URL},...settingsSnapshot,students:db.students||[],archivedStudents:db.archivedStudents||[],attendance:db.attendance||[],fees:db.fees||[],marks:db.marks||[],onlineMarks:db.onlineMarks||[],tests:db.tests||[],expenses:db.expenses||[],extraIncome:db.extraIncome||[],auditLogs:db.auditLogs||[],teachers:(db.teachers||[])};
+    try{
+      const body=new URLSearchParams();body.set('payload',JSON.stringify(payload));
+      await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',cache:'no-store',body});
+      setSyncStatus('ok');if(!silent)alert('✅ Google Sheets sync request sent.');return true;
+    }catch(e){
+      try{await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',cache:'no-store',body:new URLSearchParams({payload:JSON.stringify(payload)})});setSyncStatus('ok');return true}
+      catch(e2){setSyncStatus('error');if(!silent)alert('❌ Google Sheets Sync failed.');return false}
+    }finally{syncInProgress=false}
+  };
+  /* Debounce saves but sync immediately after each logical save. */
+  window.save=function(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>window.syncSheets(true),250)};
+
+  /* Keep sync time visible and refresh data periodically without hammering. */
+  setInterval(()=>{if(loaded&&document.visibilityState!=='hidden'&&!syncInProgress&&!sheetsLoadingPromise)loadSheets()},60000);
+})();
+
 </script>
 </body>
 </html>
