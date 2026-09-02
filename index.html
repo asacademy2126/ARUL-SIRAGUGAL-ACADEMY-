@@ -120,6 +120,21 @@ body{background:linear-gradient(135deg,#eef9ff 0%,#f8fbff 45%,#eef7ff 100%)}
 .fee-reminder-row .p-a{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:600px){.fee-reminder-row{flex-direction:column;align-items:flex-start}.fee-reminder-row .p-a{justify-content:flex-start;width:100%}}
 </style>
+<style>
+/* vNext requested upgrades */
+.student-portal-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.student-portal-card{border-radius:20px;padding:18px;min-height:125px;cursor:pointer;border:1px solid #cceaf4;box-shadow:0 10px 24px rgba(7,89,133,.10);transition:.18s}
+.student-portal-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(7,89,133,.16)}
+.student-portal-card.att{background:linear-gradient(135deg,#effcf8,#d1fae5);border-top:4px solid #14b8a6}
+.student-portal-card.fee{background:linear-gradient(135deg,#eff8ff,#dbeafe);border-top:4px solid #0ea5e9}
+.student-portal-card.mark{background:linear-gradient(135deg,#f7f3ff,#ede9fe);border-top:4px solid #8b5cf6}
+.student-portal-card .big{font-size:28px}.student-portal-card b{display:block;margin-top:8px;font-size:17px}.student-portal-card small{display:block;margin-top:4px;color:#64748b}
+.portal-section{scroll-margin-top:12px}
+.receipt-box{background:linear-gradient(135deg,#f0fdf4,#ecfeff);border:1px solid #a7f3d0;border-radius:16px;padding:14px}
+.pending-breakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.pending-breakdown>div{padding:10px;border-radius:12px;background:#f8fbff;border:1px solid #dbeafe}
+@media(max-width:700px){.student-portal-cards{grid-template-columns:1fr}.pending-breakdown{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div id="login" class="login"><div class="login-card">
@@ -215,6 +230,8 @@ function normalize(d){
     lastSyncAt:keep(incomingSettings.lastSyncAt,incomingSettings.syncedAt||old.lastSyncAt||''),
     sheetsUrl:SHEETS_URL
   };
+
+  if(window.__pendingSettings && Date.now() < Number(window.__settingsProtectedUntil||0)){ db.settings={...db.settings,...window.__pendingSettings,messages:{...(db.settings.messages||{}),...(window.__pendingSettings.messages||{})}}; }
 
   if(!db.settings.teacherId && db.teachers[0]) db.settings.teacherId=db.teachers[0].id;
   if(!db.settings.teacherPass && db.teachers[0]) db.settings.teacherPass=db.teachers[0].password;
@@ -391,288 +408,7 @@ function studentsPage(){let ss=groupStudents(),admin=role==='admin',canAdd=admin
 function filteredStudents(){let q=($('sq')?.value||'').toLowerCase().trim(),c=$('studentClassFilter')?.value||'';return groupStudents().filter(s=>(!c||String(s.class)===c)&&(!q||(s.id+' '+s.name+' '+s.class+' '+(s.mobile||'')).toLowerCase().includes(q)))}
 function renderStudentRows(){let rows=filteredStudents(),admin=role==='admin';$('studentRows').innerHTML=rows.map(s=>`<tr><td><span class="profile-chip">${esc(s.id)}</span></td><td><button class="btn light" onclick="studentDetails('${esc(s.id)}')">${esc(s.name)}</button></td><td><span class="profile-chip">${esc(s.class||'-')}</span></td><td>${esc(s.mobile||'-')}</td><td>${money(s.monthlyFee)}</td><td>${s.mobile?`<a class="btn light" href="tel:${esc(s.mobile)}">📞 Call</a>`:'-'}</td>${admin?`<td><button class="btn light" onclick="studentForm('${esc(s.id)}')">✏️ Edit</button>${role==='admin'?`<button class="btn red" onclick="removeStudent('${esc(s.id)}')">Remove</button>`:''}</td>`:''}</tr>`).join('')||'<tr><td colspan="8">Students இல்லை.</td></tr>'}
 window.copyFilteredStudents=function(){let rows=filteredStudents();if(!rows.length)return alert('Student data இல்லை.');let text=`${db.settings.academy}\nStudent Profiles\n\n`+rows.map((s,i)=>`${i+1}. ${s.name} | ID: ${s.id} | Class: ${s.class||'-'} | Mobile: ${s.mobile||'-'} | Monthly Fee: ${s.monthlyFee||0}`).join('\n');navigator.clipboard?.writeText(text);alert('✅ Student profile details copied.')}
-window.exportFilteredStudents=function(){let rows=filteredStudents();if(!rows.length)return alert('Student data இல்லை.');const escX=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');let html='<html><head><meta charset="UTF-8"></head><body><table border="1"><tr><th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Parent</th><th>Address</th><th>Monthly Fee</th></tr>'+rows.map(s=>`<tr><td>${escX(s.id)}</td><td>${escX(s.name)}</td><td>${escX(s.class)}</td><td>${escX(s.mobile||'')}</td><td>${escX(s.parent||'')}</td><td>${escX(s.address||'')}</td><td>${escX(s.monthlyFee||0)}</td></tr>`).join('')+'</table>
-<script>
-/* ===== 2026-09-02 Student Portal + Live Sync Update ===== */
-(function(){
-  const asaOriginalStudentHome = window.studentHome;
-  const asaOriginalRenderStudentMonth = window.renderStudentMonth;
-
-  /* New student billing start month: tuition cannot become pending before joining month. */
-  const asaOldCalcPending = window.calcPending;
-  window.calcPending = function(id,m){
-    const s=(db.students||[]).find(x=>String(x.id)===String(id)) ||
-            (db.archivedStudents||[]).find(x=>String(x.id)===String(id));
-    const start=String(s?.startMonth||s?.joinedMonth||'');
-    if(start && m && String(m)<start) return 0;
-    return asaOldCalcPending ? asaOldCalcPending(id,m) : 0;
-  };
-
-  function asaAdminName(){ return String(db.settings?.adminName||'Admin').trim() || 'Admin'; }
-  function asaMonthLabel(m){
-    try{return new Date(m+'-01T00:00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'});}
-    catch(e){return m;}
-  }
-  function asaMarkSubjects(){
-    return ['Maths','English','Tamil','Science','Social Science'];
-  }
-
-  /* Student portal: only cards first; click a card to open only that module. */
-  window.studentHome=function(){
-    const s=currentStudent;
-    $('pageTitle').textContent='Student Dashboard';
-    $('content').innerHTML=`
-      <div class="card" style="background:linear-gradient(135deg,#075985,#0ea5e9);color:#fff;border:0">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:32px">👨‍🎓</div>
-          <div><div style="font-size:12px;opacity:.8">WELCOME</div><h2 style="margin:4px 0">${esc(s.name)}</h2>
-          <div>Class: <b>${esc(s.class||'-')}</b> &nbsp; • &nbsp; ID: <b>${esc(s.id)}</b></div>
-          <div style="margin-top:4px;font-size:12px">Admin: <b>${esc(asaAdminName())}</b></div></div>
-        </div>
-      </div>
-      <div class="student-portal-cards">
-        <div class="student-portal-card attendance" onclick="studentOpenModule('attendance')"><span>📅</span><b>Attendance</b><small>Month-wise</small></div>
-        <div class="student-portal-card fees" onclick="studentOpenModule('fees')"><span>💰</span><b>Fees</b><small>Paid / Pending / History</small></div>
-        <div class="student-portal-card marks" onclick="studentOpenModule('marks')"><span>📝</span><b>Marks</b><small>Overall marks</small></div>
-      </div>
-      <div class="card admin-profile-card">
-        <div class="section-title"><span>👤</span><div><h3 style="margin:0">Student Details</h3><small class="muted">View only</small></div></div>
-        <div class="two">
-          <div><b>Name</b><br>${esc(s.name)}</div><div><b>Class</b><br>${esc(s.class||'-')}</div>
-          <div><b>Student ID</b><br>${esc(s.id)}</div><div><b>Admin</b><br>${esc(asaAdminName())}</div>
-        </div>
-        ${s.mobile?`<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn" href="tel:${esc(s.mobile)}">📞 Call</a>
-          <a class="btn light" href="sms:${esc(s.mobile)}">✉️ WhatsApp/SMS Contact</a>
-          <a class="btn green" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent('Hello '+s.name+', from '+(db.settings.academy||'Academy'))}">💬 WhatsApp</a>
-        </div>`:''}
-      </div>`;
-  };
-
-  window.studentOpenModule=function(type){
-    const s=currentStudent;
-    const m=monthNow();
-    if(type==='attendance'){
-      $('pageTitle').textContent='Student • Attendance';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Attendance Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderAttendance()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentAttendanceBox"></div>
-      </div>`;
-      studentRenderAttendance();
-    }else if(type==='fees'){
-      $('pageTitle').textContent='Student • Fees';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Fee Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderFees()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentFeesBox"></div>
-      </div>`;
-      studentRenderFees();
-    }else{
-      $('pageTitle').textContent='Student • Overall Marks';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentMarksBox"></div>
-      </div>`;
-      studentRenderMarks();
-    }
-  };
-
-  window.studentRenderAttendance=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const a=(db.attendance||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m))
-      .sort((x,y)=>String(y.date).localeCompare(String(x.date)));
-    const p=a.filter(x=>x.status==='Present').length, ab=a.filter(x=>x.status==='Absent').length;
-    $('studentAttendanceBox').innerHTML=`
-      <div class="cards"><div class="stat"><div class="label">Month</div><div class="value" style="font-size:18px">${esc(asaMonthLabel(m))}</div></div>
-      <div class="stat"><div class="label">Present</div><div class="value success">${p}</div></div>
-      <div class="stat"><div class="label">Absent</div><div class="value danger">${ab}</div></div></div>
-      <table class="table"><tr><th>Date</th><th>Status</th></tr>
-      ${a.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${esc(x.status)}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance for this month</td></tr>'}</table>`;
-  };
-
-  window.studentRenderFees=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const paid=calcPaid(s.id,m), pending=calcPending(s.id,m), extra=calcExtra(s.id,m), extraPaid=calcExtraPaid(s.id,m), extraPending=calcExtraPending(s.id,m);
-    const rows=(db.fees||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m)).slice().reverse();
-    $('studentFeesBox').innerHTML=`
-      <div class="cards">
-        <div class="stat"><div class="label">Tuition Paid</div><div class="value success">${money(paid)}</div></div>
-        <div class="stat"><div class="label">Tuition Pending</div><div class="value danger">${money(pending)}</div></div>
-        <div class="stat"><div class="label">Extra Paid</div><div class="value">${money(extraPaid)}</div></div>
-        <div class="stat"><div class="label">Extra Pending</div><div class="value danger">${money(extraPending)}</div></div>
-      </div>
-      <div class="notice">📌 ${esc(asaMonthLabel(m))} — Total Pending: <b class="danger">${money(pending+extraPending)}</b></div>
-      <table class="table"><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th><th>Discount</th><th>Amount</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.type||'Payment')}</td><td>${esc(x.extraType||'Monthly Fee')}</td><td>${money(x.amount||0)}</td><td>${money(x.discount||0)}</td><td>${money(Number(x.amount||0)+Number(x.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="6">No fee history</td></tr>'}</table>`;
-  };
-
-  window.studentRenderMarks=function(){
-    const s=currentStudent;
-    const rows=(db.marks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    const online=(db.onlineMarks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    $('studentMarksBox').innerHTML=`
-      <div class="notice">📝 All regular marks are shown overall. Online Test marks are also shown below.</div>
-      <table class="table"><tr><th>Date</th><th>Subject / Exam</th><th>Mark</th><th>Total</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No marks yet</td></tr>'}</table>
-      <h3 style="margin-top:18px">🧪 Online Test Marks</h3>
-      <table class="table"><tr><th>Date</th><th>Test</th><th>Mark</th><th>Total</th></tr>
-      ${online.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.testName||x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No online test marks yet</td></tr>'}</table>`;
-  };
-
-  /* Add Student: store the first billing month permanently. */
-  const oldStudentForm=window.studentForm;
-  window.studentForm=function(id=''){
-    const s=db.students.find(x=>String(x.id)===String(id))||{id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234',startMonth:monthNow()};
-    openModal(id?'Edit Student':'Add Student',`<div class="two">
-      <div><label>Student ID</label><input id="fId" value="${esc(s.id)}"></div>
-      <div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div>
-      <label>Name</label><input id="fName" value="${esc(s.name)}">
-      <div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div>
-      <div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div>
-      <div><label>Parent</label><input id="fParent" value="${esc(s.parent||'')}"></div>
-      <div><label>Monthly Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"></div></div>
-      <label>Address</label><input id="fAddress" value="${esc(s.address||'')}">
-      <label>Fee Start Month</label><input id="fStartMonth" type="month" value="${esc(s.startMonth||monthNow())}">
-      <div class="notice mini">Fee Pending will start only from this month. Previous months will NOT be pending for this student.</div>
-      <button class="btn" style="width:100%" onclick="saveStudent('${esc(id)}')">💾 Save Student</button>`);
-  };
-
-  const oldSaveStudent=window.saveStudent;
-  window.saveStudent=function(oldId){
-    const newId=$('fId').value.trim(),name=$('fName').value.trim(),studentClass=$('fClass').value.trim(),startMonth=$('fStartMonth')?.value||monthNow();
-    if(!newId||!name)return alert('Student ID மற்றும் Name தேவை');
-    if(role==='teacher'&&!teacherCanClass(studentClass))return alert('இந்த class உங்கள் Teacher Allowed Class list-ல் இல்லை.');
-    if(newId!==String(oldId)&&db.students.some(s=>String(s.id)===newId))return alert('Student ID already exists');
-    const o={id:newId,name,class:studentClass,mobile:$('fMobile').value.trim(),parent:$('fParent').value.trim(),address:$('fAddress').value.trim(),monthlyFee:Number($('fFee').value)||0,password:$('fPass').value||'1234',startMonth};
-    if(oldId){
-      const old=String(oldId),i=db.students.findIndex(s=>String(s.id)===old);
-      if(i<0)return;
-      if(old!==newId)['attendance','fees','marks','onlineMarks'].forEach(k=>(db[k]||[]).forEach(x=>{if(String(x.studentId)===old)x.studentId=newId;}));
-      db.students[i]=o;
-    }else db.students.push(o);
-    addAudit('Students',oldId?'Update':'Add',newId,`${name} • Start Month ${startMonth}`);
-    closeModal();studentsPage();save();
-  };
-
-  /* Marks subject dropdown with required defaults, but Other is optional/free text. */
-  window.markForm=function(editId=''){
-    let old=db.marks.find(x=>x._id===editId)||{},ss=groupStudents();
-    const subjects=asaMarkSubjects(), current=String(old.exam||'');
-    const isOther=current && !subjects.includes(current);
-    openModal(editId?'Edit Mark':'Add Mark',`
-      <label>Student</label><select id="mkStudent">${ss.map(s=>`<option value="${esc(s.id)}" ${s.id===old.studentId?'selected':''}>${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select>
-      <label>Subject</label><select id="mkSubject" onchange="toggleOtherSubject()">
-        <option value="">Select Subject</option>${subjects.map(x=>`<option ${current===x?'selected':''}>${x}</option>`).join('')}
-        <option value="__OTHER__" ${isOther?'selected':''}>Other</option>
-      </select>
-      <input id="mkOther" placeholder="Type other subject" value="${esc(isOther?current:'')}" style="display:${isOther?'block':'none'};margin-top:8px">
-      <div class="two"><div><label>Mark</label><input id="mkMark" type="number" value="${old.mark??''}"></div>
-      <div><label>Total</label><input id="mkTotal" type="number" value="${old.total||100}"></div></div>
-      <label>Date</label><input id="mkDate" type="date" value="${old.date||today()}">
-      <br><button class="btn" style="width:100%" onclick="saveMark('${esc(editId)}')">Save Mark</button>`);
-  };
-  window.toggleOtherSubject=function(){const other=$('mkSubject')?.value==='__OTHER__';if($('mkOther'))$('mkOther').style.display=other?'block':'none';};
-  window.saveMark=function(id=''){
-    if(role==='teacher'&&currentTeacher?.permissions?.marks===false)return alert('Marks permission இல்லை');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    const sid=$('mkStudent').value;if(role==='teacher'&&!teacherCanStudent(sid))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let subject=$('mkSubject').value;if(!subject)return alert('Subject select செய்யவும்');
-    if(subject==='__OTHER__')subject=$('mkOther').value.trim();
-    if(!subject)return alert('Other subject type செய்யவும்');
-    const mark=Number($('mkMark').value), total=Number($('mkTotal').value)||100;
-    if(!Number.isFinite(mark)||mark<0||mark>total)return alert('Mark சரியாக கொடுக்கவும்');
-    const o={_id:id||('M'+Date.now()),studentId:sid,exam:subject,mark,total,date:$('mkDate').value,enteredBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
-    if(id)db.marks[db.marks.findIndex(x=>x._id===id)]=o;else db.marks.push(o);
-    addAudit('Marks',id?'Update':'Save',o.studentId,`${subject} • ${mark}/${total}`);
-    closeModal();marksPage();save();
-  };
-
-  /* Paid fee receipt text: WhatsApp + SMS immediately after payment. */
-  function asaPaidFeeMessage(s,amount,discount,date){
-    const msg=`${db.settings?.academy||'Academy'}\nFee Payment Receipt\nStudent: ${s.name}\nMonth: ${String(date).slice(0,7)}\nPaid: ₹${Number(amount||0)}\nDiscount: ₹${Number(discount||0)}\nRemaining Tuition Pending: ₹${calcPending(s.id,String(date).slice(0,7))}\nDate: ${date}\nThank you.`;
-    return msg;
-  }
-  const oldSaveFee=window.saveFee;
-  window.saveFee=function(){
-    if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
-    let id=$('feeStudent').value,a=Number($('feeAmount').value),discount=Number($('feeDiscount').value)||0,d=$('feeDate').value;
-    if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
-    if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let pendingBefore=calcPending(id,d.slice(0,7));
-    if(a+discount>pendingBefore)return alert('Tuition Paid + Discount amount pending-ஐ விட அதிகமாக இருக்க முடியாது.');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    db.fees.push({studentId:id,amount:a,discount,extraAmount:0,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
-    addAudit('Fees','Save',id,`Payment ₹${a} • ${d}`);
-    const s=db.students.find(x=>String(x.id)===String(id)); const msg=asaPaidFeeMessage(s,a,discount,d);
-    closeModal();feesPage();save();
-    if(s?.mobile){
-      setTimeout(()=>{
-        const wa='https://wa.me/'+waPhone(s.mobile)+'?text='+encodeURIComponent(msg);
-        openModal('✅ Fee Paid Receipt',`<div class="notice"><b>${esc(s.name)}</b><br>${esc(msg).replaceAll('\n','<br>')}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn green" target="_blank" href="${wa}">💬 WhatsApp Receipt</a>
-          <a class="btn light" target="_blank" href="sms:${esc(s.mobile)}?body=${encodeURIComponent(msg)}">✉️ SMS Receipt</a>
-          </div>`);
-      },150);
-    }
-  };
-
-  /* Settings: admin name + message persistence. */
-  const oldSettingsPage=window.settingsPage;
-  window.settingsPage=function(){
-    oldSettingsPage();
-    const card=$('content').querySelector('.card');
-    const st=$('sa');
-    if(st && !$('san')){
-      const mobile=$('sm');
-      const div=document.createElement('div'); div.innerHTML=`<label>Admin Name</label><input id="san" value="${esc(db.settings.adminName||'')}">`;
-      mobile?.parentNode?.before(div.firstElementChild);
-    }
-  };
-
-  /* Live sync heartbeat: refresh from Sheets every second, but never overlap requests.
-     A short dirty window prevents a just-saved local change from being overwritten by an older GET. */
-  let asaDirtyUntil=0;
-  const oldSaveGlobal=window.save;
-  window.save=function(){asaDirtyUntil=Date.now()+1800;return oldSaveGlobal.apply(this,arguments);};
-
-  setInterval(()=>{
-    const el=$('syncTime');
-    if(!el)return;
-    const now=new Date();
-    const current=now.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    el.textContent='🕒 '+current;
-  },1000);
-
-  setInterval(()=>{
-    if(role==='student' && document.visibilityState!=='hidden' && Date.now()>asaDirtyUntil && !sheetsLoadingPromise && !syncInProgress){
-      loadSheets().catch(()=>{});
-    }
-  },1000);
-
-  /* Do not show a scary "sync error" for one transient polling failure. */
-  const originalSetSyncStatus=window.setSyncStatus;
-  window.setSyncStatus=function(t){
-    if(t==='error'){
-      $('syncStatus').textContent='🔄 Live Sync retrying…';
-      return;
-    }
-    return originalSetSyncStatus(t);
-  };
-
-  /* Re-apply Admin label whenever Sheets data arrives. */
-  const oldLoadSheets=window.loadSheets;
-  window.loadSheets=async function(){
-    const r=await oldLoadSheets.apply(this,arguments);
-    try{applySettings();if(role==='student'&&document.visibilityState!=='hidden')studentHome();}catch(e){}
-    return r;
-  };
-
-  /* Ensure new default subject behavior is also used by older calls. */
-  window.asaDefaultSubjects=asaMarkSubjects;
-})();
-</script>
-
-</body></html>';let blob=new Blob([html],{type:'application/vnd.ms-excel'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Student_Profiles_${today()}.xls`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+window.exportFilteredStudents=function(){let rows=filteredStudents();if(!rows.length)return alert('Student data இல்லை.');const escX=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');let html='<html><head><meta charset="UTF-8"></head><body><table border="1"><tr><th>ID</th><th>Name</th><th>Class</th><th>Mobile</th><th>Parent</th><th>Address</th><th>Monthly Fee</th></tr>'+rows.map(s=>`<tr><td>${escX(s.id)}</td><td>${escX(s.name)}</td><td>${escX(s.class)}</td><td>${escX(s.mobile||'')}</td><td>${escX(s.parent||'')}</td><td>${escX(s.address||'')}</td><td>${escX(s.monthlyFee||0)}</td></tr>`).join('')+'</table></body></html>';let blob=new Blob([html],{type:'application/vnd.ms-excel'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Student_Profiles_${today()}.xls`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function studentForm(id=''){let s=db.students.find(x=>x.id===id)||{id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234'};openModal(id?'Edit Student':'Add Student',`<div class="two"><div><label>Student ID</label><input id="fId" value="${esc(s.id)}" ${id?'readonly':''}></div><div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div><label>Name</label><input id="fName" value="${esc(s.name)}"><div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div><div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div><div><label>Parent</label><input id="fParent" value="${esc(s.parent||'')}"></div><div><label>Monthly Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"></div></div><label>Address</label><input id="fAddress" value="${esc(s.address||'')}"><br><button class="btn" style="width:100%" onclick="saveStudent('${esc(id)}')">Save Student</button>`)}
 function saveStudent(old){let id=$('fId').value.trim(),name=$('fName').value.trim();if(!id||!name)return alert('Student ID மற்றும் Name தேவை');if(!old&&db.students.some(s=>s.id===id))return alert('Student ID already exists');let studentClass=$('fClass').value.trim();let o={id,name,class:studentClass,mobile:$('fMobile').value.trim(),parent:$('fParent').value.trim(),address:$('fAddress').value.trim(),monthlyFee:Number($('fFee').value)||0,password:$('fPass').value||'1234'};if(old)db.students[db.students.findIndex(s=>s.id===old)]=o;else db.students.push(o);closeModal();studentsPage();save()}
 function removeStudent(id){if(!confirm('Student active list-ல் இருந்து remove செய்யவா? Old Attendance / Fees / Marks history preserve ஆகும்.'))return;let s=db.students.find(x=>String(x.id)===String(id));if(!s)return;db.archivedStudents=(db.archivedStudents||[]).filter(x=>String(x.id)!==String(id));db.archivedStudents.push({...s,removedAt:today(),removedAtTime:new Date().toISOString(),status:'Removed'});db.students=db.students.filter(x=>String(x.id)!==String(id));addAudit('Students','Remove',id,`Student ${s.name} moved to Old Students`);save();studentsPage()}
@@ -855,288 +591,7 @@ function saveTest(id=''){if(role==='teacher'&&currentTeacher?.permissions?.onlin
 function deleteTest(id){if(role==='teacher'&&currentTeacher?.permissions?.onlineTests===false)return alert('Online Test permission இல்லை');if(confirm('Test delete செய்யவா?')){db.tests=db.tests.filter(x=>x._id!==id);save();testsPage()}}
 
 function reportsPage(){let cls=[...new Set(groupStudents().map(s=>s.class).filter(Boolean))].sort();$('content').innerHTML=`<div class="analysis-grid"><div class="card"><h3>👨‍🎓 Individual Student Report</h3><label>Student</label><select id="rpStudent">${groupStudents().map(s=>`<option value="${esc(s.id)}">${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select><label>Month</label><input id="rpMonth" type="month" value="${monthNow()}"><br><button class="btn" style="margin-top:10px" onclick="studentPDF()">⬇️ Month PDF</button></div><div class="card"><h3>📊 Monthly Class Report</h3><label>Month</label><input id="rpM" type="month" value="${monthNow()}"><label>Class</label><select id="rpC"><option value="">All Classes</option>${cls.map(c=>`<option>${esc(c)}</option>`).join('')}</select><br><button class="btn green" style="margin-top:10px" onclick="monthlyPDF()">⬇️ Monthly PDF</button></div></div><div class="card"><h3>🗂️ All History PDF</h3><div class="two"><div><label>From</label><input id="histFrom" type="date" value="${new Date(Date.now()-30*86400000).toISOString().slice(0,10)}"></div><div><label>To</label><input id="histTo" type="date" value="${today()}"></div></div><br><button class="btn amber" onclick="historyPDF()">⬇️ Period PDF</button></div>`}
-function pdf(title,html){let w=window.open('','_blank');if(!w)return alert('Popup blocked');w.document.write(`<html><head><title>${esc(title)}</title><style>body{font-family:Arial;padding:25px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:6px;font-size:12px}th{background:#eee}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.box{border:1px solid #aaa;padding:8px}@media print{button{display:none}}</style></head><body><h1>${esc(title)}</h1>${html}
-<script>
-/* ===== 2026-09-02 Student Portal + Live Sync Update ===== */
-(function(){
-  const asaOriginalStudentHome = window.studentHome;
-  const asaOriginalRenderStudentMonth = window.renderStudentMonth;
-
-  /* New student billing start month: tuition cannot become pending before joining month. */
-  const asaOldCalcPending = window.calcPending;
-  window.calcPending = function(id,m){
-    const s=(db.students||[]).find(x=>String(x.id)===String(id)) ||
-            (db.archivedStudents||[]).find(x=>String(x.id)===String(id));
-    const start=String(s?.startMonth||s?.joinedMonth||'');
-    if(start && m && String(m)<start) return 0;
-    return asaOldCalcPending ? asaOldCalcPending(id,m) : 0;
-  };
-
-  function asaAdminName(){ return String(db.settings?.adminName||'Admin').trim() || 'Admin'; }
-  function asaMonthLabel(m){
-    try{return new Date(m+'-01T00:00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'});}
-    catch(e){return m;}
-  }
-  function asaMarkSubjects(){
-    return ['Maths','English','Tamil','Science','Social Science'];
-  }
-
-  /* Student portal: only cards first; click a card to open only that module. */
-  window.studentHome=function(){
-    const s=currentStudent;
-    $('pageTitle').textContent='Student Dashboard';
-    $('content').innerHTML=`
-      <div class="card" style="background:linear-gradient(135deg,#075985,#0ea5e9);color:#fff;border:0">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:32px">👨‍🎓</div>
-          <div><div style="font-size:12px;opacity:.8">WELCOME</div><h2 style="margin:4px 0">${esc(s.name)}</h2>
-          <div>Class: <b>${esc(s.class||'-')}</b> &nbsp; • &nbsp; ID: <b>${esc(s.id)}</b></div>
-          <div style="margin-top:4px;font-size:12px">Admin: <b>${esc(asaAdminName())}</b></div></div>
-        </div>
-      </div>
-      <div class="student-portal-cards">
-        <div class="student-portal-card attendance" onclick="studentOpenModule('attendance')"><span>📅</span><b>Attendance</b><small>Month-wise</small></div>
-        <div class="student-portal-card fees" onclick="studentOpenModule('fees')"><span>💰</span><b>Fees</b><small>Paid / Pending / History</small></div>
-        <div class="student-portal-card marks" onclick="studentOpenModule('marks')"><span>📝</span><b>Marks</b><small>Overall marks</small></div>
-      </div>
-      <div class="card admin-profile-card">
-        <div class="section-title"><span>👤</span><div><h3 style="margin:0">Student Details</h3><small class="muted">View only</small></div></div>
-        <div class="two">
-          <div><b>Name</b><br>${esc(s.name)}</div><div><b>Class</b><br>${esc(s.class||'-')}</div>
-          <div><b>Student ID</b><br>${esc(s.id)}</div><div><b>Admin</b><br>${esc(asaAdminName())}</div>
-        </div>
-        ${s.mobile?`<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn" href="tel:${esc(s.mobile)}">📞 Call</a>
-          <a class="btn light" href="sms:${esc(s.mobile)}">✉️ WhatsApp/SMS Contact</a>
-          <a class="btn green" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent('Hello '+s.name+', from '+(db.settings.academy||'Academy'))}">💬 WhatsApp</a>
-        </div>`:''}
-      </div>`;
-  };
-
-  window.studentOpenModule=function(type){
-    const s=currentStudent;
-    const m=monthNow();
-    if(type==='attendance'){
-      $('pageTitle').textContent='Student • Attendance';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Attendance Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderAttendance()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentAttendanceBox"></div>
-      </div>`;
-      studentRenderAttendance();
-    }else if(type==='fees'){
-      $('pageTitle').textContent='Student • Fees';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Fee Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderFees()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentFeesBox"></div>
-      </div>`;
-      studentRenderFees();
-    }else{
-      $('pageTitle').textContent='Student • Overall Marks';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentMarksBox"></div>
-      </div>`;
-      studentRenderMarks();
-    }
-  };
-
-  window.studentRenderAttendance=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const a=(db.attendance||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m))
-      .sort((x,y)=>String(y.date).localeCompare(String(x.date)));
-    const p=a.filter(x=>x.status==='Present').length, ab=a.filter(x=>x.status==='Absent').length;
-    $('studentAttendanceBox').innerHTML=`
-      <div class="cards"><div class="stat"><div class="label">Month</div><div class="value" style="font-size:18px">${esc(asaMonthLabel(m))}</div></div>
-      <div class="stat"><div class="label">Present</div><div class="value success">${p}</div></div>
-      <div class="stat"><div class="label">Absent</div><div class="value danger">${ab}</div></div></div>
-      <table class="table"><tr><th>Date</th><th>Status</th></tr>
-      ${a.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${esc(x.status)}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance for this month</td></tr>'}</table>`;
-  };
-
-  window.studentRenderFees=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const paid=calcPaid(s.id,m), pending=calcPending(s.id,m), extra=calcExtra(s.id,m), extraPaid=calcExtraPaid(s.id,m), extraPending=calcExtraPending(s.id,m);
-    const rows=(db.fees||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m)).slice().reverse();
-    $('studentFeesBox').innerHTML=`
-      <div class="cards">
-        <div class="stat"><div class="label">Tuition Paid</div><div class="value success">${money(paid)}</div></div>
-        <div class="stat"><div class="label">Tuition Pending</div><div class="value danger">${money(pending)}</div></div>
-        <div class="stat"><div class="label">Extra Paid</div><div class="value">${money(extraPaid)}</div></div>
-        <div class="stat"><div class="label">Extra Pending</div><div class="value danger">${money(extraPending)}</div></div>
-      </div>
-      <div class="notice">📌 ${esc(asaMonthLabel(m))} — Total Pending: <b class="danger">${money(pending+extraPending)}</b></div>
-      <table class="table"><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th><th>Discount</th><th>Amount</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.type||'Payment')}</td><td>${esc(x.extraType||'Monthly Fee')}</td><td>${money(x.amount||0)}</td><td>${money(x.discount||0)}</td><td>${money(Number(x.amount||0)+Number(x.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="6">No fee history</td></tr>'}</table>`;
-  };
-
-  window.studentRenderMarks=function(){
-    const s=currentStudent;
-    const rows=(db.marks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    const online=(db.onlineMarks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    $('studentMarksBox').innerHTML=`
-      <div class="notice">📝 All regular marks are shown overall. Online Test marks are also shown below.</div>
-      <table class="table"><tr><th>Date</th><th>Subject / Exam</th><th>Mark</th><th>Total</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No marks yet</td></tr>'}</table>
-      <h3 style="margin-top:18px">🧪 Online Test Marks</h3>
-      <table class="table"><tr><th>Date</th><th>Test</th><th>Mark</th><th>Total</th></tr>
-      ${online.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.testName||x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No online test marks yet</td></tr>'}</table>`;
-  };
-
-  /* Add Student: store the first billing month permanently. */
-  const oldStudentForm=window.studentForm;
-  window.studentForm=function(id=''){
-    const s=db.students.find(x=>String(x.id)===String(id))||{id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234',startMonth:monthNow()};
-    openModal(id?'Edit Student':'Add Student',`<div class="two">
-      <div><label>Student ID</label><input id="fId" value="${esc(s.id)}"></div>
-      <div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div>
-      <label>Name</label><input id="fName" value="${esc(s.name)}">
-      <div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div>
-      <div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div>
-      <div><label>Parent</label><input id="fParent" value="${esc(s.parent||'')}"></div>
-      <div><label>Monthly Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"></div></div>
-      <label>Address</label><input id="fAddress" value="${esc(s.address||'')}">
-      <label>Fee Start Month</label><input id="fStartMonth" type="month" value="${esc(s.startMonth||monthNow())}">
-      <div class="notice mini">Fee Pending will start only from this month. Previous months will NOT be pending for this student.</div>
-      <button class="btn" style="width:100%" onclick="saveStudent('${esc(id)}')">💾 Save Student</button>`);
-  };
-
-  const oldSaveStudent=window.saveStudent;
-  window.saveStudent=function(oldId){
-    const newId=$('fId').value.trim(),name=$('fName').value.trim(),studentClass=$('fClass').value.trim(),startMonth=$('fStartMonth')?.value||monthNow();
-    if(!newId||!name)return alert('Student ID மற்றும் Name தேவை');
-    if(role==='teacher'&&!teacherCanClass(studentClass))return alert('இந்த class உங்கள் Teacher Allowed Class list-ல் இல்லை.');
-    if(newId!==String(oldId)&&db.students.some(s=>String(s.id)===newId))return alert('Student ID already exists');
-    const o={id:newId,name,class:studentClass,mobile:$('fMobile').value.trim(),parent:$('fParent').value.trim(),address:$('fAddress').value.trim(),monthlyFee:Number($('fFee').value)||0,password:$('fPass').value||'1234',startMonth};
-    if(oldId){
-      const old=String(oldId),i=db.students.findIndex(s=>String(s.id)===old);
-      if(i<0)return;
-      if(old!==newId)['attendance','fees','marks','onlineMarks'].forEach(k=>(db[k]||[]).forEach(x=>{if(String(x.studentId)===old)x.studentId=newId;}));
-      db.students[i]=o;
-    }else db.students.push(o);
-    addAudit('Students',oldId?'Update':'Add',newId,`${name} • Start Month ${startMonth}`);
-    closeModal();studentsPage();save();
-  };
-
-  /* Marks subject dropdown with required defaults, but Other is optional/free text. */
-  window.markForm=function(editId=''){
-    let old=db.marks.find(x=>x._id===editId)||{},ss=groupStudents();
-    const subjects=asaMarkSubjects(), current=String(old.exam||'');
-    const isOther=current && !subjects.includes(current);
-    openModal(editId?'Edit Mark':'Add Mark',`
-      <label>Student</label><select id="mkStudent">${ss.map(s=>`<option value="${esc(s.id)}" ${s.id===old.studentId?'selected':''}>${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select>
-      <label>Subject</label><select id="mkSubject" onchange="toggleOtherSubject()">
-        <option value="">Select Subject</option>${subjects.map(x=>`<option ${current===x?'selected':''}>${x}</option>`).join('')}
-        <option value="__OTHER__" ${isOther?'selected':''}>Other</option>
-      </select>
-      <input id="mkOther" placeholder="Type other subject" value="${esc(isOther?current:'')}" style="display:${isOther?'block':'none'};margin-top:8px">
-      <div class="two"><div><label>Mark</label><input id="mkMark" type="number" value="${old.mark??''}"></div>
-      <div><label>Total</label><input id="mkTotal" type="number" value="${old.total||100}"></div></div>
-      <label>Date</label><input id="mkDate" type="date" value="${old.date||today()}">
-      <br><button class="btn" style="width:100%" onclick="saveMark('${esc(editId)}')">Save Mark</button>`);
-  };
-  window.toggleOtherSubject=function(){const other=$('mkSubject')?.value==='__OTHER__';if($('mkOther'))$('mkOther').style.display=other?'block':'none';};
-  window.saveMark=function(id=''){
-    if(role==='teacher'&&currentTeacher?.permissions?.marks===false)return alert('Marks permission இல்லை');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    const sid=$('mkStudent').value;if(role==='teacher'&&!teacherCanStudent(sid))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let subject=$('mkSubject').value;if(!subject)return alert('Subject select செய்யவும்');
-    if(subject==='__OTHER__')subject=$('mkOther').value.trim();
-    if(!subject)return alert('Other subject type செய்யவும்');
-    const mark=Number($('mkMark').value), total=Number($('mkTotal').value)||100;
-    if(!Number.isFinite(mark)||mark<0||mark>total)return alert('Mark சரியாக கொடுக்கவும்');
-    const o={_id:id||('M'+Date.now()),studentId:sid,exam:subject,mark,total,date:$('mkDate').value,enteredBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
-    if(id)db.marks[db.marks.findIndex(x=>x._id===id)]=o;else db.marks.push(o);
-    addAudit('Marks',id?'Update':'Save',o.studentId,`${subject} • ${mark}/${total}`);
-    closeModal();marksPage();save();
-  };
-
-  /* Paid fee receipt text: WhatsApp + SMS immediately after payment. */
-  function asaPaidFeeMessage(s,amount,discount,date){
-    const msg=`${db.settings?.academy||'Academy'}\nFee Payment Receipt\nStudent: ${s.name}\nMonth: ${String(date).slice(0,7)}\nPaid: ₹${Number(amount||0)}\nDiscount: ₹${Number(discount||0)}\nRemaining Tuition Pending: ₹${calcPending(s.id,String(date).slice(0,7))}\nDate: ${date}\nThank you.`;
-    return msg;
-  }
-  const oldSaveFee=window.saveFee;
-  window.saveFee=function(){
-    if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
-    let id=$('feeStudent').value,a=Number($('feeAmount').value),discount=Number($('feeDiscount').value)||0,d=$('feeDate').value;
-    if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
-    if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let pendingBefore=calcPending(id,d.slice(0,7));
-    if(a+discount>pendingBefore)return alert('Tuition Paid + Discount amount pending-ஐ விட அதிகமாக இருக்க முடியாது.');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    db.fees.push({studentId:id,amount:a,discount,extraAmount:0,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
-    addAudit('Fees','Save',id,`Payment ₹${a} • ${d}`);
-    const s=db.students.find(x=>String(x.id)===String(id)); const msg=asaPaidFeeMessage(s,a,discount,d);
-    closeModal();feesPage();save();
-    if(s?.mobile){
-      setTimeout(()=>{
-        const wa='https://wa.me/'+waPhone(s.mobile)+'?text='+encodeURIComponent(msg);
-        openModal('✅ Fee Paid Receipt',`<div class="notice"><b>${esc(s.name)}</b><br>${esc(msg).replaceAll('\n','<br>')}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn green" target="_blank" href="${wa}">💬 WhatsApp Receipt</a>
-          <a class="btn light" target="_blank" href="sms:${esc(s.mobile)}?body=${encodeURIComponent(msg)}">✉️ SMS Receipt</a>
-          </div>`);
-      },150);
-    }
-  };
-
-  /* Settings: admin name + message persistence. */
-  const oldSettingsPage=window.settingsPage;
-  window.settingsPage=function(){
-    oldSettingsPage();
-    const card=$('content').querySelector('.card');
-    const st=$('sa');
-    if(st && !$('san')){
-      const mobile=$('sm');
-      const div=document.createElement('div'); div.innerHTML=`<label>Admin Name</label><input id="san" value="${esc(db.settings.adminName||'')}">`;
-      mobile?.parentNode?.before(div.firstElementChild);
-    }
-  };
-
-  /* Live sync heartbeat: refresh from Sheets every second, but never overlap requests.
-     A short dirty window prevents a just-saved local change from being overwritten by an older GET. */
-  let asaDirtyUntil=0;
-  const oldSaveGlobal=window.save;
-  window.save=function(){asaDirtyUntil=Date.now()+1800;return oldSaveGlobal.apply(this,arguments);};
-
-  setInterval(()=>{
-    const el=$('syncTime');
-    if(!el)return;
-    const now=new Date();
-    const current=now.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    el.textContent='🕒 '+current;
-  },1000);
-
-  setInterval(()=>{
-    if(role==='student' && document.visibilityState!=='hidden' && Date.now()>asaDirtyUntil && !sheetsLoadingPromise && !syncInProgress){
-      loadSheets().catch(()=>{});
-    }
-  },1000);
-
-  /* Do not show a scary "sync error" for one transient polling failure. */
-  const originalSetSyncStatus=window.setSyncStatus;
-  window.setSyncStatus=function(t){
-    if(t==='error'){
-      $('syncStatus').textContent='🔄 Live Sync retrying…';
-      return;
-    }
-    return originalSetSyncStatus(t);
-  };
-
-  /* Re-apply Admin label whenever Sheets data arrives. */
-  const oldLoadSheets=window.loadSheets;
-  window.loadSheets=async function(){
-    const r=await oldLoadSheets.apply(this,arguments);
-    try{applySettings();if(role==='student'&&document.visibilityState!=='hidden')studentHome();}catch(e){}
-    return r;
-  };
-
-  /* Ensure new default subject behavior is also used by older calls. */
-  window.asaDefaultSubjects=asaMarkSubjects;
-})();
-</script>
-
-</body></html>`);w.document.close();setTimeout(()=>w.print(),500)}
+function pdf(title,html){let w=window.open('','_blank');if(!w)return alert('Popup blocked');w.document.write(`<html><head><title>${esc(title)}</title><style>body{font-family:Arial;padding:25px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:6px;font-size:12px}th{background:#eee}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.box{border:1px solid #aaa;padding:8px}@media print{button{display:none}}</style></head><body><h1>${esc(title)}</h1>${html}</body></html>`);w.document.close();setTimeout(()=>w.print(),500)}
 function studentPDF(){let s=db.students.find(x=>x.id===$('rpStudent').value),m=$('rpMonth').value;if(!s)return;let att=db.attendance.filter(a=>a.studentId===s.id&&a.date.startsWith(m)),fs=db.fees.filter(f=>f.studentId===s.id&&f.date.startsWith(m)),marks=db.marks.filter(x=>x.studentId===s.id&&x.date.startsWith(m)),paid=calcPaid(s.id,m),extra=calcExtra(s.id,m),p=calcPending(s.id,m);pdf('Student Report',`<p><b>${esc(s.name)}</b> | ${esc(s.class)} | ${m}</p><div class="grid"><div class="box">Present<br><b>${att.filter(a=>a.status==='Present').length}</b></div><div class="box">Absent<br><b>${att.filter(a=>a.status==='Absent').length}</b></div><div class="box">Paid<br><b>${money(paid)}</b></div><div class="box">Pending<br><b>${money(p)}</b></div></div><h3>Attendance</h3><table><tr><th>Date</th><th>Status</th></tr>${att.map(a=>`<tr><td>${a.date}</td><td>${a.status}</td></tr>`).join('')}</table><h3>Fees</h3><table><tr><th>Date</th><th>Type</th><th>Amount</th></tr>${fs.map(f=>`<tr><td>${f.date}</td><td>${f.type}</td><td>${money(f.amount+f.extraAmount)}</td></tr>`).join('')}</table><h3>Marks</h3><table><tr><th>Date</th><th>Exam</th><th>Mark</th></tr>${marks.map(x=>`<tr><td>${x.date}</td><td>${esc(x.exam)}</td><td>${x.mark}/${x.total}</td></tr>`).join('')}</table>`)}
 function monthlyPDF(){let m=$('rpM').value,c=$('rpC').value,ss=groupStudents().filter(s=>!c||s.class===c);pdf('Monthly Student Report',`<p>Month: ${m} | Class: ${esc(c||'All')}</p><table><tr><th>Student</th><th>Class</th><th>Paid</th><th>Pending</th><th>Present</th><th>Absent</th></tr>${ss.map(s=>{let a=db.attendance.filter(x=>x.studentId===s.id&&x.date.startsWith(m));return `<tr><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td>${money(calcPaid(s.id,m))}</td><td>${money(calcPending(s.id,m))}</td><td>${a.filter(x=>x.status==='Present').length}</td><td>${a.filter(x=>x.status==='Absent').length}</td></tr>`}).join('')}</table>`)}
 function historyPDF(){let f=$('histFrom').value,t=$('histTo').value,att=db.attendance.filter(x=>x.date>=f&&x.date<=t),fees=db.fees.filter(x=>x.date>=f&&x.date<=t);pdf('All History Report',`<p>${f} → ${t}</p><h3>Attendance</h3><table><tr><th>Date</th><th>Student</th><th>Status</th></tr>${att.map(x=>`<tr><td>${x.date}</td><td>${esc(db.students.find(s=>s.id===x.studentId)?.name||x.studentId)}</td><td>${x.status}</td></tr>`).join('')}</table><h3>Fees</h3><table><tr><th>Date</th><th>Student</th><th>Amount</th></tr>${fees.map(x=>`<tr><td>${x.date}</td><td>${esc(db.students.find(s=>s.id===x.studentId)?.name||x.studentId)}</td><td>${money(x.amount+x.extraAmount)}</td></tr>`).join('')}</table>`)}
@@ -1444,288 +899,7 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
   window.historyData=function(){const f=$('hFrom').value,t=$('hTo').value,c=$('hClass').value,studentIds=new Set(db.students.filter(s=>!c||String(s.class)===c).map(s=>String(s.id)));const inRange=x=>String(x.date||'')>=f&&String(x.date||'')<=t;return {students:db.students.filter(s=>studentIds.has(String(s.id))),attendance:db.attendance.filter(x=>studentIds.has(String(x.studentId))&&inRange(x)),fees:db.fees.filter(x=>studentIds.has(String(x.studentId))&&inRange(x)),marks:db.marks.filter(x=>studentIds.has(String(x.studentId))&&inRange(x)),onlineMarks:db.onlineMarks.filter(x=>studentIds.has(String(x.studentId))&&inRange(x)),tests:db.tests.filter(x=>inRange(x)&&(!c||!x.class||String(x.class)===c)),expenses:db.expenses.filter(inRange),extraIncome:db.extraIncome.filter(inRange)};};
   window.renderHistoryPreview=function(){const d=historyData();$('historyPreview').innerHTML=`<div class="cards"><div class="stat"><div class="label">Attendance</div><div class="value">${d.attendance.length}</div></div><div class="stat"><div class="label">Fees</div><div class="value">${d.fees.length}</div></div><div class="stat"><div class="label">Marks</div><div class="value">${d.marks.length+d.onlineMarks.length}</div></div><div class="stat"><div class="label">Other Finance</div><div class="value">${d.expenses.length+d.extraIncome.length}</div></div></div><div class="card"><div class="table-wrap"><table class="table"><tr><th>Date</th><th>Type</th><th>Student / Class</th><th>Details</th><th>Amount / Mark</th></tr>${d.attendance.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${x.date}</td><td>Attendance</td><td>${esc(s?.name||x.studentId)} / ${esc(s?.class||'')}</td><td>${esc(x.status)}</td><td>-</td></tr>`}).join('')}${d.fees.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${x.date}</td><td>Fee</td><td>${esc(s?.name||x.studentId)} / ${esc(s?.class||'')}</td><td>${esc(x.type)}</td><td>${money(Number(x.amount||0)+Number(x.extraAmount||0))}</td></tr>`}).join('')}${d.marks.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${x.date}</td><td>Mark</td><td>${esc(s?.name||x.studentId)} / ${esc(s?.class||'')}</td><td>${esc(x.exam||'')}</td><td>${x.mark}/${x.total}</td></tr>`}).join('')}${d.onlineMarks.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${esc(x.date||'')}</td><td>Online Mark</td><td>${esc(s?.name||x.studentId)} / ${esc(s?.class||'')}</td><td>${esc(x.testName||x.exam||'')}</td><td>${x.mark}/${x.total}</td></tr>`}).join('')}${d.tests.map(x=>`<tr><td>${esc(x.date||'')}</td><td>Online Test</td><td>- / ${esc(x.class||'All')}</td><td>${esc(x.name||'')} ${x.subject?' / '+esc(x.subject):''}</td><td>-</td></tr>`).join('')}${d.expenses.map(x=>`<tr><td>${x.date}</td><td>Expense</td><td>-</td><td>${esc(x.category||x.note||'')}</td><td>${money(x.amount)}</td></tr>`).join('')}${d.extraIncome.map(x=>`<tr><td>${x.date}</td><td>Extra Income</td><td>-</td><td>${esc(x.source||x.note||'')}</td><td>${money(x.amount)}</td></tr>`).join('')||'<tr><td colspan="5">No records</td></tr>'}</table></div></div>`};
   window.historyPDF2=function(){const d=historyData();const cls=$('hClass').value||'All Classes',f=$('hFrom').value,t=$('hTo').value;pdf('All History Report',`<p><b>Period:</b> ${f} → ${t} &nbsp; <b>Class:</b> ${esc(cls)}</p><h3>Attendance</h3><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Status</th></tr>${d.attendance.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${x.date}</td><td>${esc(s?.name||x.studentId)}</td><td>${esc(s?.class||'')}</td><td>${esc(x.status)}</td></tr>`}).join('')}</table><h3>Fees</h3><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Type</th><th>Amount</th></tr>${d.fees.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${x.date}</td><td>${esc(s?.name||x.studentId)}</td><td>${esc(s?.class||'')}</td><td>${esc(x.type)}</td><td>${money(Number(x.amount||0)+Number(x.extraAmount||0))}</td></tr>`}).join('')}</table><h3>Regular Marks</h3><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Exam</th><th>Mark</th></tr>${d.marks.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${x.date}</td><td>${esc(s?.name||x.studentId)}</td><td>${esc(s?.class||'')}</td><td>${esc(x.exam||'')}</td><td>${x.mark}/${x.total}</td></tr>`}).join('')}</table><h3>Online Test Marks</h3><table><tr><th>Date</th><th>Student</th><th>Class</th><th>Test</th><th>Mark</th></tr>${d.onlineMarks.map(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));return `<tr><td>${esc(x.date||'')}</td><td>${esc(s?.name||x.studentId)}</td><td>${esc(s?.class||'')}</td><td>${esc(x.testName||x.exam||'')}</td><td>${x.mark}/${x.total}</td></tr>`}).join('')}</table><h3>Online Tests</h3><table><tr><th>Date</th><th>Test</th><th>Class</th><th>Subject</th></tr>${d.tests.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.name||'')}</td><td>${esc(x.class||'All')}</td><td>${esc(x.subject||'')}</td></tr>`).join('')}</table><h3>Finance</h3><table><tr><th>Date</th><th>Type</th><th>Source/Note</th><th>Amount</th></tr>${d.expenses.map(x=>`<tr><td>${x.date}</td><td>Expense</td><td>${esc(x.category||x.note||'')}</td><td>${money(x.amount)}</td></tr>`).join('')}${d.extraIncome.map(x=>`<tr><td>${x.date}</td><td>Extra Income</td><td>${esc(x.source||x.note||'')}</td><td>${money(x.amount)}</td></tr>`).join('')}</table>`)};
-  window.exportAllExcel=function(){const d=historyData();const rows=[['Date','Type','Student ID','Student Name','Class','Status/Description','Amount','Mark','Total']];const add=(date,type,s,desc,amount='',mark='',total='')=>rows.push([date,type,s?.id||'',s?.name||'',s?.class||'',desc,amount,mark,total]);d.attendance.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date,'Attendance',s,x.status)});d.fees.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date,'Fee',s,x.type,Number(x.amount||0)+Number(x.extraAmount||0))});d.marks.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date,'Mark',s,x.exam,'',x.mark,x.total)});d.onlineMarks.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date||'', 'Online Mark',s,x.testName||x.exam||'', '',x.mark,x.total)});d.tests.forEach(x=>add(x.date,'Online Test',null,`${x.name||''} / ${x.class||'All'} / ${x.subject||''}`));d.expenses.forEach(x=>add(x.date,'Expense',null,x.category||x.note||'',Number(x.amount||0)));d.extraIncome.forEach(x=>add(x.date,'Extra Income',null,x.source||x.note||'',Number(x.amount||0)));const escX=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');const html='<html><head><meta charset="UTF-8"></head><body><table border="1"><tr>'+rows[0].map(x=>`<th>${escX(x)}</th>`).join('')+'</tr>'+rows.slice(1).map(r=>'<tr>'+r.map(x=>`<td>${escX(x)}</td>`).join('')+'</tr>').join('')+'</table>
-<script>
-/* ===== 2026-09-02 Student Portal + Live Sync Update ===== */
-(function(){
-  const asaOriginalStudentHome = window.studentHome;
-  const asaOriginalRenderStudentMonth = window.renderStudentMonth;
-
-  /* New student billing start month: tuition cannot become pending before joining month. */
-  const asaOldCalcPending = window.calcPending;
-  window.calcPending = function(id,m){
-    const s=(db.students||[]).find(x=>String(x.id)===String(id)) ||
-            (db.archivedStudents||[]).find(x=>String(x.id)===String(id));
-    const start=String(s?.startMonth||s?.joinedMonth||'');
-    if(start && m && String(m)<start) return 0;
-    return asaOldCalcPending ? asaOldCalcPending(id,m) : 0;
-  };
-
-  function asaAdminName(){ return String(db.settings?.adminName||'Admin').trim() || 'Admin'; }
-  function asaMonthLabel(m){
-    try{return new Date(m+'-01T00:00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'});}
-    catch(e){return m;}
-  }
-  function asaMarkSubjects(){
-    return ['Maths','English','Tamil','Science','Social Science'];
-  }
-
-  /* Student portal: only cards first; click a card to open only that module. */
-  window.studentHome=function(){
-    const s=currentStudent;
-    $('pageTitle').textContent='Student Dashboard';
-    $('content').innerHTML=`
-      <div class="card" style="background:linear-gradient(135deg,#075985,#0ea5e9);color:#fff;border:0">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:32px">👨‍🎓</div>
-          <div><div style="font-size:12px;opacity:.8">WELCOME</div><h2 style="margin:4px 0">${esc(s.name)}</h2>
-          <div>Class: <b>${esc(s.class||'-')}</b> &nbsp; • &nbsp; ID: <b>${esc(s.id)}</b></div>
-          <div style="margin-top:4px;font-size:12px">Admin: <b>${esc(asaAdminName())}</b></div></div>
-        </div>
-      </div>
-      <div class="student-portal-cards">
-        <div class="student-portal-card attendance" onclick="studentOpenModule('attendance')"><span>📅</span><b>Attendance</b><small>Month-wise</small></div>
-        <div class="student-portal-card fees" onclick="studentOpenModule('fees')"><span>💰</span><b>Fees</b><small>Paid / Pending / History</small></div>
-        <div class="student-portal-card marks" onclick="studentOpenModule('marks')"><span>📝</span><b>Marks</b><small>Overall marks</small></div>
-      </div>
-      <div class="card admin-profile-card">
-        <div class="section-title"><span>👤</span><div><h3 style="margin:0">Student Details</h3><small class="muted">View only</small></div></div>
-        <div class="two">
-          <div><b>Name</b><br>${esc(s.name)}</div><div><b>Class</b><br>${esc(s.class||'-')}</div>
-          <div><b>Student ID</b><br>${esc(s.id)}</div><div><b>Admin</b><br>${esc(asaAdminName())}</div>
-        </div>
-        ${s.mobile?`<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn" href="tel:${esc(s.mobile)}">📞 Call</a>
-          <a class="btn light" href="sms:${esc(s.mobile)}">✉️ WhatsApp/SMS Contact</a>
-          <a class="btn green" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent('Hello '+s.name+', from '+(db.settings.academy||'Academy'))}">💬 WhatsApp</a>
-        </div>`:''}
-      </div>`;
-  };
-
-  window.studentOpenModule=function(type){
-    const s=currentStudent;
-    const m=monthNow();
-    if(type==='attendance'){
-      $('pageTitle').textContent='Student • Attendance';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Attendance Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderAttendance()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentAttendanceBox"></div>
-      </div>`;
-      studentRenderAttendance();
-    }else if(type==='fees'){
-      $('pageTitle').textContent='Student • Fees';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Fee Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderFees()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentFeesBox"></div>
-      </div>`;
-      studentRenderFees();
-    }else{
-      $('pageTitle').textContent='Student • Overall Marks';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentMarksBox"></div>
-      </div>`;
-      studentRenderMarks();
-    }
-  };
-
-  window.studentRenderAttendance=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const a=(db.attendance||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m))
-      .sort((x,y)=>String(y.date).localeCompare(String(x.date)));
-    const p=a.filter(x=>x.status==='Present').length, ab=a.filter(x=>x.status==='Absent').length;
-    $('studentAttendanceBox').innerHTML=`
-      <div class="cards"><div class="stat"><div class="label">Month</div><div class="value" style="font-size:18px">${esc(asaMonthLabel(m))}</div></div>
-      <div class="stat"><div class="label">Present</div><div class="value success">${p}</div></div>
-      <div class="stat"><div class="label">Absent</div><div class="value danger">${ab}</div></div></div>
-      <table class="table"><tr><th>Date</th><th>Status</th></tr>
-      ${a.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${esc(x.status)}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance for this month</td></tr>'}</table>`;
-  };
-
-  window.studentRenderFees=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const paid=calcPaid(s.id,m), pending=calcPending(s.id,m), extra=calcExtra(s.id,m), extraPaid=calcExtraPaid(s.id,m), extraPending=calcExtraPending(s.id,m);
-    const rows=(db.fees||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m)).slice().reverse();
-    $('studentFeesBox').innerHTML=`
-      <div class="cards">
-        <div class="stat"><div class="label">Tuition Paid</div><div class="value success">${money(paid)}</div></div>
-        <div class="stat"><div class="label">Tuition Pending</div><div class="value danger">${money(pending)}</div></div>
-        <div class="stat"><div class="label">Extra Paid</div><div class="value">${money(extraPaid)}</div></div>
-        <div class="stat"><div class="label">Extra Pending</div><div class="value danger">${money(extraPending)}</div></div>
-      </div>
-      <div class="notice">📌 ${esc(asaMonthLabel(m))} — Total Pending: <b class="danger">${money(pending+extraPending)}</b></div>
-      <table class="table"><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th><th>Discount</th><th>Amount</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.type||'Payment')}</td><td>${esc(x.extraType||'Monthly Fee')}</td><td>${money(x.amount||0)}</td><td>${money(x.discount||0)}</td><td>${money(Number(x.amount||0)+Number(x.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="6">No fee history</td></tr>'}</table>`;
-  };
-
-  window.studentRenderMarks=function(){
-    const s=currentStudent;
-    const rows=(db.marks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    const online=(db.onlineMarks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    $('studentMarksBox').innerHTML=`
-      <div class="notice">📝 All regular marks are shown overall. Online Test marks are also shown below.</div>
-      <table class="table"><tr><th>Date</th><th>Subject / Exam</th><th>Mark</th><th>Total</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No marks yet</td></tr>'}</table>
-      <h3 style="margin-top:18px">🧪 Online Test Marks</h3>
-      <table class="table"><tr><th>Date</th><th>Test</th><th>Mark</th><th>Total</th></tr>
-      ${online.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.testName||x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No online test marks yet</td></tr>'}</table>`;
-  };
-
-  /* Add Student: store the first billing month permanently. */
-  const oldStudentForm=window.studentForm;
-  window.studentForm=function(id=''){
-    const s=db.students.find(x=>String(x.id)===String(id))||{id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234',startMonth:monthNow()};
-    openModal(id?'Edit Student':'Add Student',`<div class="two">
-      <div><label>Student ID</label><input id="fId" value="${esc(s.id)}"></div>
-      <div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div>
-      <label>Name</label><input id="fName" value="${esc(s.name)}">
-      <div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div>
-      <div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div>
-      <div><label>Parent</label><input id="fParent" value="${esc(s.parent||'')}"></div>
-      <div><label>Monthly Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"></div></div>
-      <label>Address</label><input id="fAddress" value="${esc(s.address||'')}">
-      <label>Fee Start Month</label><input id="fStartMonth" type="month" value="${esc(s.startMonth||monthNow())}">
-      <div class="notice mini">Fee Pending will start only from this month. Previous months will NOT be pending for this student.</div>
-      <button class="btn" style="width:100%" onclick="saveStudent('${esc(id)}')">💾 Save Student</button>`);
-  };
-
-  const oldSaveStudent=window.saveStudent;
-  window.saveStudent=function(oldId){
-    const newId=$('fId').value.trim(),name=$('fName').value.trim(),studentClass=$('fClass').value.trim(),startMonth=$('fStartMonth')?.value||monthNow();
-    if(!newId||!name)return alert('Student ID மற்றும் Name தேவை');
-    if(role==='teacher'&&!teacherCanClass(studentClass))return alert('இந்த class உங்கள் Teacher Allowed Class list-ல் இல்லை.');
-    if(newId!==String(oldId)&&db.students.some(s=>String(s.id)===newId))return alert('Student ID already exists');
-    const o={id:newId,name,class:studentClass,mobile:$('fMobile').value.trim(),parent:$('fParent').value.trim(),address:$('fAddress').value.trim(),monthlyFee:Number($('fFee').value)||0,password:$('fPass').value||'1234',startMonth};
-    if(oldId){
-      const old=String(oldId),i=db.students.findIndex(s=>String(s.id)===old);
-      if(i<0)return;
-      if(old!==newId)['attendance','fees','marks','onlineMarks'].forEach(k=>(db[k]||[]).forEach(x=>{if(String(x.studentId)===old)x.studentId=newId;}));
-      db.students[i]=o;
-    }else db.students.push(o);
-    addAudit('Students',oldId?'Update':'Add',newId,`${name} • Start Month ${startMonth}`);
-    closeModal();studentsPage();save();
-  };
-
-  /* Marks subject dropdown with required defaults, but Other is optional/free text. */
-  window.markForm=function(editId=''){
-    let old=db.marks.find(x=>x._id===editId)||{},ss=groupStudents();
-    const subjects=asaMarkSubjects(), current=String(old.exam||'');
-    const isOther=current && !subjects.includes(current);
-    openModal(editId?'Edit Mark':'Add Mark',`
-      <label>Student</label><select id="mkStudent">${ss.map(s=>`<option value="${esc(s.id)}" ${s.id===old.studentId?'selected':''}>${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select>
-      <label>Subject</label><select id="mkSubject" onchange="toggleOtherSubject()">
-        <option value="">Select Subject</option>${subjects.map(x=>`<option ${current===x?'selected':''}>${x}</option>`).join('')}
-        <option value="__OTHER__" ${isOther?'selected':''}>Other</option>
-      </select>
-      <input id="mkOther" placeholder="Type other subject" value="${esc(isOther?current:'')}" style="display:${isOther?'block':'none'};margin-top:8px">
-      <div class="two"><div><label>Mark</label><input id="mkMark" type="number" value="${old.mark??''}"></div>
-      <div><label>Total</label><input id="mkTotal" type="number" value="${old.total||100}"></div></div>
-      <label>Date</label><input id="mkDate" type="date" value="${old.date||today()}">
-      <br><button class="btn" style="width:100%" onclick="saveMark('${esc(editId)}')">Save Mark</button>`);
-  };
-  window.toggleOtherSubject=function(){const other=$('mkSubject')?.value==='__OTHER__';if($('mkOther'))$('mkOther').style.display=other?'block':'none';};
-  window.saveMark=function(id=''){
-    if(role==='teacher'&&currentTeacher?.permissions?.marks===false)return alert('Marks permission இல்லை');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    const sid=$('mkStudent').value;if(role==='teacher'&&!teacherCanStudent(sid))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let subject=$('mkSubject').value;if(!subject)return alert('Subject select செய்யவும்');
-    if(subject==='__OTHER__')subject=$('mkOther').value.trim();
-    if(!subject)return alert('Other subject type செய்யவும்');
-    const mark=Number($('mkMark').value), total=Number($('mkTotal').value)||100;
-    if(!Number.isFinite(mark)||mark<0||mark>total)return alert('Mark சரியாக கொடுக்கவும்');
-    const o={_id:id||('M'+Date.now()),studentId:sid,exam:subject,mark,total,date:$('mkDate').value,enteredBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
-    if(id)db.marks[db.marks.findIndex(x=>x._id===id)]=o;else db.marks.push(o);
-    addAudit('Marks',id?'Update':'Save',o.studentId,`${subject} • ${mark}/${total}`);
-    closeModal();marksPage();save();
-  };
-
-  /* Paid fee receipt text: WhatsApp + SMS immediately after payment. */
-  function asaPaidFeeMessage(s,amount,discount,date){
-    const msg=`${db.settings?.academy||'Academy'}\nFee Payment Receipt\nStudent: ${s.name}\nMonth: ${String(date).slice(0,7)}\nPaid: ₹${Number(amount||0)}\nDiscount: ₹${Number(discount||0)}\nRemaining Tuition Pending: ₹${calcPending(s.id,String(date).slice(0,7))}\nDate: ${date}\nThank you.`;
-    return msg;
-  }
-  const oldSaveFee=window.saveFee;
-  window.saveFee=function(){
-    if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
-    let id=$('feeStudent').value,a=Number($('feeAmount').value),discount=Number($('feeDiscount').value)||0,d=$('feeDate').value;
-    if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
-    if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let pendingBefore=calcPending(id,d.slice(0,7));
-    if(a+discount>pendingBefore)return alert('Tuition Paid + Discount amount pending-ஐ விட அதிகமாக இருக்க முடியாது.');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    db.fees.push({studentId:id,amount:a,discount,extraAmount:0,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
-    addAudit('Fees','Save',id,`Payment ₹${a} • ${d}`);
-    const s=db.students.find(x=>String(x.id)===String(id)); const msg=asaPaidFeeMessage(s,a,discount,d);
-    closeModal();feesPage();save();
-    if(s?.mobile){
-      setTimeout(()=>{
-        const wa='https://wa.me/'+waPhone(s.mobile)+'?text='+encodeURIComponent(msg);
-        openModal('✅ Fee Paid Receipt',`<div class="notice"><b>${esc(s.name)}</b><br>${esc(msg).replaceAll('\n','<br>')}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn green" target="_blank" href="${wa}">💬 WhatsApp Receipt</a>
-          <a class="btn light" target="_blank" href="sms:${esc(s.mobile)}?body=${encodeURIComponent(msg)}">✉️ SMS Receipt</a>
-          </div>`);
-      },150);
-    }
-  };
-
-  /* Settings: admin name + message persistence. */
-  const oldSettingsPage=window.settingsPage;
-  window.settingsPage=function(){
-    oldSettingsPage();
-    const card=$('content').querySelector('.card');
-    const st=$('sa');
-    if(st && !$('san')){
-      const mobile=$('sm');
-      const div=document.createElement('div'); div.innerHTML=`<label>Admin Name</label><input id="san" value="${esc(db.settings.adminName||'')}">`;
-      mobile?.parentNode?.before(div.firstElementChild);
-    }
-  };
-
-  /* Live sync heartbeat: refresh from Sheets every second, but never overlap requests.
-     A short dirty window prevents a just-saved local change from being overwritten by an older GET. */
-  let asaDirtyUntil=0;
-  const oldSaveGlobal=window.save;
-  window.save=function(){asaDirtyUntil=Date.now()+1800;return oldSaveGlobal.apply(this,arguments);};
-
-  setInterval(()=>{
-    const el=$('syncTime');
-    if(!el)return;
-    const now=new Date();
-    const current=now.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    el.textContent='🕒 '+current;
-  },1000);
-
-  setInterval(()=>{
-    if(role==='student' && document.visibilityState!=='hidden' && Date.now()>asaDirtyUntil && !sheetsLoadingPromise && !syncInProgress){
-      loadSheets().catch(()=>{});
-    }
-  },1000);
-
-  /* Do not show a scary "sync error" for one transient polling failure. */
-  const originalSetSyncStatus=window.setSyncStatus;
-  window.setSyncStatus=function(t){
-    if(t==='error'){
-      $('syncStatus').textContent='🔄 Live Sync retrying…';
-      return;
-    }
-    return originalSetSyncStatus(t);
-  };
-
-  /* Re-apply Admin label whenever Sheets data arrives. */
-  const oldLoadSheets=window.loadSheets;
-  window.loadSheets=async function(){
-    const r=await oldLoadSheets.apply(this,arguments);
-    try{applySettings();if(role==='student'&&document.visibilityState!=='hidden')studentHome();}catch(e){}
-    return r;
-  };
-
-  /* Ensure new default subject behavior is also used by older calls. */
-  window.asaDefaultSubjects=asaMarkSubjects;
-})();
-</script>
-
-</body></html>';const blob=new Blob([html],{type:'application/vnd.ms-excel'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Arul_Siragugal_All_Details_${today()}.xls`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+  window.exportAllExcel=function(){const d=historyData();const rows=[['Date','Type','Student ID','Student Name','Class','Status/Description','Amount','Mark','Total']];const add=(date,type,s,desc,amount='',mark='',total='')=>rows.push([date,type,s?.id||'',s?.name||'',s?.class||'',desc,amount,mark,total]);d.attendance.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date,'Attendance',s,x.status)});d.fees.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date,'Fee',s,x.type,Number(x.amount||0)+Number(x.extraAmount||0))});d.marks.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date,'Mark',s,x.exam,'',x.mark,x.total)});d.onlineMarks.forEach(x=>{const s=db.students.find(s=>String(s.id)===String(x.studentId));add(x.date||'', 'Online Mark',s,x.testName||x.exam||'', '',x.mark,x.total)});d.tests.forEach(x=>add(x.date,'Online Test',null,`${x.name||''} / ${x.class||'All'} / ${x.subject||''}`));d.expenses.forEach(x=>add(x.date,'Expense',null,x.category||x.note||'',Number(x.amount||0)));d.extraIncome.forEach(x=>add(x.date,'Extra Income',null,x.source||x.note||'',Number(x.amount||0)));const escX=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');const html='<html><head><meta charset="UTF-8"></head><body><table border="1"><tr>'+rows[0].map(x=>`<th>${escX(x)}</th>`).join('')+'</tr>'+rows.slice(1).map(r=>'<tr>'+r.map(x=>`<td>${escX(x)}</td>`).join('')+'</tr>').join('')+'</table></body></html>';const blob=new Blob([html],{type:'application/vnd.ms-excel'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Arul_Siragugal_All_Details_${today()}.xls`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 
   window.financePage=function(){
     if(role!=='admin')return alert('Admin only');
@@ -1798,7 +972,7 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
   window.deleteExtraIncome=function(id){if(!confirm('Extra income delete செய்யவா?'))return;db.extraIncome=db.extraIncome.filter(x=>String(x._id)!==String(id));save();financePage();};
   
   window.settingsPage=function(){
-    if(role!=='admin')return alert('Admin only');let m=db.settings.messages||{};$('content').innerHTML=`<div class="card"><h3>⚙️ Admin Settings</h3><div class="two"><div><label>Academy Name</label><input id="sa" value="${esc(db.settings.academy)}"></div><div><label>Academy Logo URL</label><input id="slogo" value="${esc(db.settings.logo||'')}" placeholder="https://.../logo.png"><input id="slogoFile" type="file" accept="image/*" style="margin-top:7px"><small class="muted">URL அல்லது image upload. Save செய்ததும் login + dashboard logo update ஆகும்.</small></div><div><label>Teacher Name</label><input id="st" value="${esc(db.settings.teacher)}"></div><div><label>Admin Name</label><input id="san" value="${esc(db.settings.adminName||'')}"></div><div><label>Mobile</label><input id="sm" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="sf" type="number" value="${db.settings.fee}"></div><div><label>Admin ID</label><input id="sid" value="${esc(db.settings.adminId)}"></div><div><label>Admin Password</label><input id="sp" type="password" value="${esc(db.settings.adminPass)}"></div><div><label>Teacher ID</label><input id="tid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="tp" value="${esc(db.settings.teacherPass)}"></div><div><label>WhatsApp Group Link</label><input id="wg" value="${esc(db.settings.whatsappGroup||'')}" placeholder="https://chat.whatsapp.com/..."> </div></div><label>Fee Reminder Message</label><textarea id="fm">${esc(m.fee||'')}</textarea><small class="muted">Placeholders: {student} {tuitionPending} {extraPending} {totalPending} {amount} {academy} {date}</small><label>Absent Reminder Message</label><textarea id="am">${esc(m.absent||'')}</textarea><br><button class="btn" onclick="saveSettings()">💾 Save & Sync</button><button class="btn light" onclick="loadSheets()">↻ Reload Sheets</button></div><div class="card"><b>Database:</b> Google Sheets only. Browser localStorage is not used for student/attendance/fee/marks data.</div>`;
+    if(role!=='admin')return alert('Admin only');let m=db.settings.messages||{};$('content').innerHTML=`<div class="card"><h3>⚙️ Admin Settings</h3><div class="two"><div><label>Academy Name</label><input id="sa" value="${esc(db.settings.academy)}"></div><div><label>Academy Logo URL</label><input id="slogo" value="${esc(db.settings.logo||'')}" placeholder="https://.../logo.png"><input id="slogoFile" type="file" accept="image/*" style="margin-top:7px"><small class="muted">URL அல்லது image upload. Save செய்ததும் login + dashboard logo update ஆகும்.</small></div><div><label>Teacher Name</label><input id="st" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="sm" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="sf" type="number" value="${db.settings.fee}"></div><div><label>Admin ID</label><input id="sid" value="${esc(db.settings.adminId)}"></div><div><label>Admin Password</label><input id="sp" type="password" value="${esc(db.settings.adminPass)}"></div><div><label>Teacher ID</label><input id="tid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="tp" value="${esc(db.settings.teacherPass)}"></div><div><label>WhatsApp Group Link</label><input id="wg" value="${esc(db.settings.whatsappGroup||'')}" placeholder="https://chat.whatsapp.com/..."> </div></div><label>Fee Reminder Message</label><textarea id="fm">${esc(m.fee||'')}</textarea><small class="muted">Placeholders: {student} {tuitionPending} {extraPending} {totalPending} {amount} {academy} {date}</small><label>Absent Reminder Message</label><textarea id="am">${esc(m.absent||'')}</textarea><br><button class="btn" onclick="saveSettings()">💾 Save & Sync</button><button class="btn light" onclick="loadSheets()">↻ Reload Sheets</button></div><div class="card"><b>Database:</b> Google Sheets only. Browser localStorage is not used for student/attendance/fee/marks data.</div>`;
   };
 
   window.saveSettings=async function(){
@@ -1834,287 +1008,158 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
 
   setSyncTime(db.settings?.lastSyncAt);
 })();
-</script>
 
-<script>
-/* ===== 2026-09-02 Student Portal + Live Sync Update ===== */
+/* ===== Requested vNext functional upgrades ===== */
 (function(){
-  const asaOriginalStudentHome = window.studentHome;
-  const asaOriginalRenderStudentMonth = window.renderStudentMonth;
+  const VDEFAULT_SUBJECTS=['Maths','English','Tamil','Science','Social Science'];
+  const escH=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-  /* New student billing start month: tuition cannot become pending before joining month. */
-  const asaOldCalcPending = window.calcPending;
-  window.calcPending = function(id,m){
-    const s=(db.students||[]).find(x=>String(x.id)===String(id)) ||
-            (db.archivedStudents||[]).find(x=>String(x.id)===String(id));
-    const start=String(s?.startMonth||s?.joinedMonth||'');
-    if(start && m && String(m)<start) return 0;
-    return asaOldCalcPending ? asaOldCalcPending(id,m) : 0;
-  };
-
-  function asaAdminName(){ return String(db.settings?.adminName||'Admin').trim() || 'Admin'; }
-  function asaMonthLabel(m){
-    try{return new Date(m+'-01T00:00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'});}
-    catch(e){return m;}
+  function ymOfDate(d){return String(d||'').slice(0,7)}
+  function joinMonth(s){
+    return String(s?.joinMonth||s?.admissionMonth||s?.joinedMonth||s?.joiningMonth||'').slice(0,7);
   }
-  function asaMarkSubjects(){
-    return ['Maths','English','Tamil','Science','Social Science'];
+  function studentActiveForMonth(s,m){
+    const j=joinMonth(s);
+    return !j || String(m)>=j;
   }
+  function monthAdd(m,n){
+    let [y,mo]=String(m).split('-').map(Number); if(!y||!mo)return m;
+    const d=new Date(y,mo-1+n,1); return d.toISOString().slice(0,7);
+  }
+  function monthsFromTo(a,b){
+    const out=[]; let x=a; let guard=0;
+    while(x<=b&&guard++<240){out.push(x);x=monthAdd(x,1)}
+    return out;
+  }
+  function tuitionDueForMonth(id,m){
+    const s=db.students.find(x=>String(x.id)===String(id))||db.archivedStudents?.find(x=>String(x.id)===String(id));
+    if(!s||!studentActiveForMonth(s,m))return 0;
+    return Math.max(0,Number(s.monthlyFee||0));
+  }
+  function tuitionDueThrough(id,m){
+    const s=db.students.find(x=>String(x.id)===String(id))||db.archivedStudents?.find(x=>String(x.id)===String(id));
+    if(!s)return 0;
+    let start=joinMonth(s)||String(db.settings?.feeStartMonth||m);
+    if(start>m)return 0;
+    return monthsFromTo(start,m).reduce((sum,x)=>sum+tuitionDueForMonth(id,x),0);
+  }
+  /* Use the existing Google Sheets fee records exactly as stored.
+     Payment date determines the month; no previous-month carry/transfer logic. */
+  function paymentAllocations(f){
+    const mm=ymOfDate(f?.date);
+    return mm?[{month:mm,paid:Number(f.amount||0),discount:Number(f.discount||0)}]:[];
+  }
+  function tuitionPaidThrough(id,m){
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='Payment'&&String(f.date||'').slice(0,7)<=String(m))
+      .reduce((sum,f)=>sum+Number(f.amount||0)+Number(f.discount||0),0);
+  }
+  /* Keep the original month-wise calculations: August Sheets data stays in August. */
+  window.calcPaid=function(id,m){return db.fees.filter(f=>String(f.studentId)===String(id)&&String(f.date).startsWith(m)&&f.type==='Payment').reduce((a,f)=>a+Number(f.amount||0),0)};
+  window.calcDiscount=function(id,m){return db.fees.filter(f=>String(f.studentId)===String(id)&&String(f.date).startsWith(m)&&f.type==='Payment').reduce((a,f)=>a+Number(f.discount||0),0)};
+  function cumulativeTuitionPending(id,m){return Math.max(0,tuitionDueThrough(id,m)-tuitionPaidThrough(id,m));}
+  function previousTuitionPending(id,m){return 0;}
+  function currentMonthTuitionPending(id,m){return Math.max(0,Number(calcPending(id,m)||0));}
+  function pendingInfo(id,m){
+    const cur=Math.max(0,Number(calcPending(id,m)||0));
+    const extra=typeof calcExtraPending==='function'?calcExtraPending(id,m):0;
+    return {previous:0,current:cur,tuition:cur,extra,total:cur+extra};
+  }
+  window.tuitionDueForMonth=tuitionDueForMonth;
+  window.cumulativeTuitionPending=cumulativeTuitionPending;
+  window.pendingInfo=pendingInfo;
+  /* IMPORTANT: do not override calcPending/calcTotalPending.
+     The original functions use the actual month present in Google Sheets. */
 
-  /* Student portal: only cards first; click a card to open only that module. */
-  window.studentHome=function(){
-    const s=currentStudent;
-    $('pageTitle').textContent='Student Dashboard';
-    $('content').innerHTML=`
-      <div class="card" style="background:linear-gradient(135deg,#075985,#0ea5e9);color:#fff;border:0">
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <div style="width:64px;height:64px;border-radius:18px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:32px">👨‍🎓</div>
-          <div><div style="font-size:12px;opacity:.8">WELCOME</div><h2 style="margin:4px 0">${esc(s.name)}</h2>
-          <div>Class: <b>${esc(s.class||'-')}</b> &nbsp; • &nbsp; ID: <b>${esc(s.id)}</b></div>
-          <div style="margin-top:4px;font-size:12px">Admin: <b>${esc(asaAdminName())}</b></div></div>
-        </div>
-      </div>
-      <div class="student-portal-cards">
-        <div class="student-portal-card attendance" onclick="studentOpenModule('attendance')"><span>📅</span><b>Attendance</b><small>Month-wise</small></div>
-        <div class="student-portal-card fees" onclick="studentOpenModule('fees')"><span>💰</span><b>Fees</b><small>Paid / Pending / History</small></div>
-        <div class="student-portal-card marks" onclick="studentOpenModule('marks')"><span>📝</span><b>Marks</b><small>Overall marks</small></div>
-      </div>
-      <div class="card admin-profile-card">
-        <div class="section-title"><span>👤</span><div><h3 style="margin:0">Student Details</h3><small class="muted">View only</small></div></div>
-        <div class="two">
-          <div><b>Name</b><br>${esc(s.name)}</div><div><b>Class</b><br>${esc(s.class||'-')}</div>
-          <div><b>Student ID</b><br>${esc(s.id)}</div><div><b>Admin</b><br>${esc(asaAdminName())}</div>
-        </div>
-        ${s.mobile?`<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn" href="tel:${esc(s.mobile)}">📞 Call</a>
-          <a class="btn light" href="sms:${esc(s.mobile)}">✉️ WhatsApp/SMS Contact</a>
-          <a class="btn green" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent('Hello '+s.name+', from '+(db.settings.academy||'Academy'))}">💬 WhatsApp</a>
-        </div>`:''}
-      </div>`;
-  };
-
-  window.studentOpenModule=function(type){
-    const s=currentStudent;
-    const m=monthNow();
-    if(type==='attendance'){
-      $('pageTitle').textContent='Student • Attendance';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Attendance Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderAttendance()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentAttendanceBox"></div>
-      </div>`;
-      studentRenderAttendance();
-    }else if(type==='fees'){
-      $('pageTitle').textContent='Student • Fees';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><div><label>Fee Month</label><input id="smMonth" type="month" value="${m}" onchange="studentRenderFees()"></div><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentFeesBox"></div>
-      </div>`;
-      studentRenderFees();
-    }else{
-      $('pageTitle').textContent='Student • Overall Marks';
-      $('content').innerHTML=`<div class="card">
-        <div class="toolbar"><button class="btn light" onclick="studentHome()">← Back</button></div>
-        <div id="studentMarksBox"></div>
-      </div>`;
-      studentRenderMarks();
-    }
-  };
-
-  window.studentRenderAttendance=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const a=(db.attendance||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m))
-      .sort((x,y)=>String(y.date).localeCompare(String(x.date)));
-    const p=a.filter(x=>x.status==='Present').length, ab=a.filter(x=>x.status==='Absent').length;
-    $('studentAttendanceBox').innerHTML=`
-      <div class="cards"><div class="stat"><div class="label">Month</div><div class="value" style="font-size:18px">${esc(asaMonthLabel(m))}</div></div>
-      <div class="stat"><div class="label">Present</div><div class="value success">${p}</div></div>
-      <div class="stat"><div class="label">Absent</div><div class="value danger">${ab}</div></div></div>
-      <table class="table"><tr><th>Date</th><th>Status</th></tr>
-      ${a.map(x=>`<tr><td>${esc(x.date)}</td><td><span class="badge ${x.status==='Present'?'ok':'pending'}">${esc(x.status)}</span></td></tr>`).join('')||'<tr><td colspan="2">No attendance for this month</td></tr>'}</table>`;
-  };
-
-  window.studentRenderFees=function(){
-    const s=currentStudent,m=$('smMonth')?.value||monthNow();
-    const paid=calcPaid(s.id,m), pending=calcPending(s.id,m), extra=calcExtra(s.id,m), extraPaid=calcExtraPaid(s.id,m), extraPending=calcExtraPending(s.id,m);
-    const rows=(db.fees||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m)).slice().reverse();
-    $('studentFeesBox').innerHTML=`
-      <div class="cards">
-        <div class="stat"><div class="label">Tuition Paid</div><div class="value success">${money(paid)}</div></div>
-        <div class="stat"><div class="label">Tuition Pending</div><div class="value danger">${money(pending)}</div></div>
-        <div class="stat"><div class="label">Extra Paid</div><div class="value">${money(extraPaid)}</div></div>
-        <div class="stat"><div class="label">Extra Pending</div><div class="value danger">${money(extraPending)}</div></div>
-      </div>
-      <div class="notice">📌 ${esc(asaMonthLabel(m))} — Total Pending: <b class="danger">${money(pending+extraPending)}</b></div>
-      <table class="table"><tr><th>Date</th><th>Type</th><th>Purpose</th><th>Paid</th><th>Discount</th><th>Amount</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.type||'Payment')}</td><td>${esc(x.extraType||'Monthly Fee')}</td><td>${money(x.amount||0)}</td><td>${money(x.discount||0)}</td><td>${money(Number(x.amount||0)+Number(x.extraAmount||0))}</td></tr>`).join('')||'<tr><td colspan="6">No fee history</td></tr>'}</table>`;
-  };
-
-  window.studentRenderMarks=function(){
-    const s=currentStudent;
-    const rows=(db.marks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    const online=(db.onlineMarks||[]).filter(x=>String(x.studentId)===String(s.id)).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-    $('studentMarksBox').innerHTML=`
-      <div class="notice">📝 All regular marks are shown overall. Online Test marks are also shown below.</div>
-      <table class="table"><tr><th>Date</th><th>Subject / Exam</th><th>Mark</th><th>Total</th></tr>
-      ${rows.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No marks yet</td></tr>'}</table>
-      <h3 style="margin-top:18px">🧪 Online Test Marks</h3>
-      <table class="table"><tr><th>Date</th><th>Test</th><th>Mark</th><th>Total</th></tr>
-      ${online.map(x=>`<tr><td>${esc(x.date||'-')}</td><td>${esc(x.testName||x.exam||'-')}</td><td><b>${esc(x.mark)}</b></td><td>${esc(x.total||0)}</td></tr>`).join('')||'<tr><td colspan="4">No online test marks yet</td></tr>'}</table>`;
-  };
-
-  /* Add Student: store the first billing month permanently. */
-  const oldStudentForm=window.studentForm;
+  /* New student: admission month is the first billable month. Never create previous-month dues. */
   window.studentForm=function(id=''){
-    const s=db.students.find(x=>String(x.id)===String(id))||{id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234',startMonth:monthNow()};
-    openModal(id?'Edit Student':'Add Student',`<div class="two">
-      <div><label>Student ID</label><input id="fId" value="${esc(s.id)}"></div>
-      <div><label>Password</label><input id="fPass" value="${esc(s.password)}"></div></div>
-      <label>Name</label><input id="fName" value="${esc(s.name)}">
-      <div class="two"><div><label>Class</label><input id="fClass" value="${esc(s.class)}"></div>
-      <div><label>Mobile</label><input id="fMobile" value="${esc(s.mobile)}"></div>
-      <div><label>Parent</label><input id="fParent" value="${esc(s.parent||'')}"></div>
-      <div><label>Monthly Fee</label><input id="fFee" type="number" value="${s.monthlyFee}"></div></div>
-      <label>Address</label><input id="fAddress" value="${esc(s.address||'')}">
-      <label>Fee Start Month</label><input id="fStartMonth" type="month" value="${esc(s.startMonth||monthNow())}">
-      <div class="notice mini">Fee Pending will start only from this month. Previous months will NOT be pending for this student.</div>
-      <button class="btn" style="width:100%" onclick="saveStudent('${esc(id)}')">💾 Save Student</button>`);
+    const s=db.students.find(x=>String(x.id)===String(id))||{
+      id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:db.settings.fee,password:'1234',joinMonth:monthNow()
+    };
+    openModal(id?'Edit Student':'Add Student',`
+      <div class="two">
+        <div><label>Student ID</label><input id="fId" value="${escH(s.id)}" ${id?'readonly':''}></div>
+        <div><label>Password</label><input id="fPass" value="${escH(s.password)}"></div>
+      </div>
+      <label>Name</label><input id="fName" value="${escH(s.name)}">
+      <div class="two">
+        <div><label>Class</label><input id="fClass" value="${escH(s.class)}"></div>
+        <div><label>Mobile</label><input id="fMobile" value="${escH(s.mobile)}"></div>
+        <div><label>Parent</label><input id="fParent" value="${escH(s.parent||'')}"></div>
+        <div><label>Monthly Fee</label><input id="fFee" type="number" value="${Number(s.monthlyFee||0)}"></div>
+      </div>
+      <label>Admission / Billing Start Month</label>
+      <input id="fJoinMonth" type="month" value="${escH(joinMonth(s)||monthNow())}">
+      <small class="muted">Student fee starts only from this month. Previous months will not be charged.</small>
+      <label>Address</label><input id="fAddress" value="${escH(s.address||'')}">
+      <br><button class="btn" style="width:100%" onclick="saveStudent('${escH(id)}')">💾 Save Student</button>
+    `);
   };
-
-  const oldSaveStudent=window.saveStudent;
-  window.saveStudent=function(oldId){
-    const newId=$('fId').value.trim(),name=$('fName').value.trim(),studentClass=$('fClass').value.trim(),startMonth=$('fStartMonth')?.value||monthNow();
-    if(!newId||!name)return alert('Student ID மற்றும் Name தேவை');
-    if(role==='teacher'&&!teacherCanClass(studentClass))return alert('இந்த class உங்கள் Teacher Allowed Class list-ல் இல்லை.');
-    if(newId!==String(oldId)&&db.students.some(s=>String(s.id)===newId))return alert('Student ID already exists');
-    const o={id:newId,name,class:studentClass,mobile:$('fMobile').value.trim(),parent:$('fParent').value.trim(),address:$('fAddress').value.trim(),monthlyFee:Number($('fFee').value)||0,password:$('fPass').value||'1234',startMonth};
-    if(oldId){
-      const old=String(oldId),i=db.students.findIndex(s=>String(s.id)===old);
-      if(i<0)return;
-      if(old!==newId)['attendance','fees','marks','onlineMarks'].forEach(k=>(db[k]||[]).forEach(x=>{if(String(x.studentId)===old)x.studentId=newId;}));
-      db.students[i]=o;
+  window.saveStudent=function(old){
+    let id=$('fId').value.trim(),name=$('fName').value.trim();
+    if(!id||!name)return alert('Student ID மற்றும் Name தேவை');
+    if(!old&&db.students.some(s=>String(s.id)===id))return alert('Student ID already exists');
+    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher');
+    const o={
+      id,name,class:$('fClass').value.trim(),mobile:$('fMobile').value.trim(),
+      parent:$('fParent').value.trim(),address:$('fAddress').value.trim(),
+      monthlyFee:Number($('fFee').value)||0,password:$('fPass').value||'1234',
+      joinMonth:$('fJoinMonth').value||monthNow(),admissionMonth:$('fJoinMonth').value||monthNow(),
+      updatedAt:new Date().toISOString(),lastUpdatedBy:actor
+    };
+    if(old){
+      const idx=db.students.findIndex(s=>String(s.id)===String(old)); if(idx>=0)db.students[idx]={...db.students[idx],...o};
     }else db.students.push(o);
-    addAudit('Students',oldId?'Update':'Add',newId,`${name} • Start Month ${startMonth}`);
+    if(typeof addAudit==='function')addAudit('Students',old?'Update':'Add',id,`${name} • Class ${o.class||'-'}`);
     closeModal();studentsPage();save();
   };
 
-  /* Marks subject dropdown with required defaults, but Other is optional/free text. */
-  window.markForm=function(editId=''){
-    let old=db.marks.find(x=>x._id===editId)||{},ss=groupStudents();
-    const subjects=asaMarkSubjects(), current=String(old.exam||'');
-    const isOther=current && !subjects.includes(current);
-    openModal(editId?'Edit Mark':'Add Mark',`
-      <label>Student</label><select id="mkStudent">${ss.map(s=>`<option value="${esc(s.id)}" ${s.id===old.studentId?'selected':''}>${esc(s.name)} — ${esc(s.class)}</option>`).join('')}</select>
-      <label>Subject</label><select id="mkSubject" onchange="toggleOtherSubject()">
-        <option value="">Select Subject</option>${subjects.map(x=>`<option ${current===x?'selected':''}>${x}</option>`).join('')}
-        <option value="__OTHER__" ${isOther?'selected':''}>Other</option>
+  /* Fee payment uses the actual selected/payment date only. No transfer allocation. */
+  window.feeForm=function(id=''){
+    const m=$('feeMonth')?.value||monthNow();
+    const options=groupStudents().filter(s=>studentActiveForMonth(s,m));
+    openModal('Record Tuition Fee Payment',`
+      <label>Student</label><select id="feeStudent">
+      ${options.map(s=>`<option value="${escH(s.id)}" ${String(s.id)===String(id)?'selected':''}>${escH(s.name)} — ${escH(s.class||'')}</option>`).join('')}
       </select>
-      <input id="mkOther" placeholder="Type other subject" value="${esc(isOther?current:'')}" style="display:${isOther?'block':'none'};margin-top:8px">
-      <div class="two"><div><label>Mark</label><input id="mkMark" type="number" value="${old.mark??''}"></div>
-      <div><label>Total</label><input id="mkTotal" type="number" value="${old.total||100}"></div></div>
-      <label>Date</label><input id="mkDate" type="date" value="${old.date||today()}">
-      <br><button class="btn" style="width:100%" onclick="saveMark('${esc(editId)}')">Save Mark</button>`);
+      <div id="feePayInfo" class="notice"></div>
+      <div class="two">
+        <div><label>Paid Tuition Amount</label><input id="feeAmount" type="number" min="0" oninput="refreshFeePayInfo()"></div>
+        <div><label>Discount Amount</label><input id="feeDiscount" type="number" value="0" min="0" oninput="refreshFeePayInfo()"></div>
+      </div>
+      <label>Date</label><input id="feeDate" type="date" value="${today()}" onchange="refreshFeePayInfo()">
+      <div class="notice mini">Payment is recorded in the month of the actual payment date. Existing August Google Sheets data is used as-is.</div>
+      <button class="btn green" style="width:100%" onclick="saveFee()">💾 Save Payment</button>
+    `);
+    $('feeStudent').addEventListener('change',refreshFeePayInfo); refreshFeePayInfo();
   };
-  window.toggleOtherSubject=function(){const other=$('mkSubject')?.value==='__OTHER__';if($('mkOther'))$('mkOther').style.display=other?'block':'none';};
-  window.saveMark=function(id=''){
-    if(role==='teacher'&&currentTeacher?.permissions?.marks===false)return alert('Marks permission இல்லை');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    const sid=$('mkStudent').value;if(role==='teacher'&&!teacherCanStudent(sid))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let subject=$('mkSubject').value;if(!subject)return alert('Subject select செய்யவும்');
-    if(subject==='__OTHER__')subject=$('mkOther').value.trim();
-    if(!subject)return alert('Other subject type செய்யவும்');
-    const mark=Number($('mkMark').value), total=Number($('mkTotal').value)||100;
-    if(!Number.isFinite(mark)||mark<0||mark>total)return alert('Mark சரியாக கொடுக்கவும்');
-    const o={_id:id||('M'+Date.now()),studentId:sid,exam:subject,mark,total,date:$('mkDate').value,enteredBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
-    if(id)db.marks[db.marks.findIndex(x=>x._id===id)]=o;else db.marks.push(o);
-    addAudit('Marks',id?'Update':'Save',o.studentId,`${subject} • ${mark}/${total}`);
-    closeModal();marksPage();save();
+  window.refreshFeePayInfo=function(){
+    const id=$('feeStudent')?.value,m=ymOfDate($('feeDate')?.value)||($('feeMonth')?.value||monthNow());
+    if(!id||!$('feePayInfo'))return;
+    const cur=Math.max(0,Number(calcPending(id,m)||0));
+    const extra=typeof calcExtraPending==='function'?calcExtraPending(id,m):0;
+    $('feePayInfo').innerHTML=`<b>${m} Pending</b><div class="pending-breakdown" style="margin-top:8px">
+      <div>Tuition Pending<br><b class="danger">${money(cur)}</b></div>
+      <div>Extra Pending<br><b class="danger">${money(extra)}</b></div>
+      <div>Total Pending<br><b class="danger">${money(cur+extra)}</b></div>
+    </div>`;
   };
-
-  /* Paid fee receipt text: WhatsApp + SMS immediately after payment. */
-  function asaPaidFeeMessage(s,amount,discount,date){
-    const msg=`${db.settings?.academy||'Academy'}\nFee Payment Receipt\nStudent: ${s.name}\nMonth: ${String(date).slice(0,7)}\nPaid: ₹${Number(amount||0)}\nDiscount: ₹${Number(discount||0)}\nRemaining Tuition Pending: ₹${calcPending(s.id,String(date).slice(0,7))}\nDate: ${date}\nThank you.`;
-    return msg;
-  }
-  const oldSaveFee=window.saveFee;
   window.saveFee=function(){
     if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
-    let id=$('feeStudent').value,a=Number($('feeAmount').value),discount=Number($('feeDiscount').value)||0,d=$('feeDate').value;
+    const id=$('feeStudent')?.value,a=Number($('feeAmount')?.value)||0,discount=Number($('feeDiscount')?.value)||0,d=$('feeDate')?.value||today();
+    const m=d.slice(0,7),pending=Number(calcPending(id,m)||0),pay=a+discount;
     if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
+    if(!studentActiveForMonth(db.students.find(s=>String(s.id)===String(id)),m))return alert('இந்த student-க்கு இந்த month billing இல்லை.');
+    if(pay>pending)return alert(`${m} Tuition Pending ₹${pending}. அதைவிட அதிகமாக payment செய்ய முடியாது.`);
     if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
-    let pendingBefore=calcPending(id,d.slice(0,7));
-    if(a+discount>pendingBefore)return alert('Tuition Paid + Discount amount pending-ஐ விட அதிகமாக இருக்க முடியாது.');
-    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'), actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    db.fees.push({studentId:id,amount:a,discount,extraAmount:0,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
-    addAudit('Fees','Save',id,`Payment ₹${a} • ${d}`);
-    const s=db.students.find(x=>String(x.id)===String(id)); const msg=asaPaidFeeMessage(s,a,discount,d);
-    closeModal();feesPage();save();
-    if(s?.mobile){
-      setTimeout(()=>{
-        const wa='https://wa.me/'+waPhone(s.mobile)+'?text='+encodeURIComponent(msg);
-        openModal('✅ Fee Paid Receipt',`<div class="notice"><b>${esc(s.name)}</b><br>${esc(msg).replaceAll('\n','<br>')}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn green" target="_blank" href="${wa}">💬 WhatsApp Receipt</a>
-          <a class="btn light" target="_blank" href="sms:${esc(s.mobile)}?body=${encodeURIComponent(msg)}">✉️ SMS Receipt</a>
-          </div>`);
-      },150);
-    }
+    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'),actorId=role==='admin'?'admin':(currentTeacher?.id||'');
+    const row={studentId:id,amount:a,discount,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
+    db.fees.push(row);
+    if(typeof addAudit==='function')addAudit('Fees','Payment',id,`${db.students.find(s=>String(s.id)===String(id))?.name||id} • ₹${a} • ${d}`);
+    closeModal();save();feesPage();
   };
 
-  /* Settings: admin name + message persistence. */
-  const oldSettingsPage=window.settingsPage;
-  window.settingsPage=function(){
-    oldSettingsPage();
-    const card=$('content').querySelector('.card');
-    const st=$('sa');
-    if(st && !$('san')){
-      const mobile=$('sm');
-      const div=document.createElement('div'); div.innerHTML=`<label>Admin Name</label><input id="san" value="${esc(db.settings.adminName||'')}">`;
-      mobile?.parentNode?.before(div.firstElementChild);
-    }
-  };
-
-  /* Live sync heartbeat: refresh from Sheets every second, but never overlap requests.
-     A short dirty window prevents a just-saved local change from being overwritten by an older GET. */
-  let asaDirtyUntil=0;
-  const oldSaveGlobal=window.save;
-  window.save=function(){asaDirtyUntil=Date.now()+1800;return oldSaveGlobal.apply(this,arguments);};
-
-  setInterval(()=>{
-    const el=$('syncTime');
-    if(!el)return;
-    const now=new Date();
-    const current=now.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    el.textContent='🕒 '+current;
-  },1000);
-
-  setInterval(()=>{
-    if(role==='student' && document.visibilityState!=='hidden' && Date.now()>asaDirtyUntil && !sheetsLoadingPromise && !syncInProgress){
-      loadSheets().catch(()=>{});
-    }
-  },1000);
-
-  /* Do not show a scary "sync error" for one transient polling failure. */
-  const originalSetSyncStatus=window.setSyncStatus;
-  window.setSyncStatus=function(t){
-    if(t==='error'){
-      $('syncStatus').textContent='🔄 Live Sync retrying…';
-      return;
-    }
-    return originalSetSyncStatus(t);
-  };
-
-  /* Re-apply Admin label whenever Sheets data arrives. */
-  const oldLoadSheets=window.loadSheets;
-  window.loadSheets=async function(){
-    const r=await oldLoadSheets.apply(this,arguments);
-    try{applySettings();if(role==='student'&&document.visibilityState!=='hidden')studentHome();}catch(e){}
-    return r;
-  };
-
-  /* Ensure new default subject behavior is also used by older calls. */
-  window.asaDefaultSubjects=asaMarkSubjects;
 })();
-</script>
 
+</script>
 </body>
 </html>
