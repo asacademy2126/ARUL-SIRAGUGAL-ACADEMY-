@@ -231,6 +231,8 @@ function normalize(d){
     sheetsUrl:SHEETS_URL
   };
 
+  if(window.__pendingSettings && Date.now() < Number(window.__settingsProtectedUntil||0)){ db.settings={...db.settings,...window.__pendingSettings,messages:{...(db.settings.messages||{}),...(window.__pendingSettings.messages||{})}}; }
+
   if(!db.settings.teacherId && db.teachers[0]) db.settings.teacherId=db.teachers[0].id;
   if(!db.settings.teacherPass && db.teachers[0]) db.settings.teacherPass=db.teachers[0].password;
   applySettings();
@@ -1041,10 +1043,23 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     if(start>m)return 0;
     return monthsFromTo(start,m).reduce((sum,x)=>sum+tuitionDueForMonth(id,x),0);
   }
-  function tuitionPaidThrough(id,m){
-    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='Payment'&&ymOfDate(f.date)<=m)
-      .reduce((a,f)=>a+Number(f.amount||0)+Number(f.discount||0),0);
+  function paymentAllocations(f){
+    if(f&&Array.isArray(f.paymentAllocation?.allocations)&&f.paymentAllocation.allocations.length) return f.paymentAllocation.allocations;
+    const mm=ymOfDate(f?.date);
+    return mm?[{month:mm,paid:Number(f.amount||0),discount:Number(f.discount||0)}]:[];
   }
+  function tuitionPaidThrough(id,m){
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='Payment')
+      .reduce((sum,f)=>sum+paymentAllocations(f).filter(a=>String(a.month)<=String(m)).reduce((x,a)=>x+Number(a.paid||0)+Number(a.discount||0),0),0);
+  }
+  window.calcPaid=function(id,m){
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='Payment')
+      .reduce((sum,f)=>sum+paymentAllocations(f).filter(a=>String(a.month)===String(m)).reduce((x,a)=>x+Number(a.paid||0),0),0);
+  };
+  window.calcDiscount=function(id,m){
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='Payment')
+      .reduce((sum,f)=>sum+paymentAllocations(f).filter(a=>String(a.month)===String(m)).reduce((x,a)=>x+Number(a.discount||0),0),0);
+  };
   function cumulativeTuitionPending(id,m){
     return Math.max(0,tuitionDueThrough(id,m)-tuitionPaidThrough(id,m));
   }
@@ -1127,7 +1142,12 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
         <div><label>Discount Amount</label><input id="feeDiscount" type="number" value="0" min="0" oninput="refreshFeePayInfo()"></div>
       </div>
       <label>Date</label><input id="feeDate" type="date" value="${today()}" onchange="refreshFeePayInfo()">
-      <div class="notice mini">Payment will be adjusted <b>Previous Month Pending first → Current Month</b>. Extra Fee is separate.</div>
+      <label>Pending Transfer / Payment Allocation</label>
+      <select id="feeAllocationMode" onchange="refreshFeePayInfo()">
+        <option value="carry" selected>Previous Month Pending → Current Month (Recommended)</option>
+        <option value="current">Current Month Only</option>
+      </select>
+      <div class="notice mini">If transfer mode is selected, older pending is cleared first. The payment <b>date remains the actual paid date</b>, while Finance credits the amount to the original pending month.</div>
       <button class="btn green" style="width:100%" onclick="saveFee()">💾 Save Payment</button>
     `);
     $('feeStudent').addEventListener('change',refreshFeePayInfo); refreshFeePayInfo();
@@ -1135,12 +1155,12 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
   window.refreshFeePayInfo=function(){
     const id=$('feeStudent')?.value,m=ymOfDate($('feeDate')?.value)||($('feeMonth')?.value||monthNow());
     if(!id||!$('feePayInfo'))return;
-    const pi=pendingInfo(id,m);
+    const pi=pendingInfo(id,m),mode=$('feeAllocationMode')?.value||'carry';
     $('feePayInfo').innerHTML=`<b>Pending before payment</b><div class="pending-breakdown" style="margin-top:8px">
       <div>Previous Pending<br><b class="danger">${money(pi.previous)}</b></div>
       <div>Current Month<br><b class="danger">${money(pi.current)}</b></div>
       <div>Total Tuition<br><b class="danger">${money(pi.tuition)}</b></div>
-    </div>`;
+    </div><div class="notice mini">Mode: <b>${mode==='carry'?'Previous Pending → Current':'Current Month Only'}</b></div>`;
   };
 
   function paymentReceiptText(s,row,info){
@@ -1159,13 +1179,29 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     const m=d.slice(0,7),pi=pendingInfo(id,m),pay=a+discount;
     if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
     if(!studentActiveForMonth(db.students.find(s=>String(s.id)===String(id)),m))return alert('இந்த student-க்கு இந்த month billing இல்லை.');
-    if(pay>pi.tuition)return alert(`Previous + Current Tuition Pending ₹${pi.tuition}. அதைவிட அதிகமாக payment செய்ய முடியாது.`);
+    const mode=$('feeAllocationMode')?.value||'carry';
+    const allowed=mode==='current'?pi.current:pi.tuition;
+    if(pay>allowed)return alert(mode==='current'?`Current Month Pending ₹${pi.current}. அதைவிட அதிகமாக payment செய்ய முடியாது.`:`Previous + Current Tuition Pending ₹${pi.tuition}. அதைவிட அதிகமாக payment செய்ய முடியாது.`);
     if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
     const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'),actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    /* Determine how this payment consumes oldest outstanding dues. */
-    let remaining=pay,prevPaid=Math.min(remaining,pi.previous);remaining-=prevPaid;
-    let currentPaid=Math.min(remaining,pi.current);
-    const row={studentId:id,amount:a,discount,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor,paymentAllocation:{previousPending:prevPaid,currentMonth:currentPaid}};
+    /* Allocate oldest outstanding month first. This keeps Finance in the original month. */
+    const allocations=[]; let remainingPaid=a,remainingDiscount=discount;
+    const months=monthsFromTo(joinMonth(db.students.find(s=>String(s.id)===String(id)))||m,m);
+    for(const mm of months){
+      let due=tuitionDueForMonth(id,mm);
+      const already=tuitionPaidThrough(id,monthAdd(mm,-1));
+      let outstanding=Math.max(0,due-(tuitionPaidThrough(id,mm)-tuitionPaidThrough(id,monthAdd(mm,-1))));
+      if(mode==='current'&&mm!==m)continue;
+      if(outstanding<=0)continue;
+      const takePaid=Math.min(remainingPaid,outstanding); remainingPaid-=takePaid;
+      const takeDisc=Math.min(remainingDiscount,Math.max(0,outstanding-takePaid)); remainingDiscount-=takeDisc;
+      if(takePaid||takeDisc)allocations.push({month:mm,paid:takePaid,discount:takeDisc});
+      if(remainingPaid<=0&&remainingDiscount<=0)break;
+    }
+    if(remainingPaid>0||remainingDiscount>0)return alert('Payment allocation could not be completed. Please check pending amount.');
+    const prevPaid=allocations.filter(x=>x.month<m).reduce((s,x)=>s+Number(x.paid||0)+Number(x.discount||0),0);
+    const currentPaid=allocations.filter(x=>x.month===m).reduce((s,x)=>s+Number(x.paid||0)+Number(x.discount||0),0);
+    const row={studentId:id,amount:a,discount,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor,paymentAllocation:{previousPending:prevPaid,currentMonth:currentPaid,allocations}};
     db.fees.push(row);
     if(typeof addAudit==='function')addAudit('Fees','Payment',id,`${db.students.find(s=>String(s.id)===String(id))?.name||id} • ₹${a} • Previous ₹${prevPaid} first • Current ₹${currentPaid}`);
     closeModal();save();feesPage();
@@ -1306,6 +1342,8 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     const file=$('slogoFile')?.files?.[0];let logo=$('slogo')?.value.trim()||'';
     if(file){if(file.size>1500000)return alert('Logo image 1.5MB-க்கு கீழே இருக்க வேண்டும்.');logo=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
     db.settings={...db.settings,academy:$('sa').value.trim(),adminName:$('san').value.trim()||'Admin',teacher:$('st').value.trim(),mobile:$('sm').value.trim(),fee:Number($('sf').value)||0,adminId:$('sid').value.trim(),adminPass:String($('sp').value||'').trim(),teacherId:$('tid').value.trim(),teacherPass:String($('tp').value||'').trim(),whatsappGroup:$('wg').value.trim(),logo,messages:{...(db.settings.messages||{}),fee:$('fm').value,absent:$('am').value}};
+    window.__pendingSettings=JSON.parse(JSON.stringify(db.settings));
+    window.__settingsProtectedUntil=Date.now()+180000;
     applySettings();setSyncTime(new Date().toISOString());setSyncStatus('syncing');
     const ok=await syncSheets(true);setSyncTime(new Date().toISOString());setSyncStatus(ok?'ok':'error');
     alert(ok?'✅ Settings saved and sync request sent.':'⚠️ Settings saved locally in current session, but Google Sheets sync failed.');
@@ -1321,9 +1359,17 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     const settingsSnapshot={academy:String(snap.academy||''),adminName:String(snap.adminName||'Admin'),teacher:String(snap.teacher||''),mobile:String(snap.mobile||''),fee:Number(snap.fee||0),adminId:String(snap.adminId||''),adminPass:String(snap.adminPass||''),teacherId:String(snap.teacherId||''),teacherPass:String(snap.teacherPass||''),whatsappGroup:String(snap.whatsappGroup||''),logo:String(snap.logo||''),messages:{fee:String(snap.messages?.fee||''),absent:String(snap.messages?.absent||'')}};
     const payload={source:'Arul Siragugal Academy',syncedAt:new Date().toISOString(),settings:{...settingsSnapshot,sheetsUrl:SHEETS_URL},...settingsSnapshot,students:db.students||[],archivedStudents:db.archivedStudents||[],attendance:db.attendance||[],fees:db.fees||[],marks:db.marks||[],onlineMarks:db.onlineMarks||[],tests:db.tests||[],expenses:db.expenses||[],extraIncome:db.extraIncome||[],auditLogs:db.auditLogs||[],teachers:(db.teachers||[])};
     try{
-      const body=new URLSearchParams();body.set('payload',JSON.stringify(payload));
-      await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',cache:'no-store',body});
-      setSyncStatus('ok');if(!silent)alert('✅ Google Sheets sync request sent.');return true;
+      const bodyText=JSON.stringify(payload);
+      let sent=false,lastErr='';
+      for(let attempt=1;attempt<=3&&!sent;attempt++){
+        try{
+          const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+          await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',cache:'no-store',body:new URLSearchParams({payload:bodyText}),signal:controller.signal});
+          clearTimeout(timer); sent=true;
+        }catch(e){lastErr=String(e);await new Promise(r=>setTimeout(r,400*attempt));}
+      }
+      if(!sent)throw new Error(lastErr||'Network error');
+      setSyncStatus('ok');if(!silent)alert('✅ Google Sheets sync request sent successfully.');return true;
     }catch(e){
       try{await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',cache:'no-store',body:new URLSearchParams({payload:JSON.stringify(payload)})});setSyncStatus('ok');return true}
       catch(e2){setSyncStatus('error');if(!silent)alert('❌ Google Sheets Sync failed.');return false}
