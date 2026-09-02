@@ -521,7 +521,7 @@ window.studentFeeDetails=function(id,m){
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
       ${totalPending&&s.mobile?`<a class="btn light" target="_blank" href="https://wa.me/${waPhone(s.mobile)}?text=${encodeURIComponent(fillFee(s,pending,extraPending))}">💬 Fee Reminder</a><a class="btn light" target="_blank" href="sms:${esc(s.mobile)}?body=${encodeURIComponent(fillFee(s,pending,extraPending))}">💬 SMS</a>`:''}
-      ${pending?`<button class="btn green" onclick="closeModal();feeForm('${esc(s.id)}')">💳 Add Tuition Payment</button>`:''}
+      ${pending?`<button class="btn green" onclick="closeModal();feeForm('${esc(s.id)}')">💳 Add Tuition Payment</button>`:''}${pending&&$('feeMonth')?.value?`<button class="btn amber" onclick="closeModal();transferPendingForm('${esc(s.id)}')">↗️ Transfer Pending</button>`:''}
       ${extraPending?`<button class="btn amber" onclick="closeModal();extraPaymentForm('${esc(s.id)}')">💳 Extra Payment</button>`:''}
     </div>
     <h4>📋 ${m} Fee History</h4>
@@ -1043,19 +1043,57 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     if(start>m)return 0;
     return monthsFromTo(start,m).reduce((sum,x)=>sum+tuitionDueForMonth(id,x),0);
   }
-  /* Use the existing Google Sheets fee records exactly as stored.
-     Payment date determines the month; no previous-month carry/transfer logic. */
+  /* Manual Pending Transfer:
+     - No automatic previous-month pending for new students.
+     - Transfer is created only when Admin/Teacher explicitly selects a source month and target month.
+     - Source-month Finance gets the transferred tuition immediately.
+     - Target-month Finance does NOT count payments made against a transferred amount.
+     - Payment date remains the actual date paid in Fee History. */
+  function transferRows(id,kind){
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='PendingTransfer'&&(kind?String(f.transferKind||'Tuition')===String(kind):true));
+  }
+  function transferPaidFor(tr){
+    return (db.fees||[]).filter(f=>f.type==='TransferPayment'&&String(f.transferId)===String(tr.transferId)).reduce((a,f)=>a+Number(f.amount||0)+Number(f.discount||0),0);
+  }
+  function transferOutstanding(tr){return Math.max(0,Number(tr.amount||0)-transferPaidFor(tr));}
+  function transferIn(id,m,kind){return transferRows(id,kind).filter(f=>String(f.toMonth)===String(m)).reduce((a,f)=>a+transferOutstanding(f),0)}
+  function transferOut(id,m,kind){return transferRows(id,kind).filter(f=>String(f.fromMonth)===String(m)).reduce((a,f)=>a+transferOutstanding(f),0)}
+  function transferCreated(id,m,kind){return transferRows(id,kind).filter(f=>String(f.fromMonth)===String(m)).reduce((a,f)=>a+Number(f.amount||0),0)}
   function paymentAllocations(f){
+    if(f?.type==='TransferPayment')return [];
     const mm=ymOfDate(f?.date);
     return mm?[{month:mm,paid:Number(f.amount||0),discount:Number(f.discount||0)}]:[];
   }
   function tuitionPaidThrough(id,m){
-    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='Payment'&&String(f.date||'').slice(0,7)<=String(m))
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&(f.type==='Payment')&&String(f.date||'').slice(0,7)<=String(m))
       .reduce((sum,f)=>sum+Number(f.amount||0)+Number(f.discount||0),0);
   }
-  /* Keep the original month-wise calculations: August Sheets data stays in August. */
-  window.calcPaid=function(id,m){return db.fees.filter(f=>String(f.studentId)===String(id)&&String(f.date).startsWith(m)&&f.type==='Payment').reduce((a,f)=>a+Number(f.amount||0),0)};
-  window.calcDiscount=function(id,m){return db.fees.filter(f=>String(f.studentId)===String(id)&&String(f.date).startsWith(m)&&f.type==='Payment').reduce((a,f)=>a+Number(f.discount||0),0)};
+  window.calcPaid=function(id,m){
+    /* Normal payments belong to their actual payment-date month.
+       A manual PendingTransfer is different: it immediately credits the
+       ORIGINAL/source month's Finance, while it becomes pending in the
+       selected/target month. The later TransferPayment is intentionally
+       excluded from Finance so the amount is never double-counted. */
+    const normal=(db.fees||[]).filter(f=>String(f.studentId)===String(id)&&String(f.date||'').startsWith(m)&&f.type==='Payment'&&f.transferId==null)
+      .reduce((a,f)=>a+Number(f.amount||0),0);
+    const transferred=(db.fees||[]).filter(f=>String(f.studentId)===String(id)&&f.type==='PendingTransfer'&&String(f.fromMonth)===String(m))
+      .reduce((a,f)=>a+Number(f.amount||0),0);
+    return normal+transferred;
+  };
+  /* A TransferPayment is intentionally excluded from the target month's Finance. */
+  window.calcDiscount=function(id,m){
+    return (db.fees||[]).filter(f=>String(f.studentId)===String(id)&&String(f.date||'').startsWith(m)&&f.type==='Payment'&&f.transferId==null)
+      .reduce((a,f)=>a+Number(f.discount||0),0);
+  };
+  const _baseCalcPending=window.calcPending;
+  window.calcPending=function(id,m){
+    const s=db.students.find(x=>String(x.id)===String(id))||db.archivedStudents?.find(x=>String(x.id)===String(id));
+    if(!s||!studentActiveForMonth(s,m))return 0;
+    const base=Math.max(0,Number(s.monthlyFee||0)-window.calcPaid(id,m)-window.calcDiscount(id,m));
+    const incoming=transferIn(id,m,'Tuition');
+    const outgoing=transferCreated(id,m,'Tuition');
+    return Math.max(0,base+incoming-outgoing);
+  };
   function cumulativeTuitionPending(id,m){return Math.max(0,tuitionDueThrough(id,m)-tuitionPaidThrough(id,m));}
   function previousTuitionPending(id,m){return 0;}
   function currentMonthTuitionPending(id,m){return Math.max(0,Number(calcPending(id,m)||0));}
@@ -1064,6 +1102,11 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     const extra=typeof calcExtraPending==='function'?calcExtraPending(id,m):0;
     return {previous:0,current:cur,tuition:cur,extra,total:cur+extra};
   }
+  window.transferOutstanding=transferOutstanding;
+  window.transferIn=transferIn;
+  window.transferOut=transferOut;
+  window.pendingInfo=pendingInfo;
+
   window.tuitionDueForMonth=tuitionDueForMonth;
   window.cumulativeTuitionPending=cumulativeTuitionPending;
   window.pendingInfo=pendingInfo;
@@ -1113,48 +1156,109 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     closeModal();studentsPage();save();
   };
 
-  /* Fee payment uses the actual selected/payment date only. No transfer allocation. */
+  /* Add Payment: selected feeMonth is the destination month. Transfer is always manual. */
   window.feeForm=function(id=''){
-    const m=$('feeMonth')?.value||monthNow();
-    const options=groupStudents().filter(s=>studentActiveForMonth(s,m));
+    const target=$('feeMonth')?.value||monthNow();
+    const options=groupStudents().filter(s=>studentActiveForMonth(s,target));
     openModal('Record Tuition Fee Payment',`
       <label>Student</label><select id="feeStudent">
       ${options.map(s=>`<option value="${escH(s.id)}" ${String(s.id)===String(id)?'selected':''}>${escH(s.name)} — ${escH(s.class||'')}</option>`).join('')}
       </select>
+      <label>Payment Type</label>
+      <select id="feePayType" onchange="refreshFeePayInfo()">
+        <option value="current">Current Month Tuition</option>
+        <option value="transfer">Transferred Pending (from selected previous month)</option>
+      </select>
+      <div id="feeTransferBox" style="display:none"></div>
       <div id="feePayInfo" class="notice"></div>
       <div class="two">
         <div><label>Paid Tuition Amount</label><input id="feeAmount" type="number" min="0" oninput="refreshFeePayInfo()"></div>
         <div><label>Discount Amount</label><input id="feeDiscount" type="number" value="0" min="0" oninput="refreshFeePayInfo()"></div>
       </div>
-      <label>Date</label><input id="feeDate" type="date" value="${today()}" onchange="refreshFeePayInfo()">
-      <div class="notice mini">Payment is recorded in the month of the actual payment date. Existing August Google Sheets data is used as-is.</div>
-      <button class="btn green" style="width:100%" onclick="saveFee()">💾 Save Payment</button>
+      <label>Payment Date</label><input id="feeDate" type="date" value="${today()}" onchange="refreshFeePayInfo()">
+      <div class="notice mini">Transfer creates pending in the selected month only. Original month Finance is credited immediately. When paid later, the actual payment date is saved in Fee History, but that transferred payment is NOT added again to the selected month's Finance.</div>
+      <button class="btn green" style="width:100%;margin-top:8px" onclick="saveFee()">💾 Save Payment</button>
     `);
     $('feeStudent').addEventListener('change',refreshFeePayInfo); refreshFeePayInfo();
   };
+
   window.refreshFeePayInfo=function(){
-    const id=$('feeStudent')?.value,m=ymOfDate($('feeDate')?.value)||($('feeMonth')?.value||monthNow());
+    const id=$('feeStudent')?.value,target=$('feeMonth')?.value||monthNow(),type=$('feePayType')?.value||'current';
     if(!id||!$('feePayInfo'))return;
-    const cur=Math.max(0,Number(calcPending(id,m)||0));
-    const extra=typeof calcExtraPending==='function'?calcExtraPending(id,m):0;
-    $('feePayInfo').innerHTML=`<b>${m} Pending</b><div class="pending-breakdown" style="margin-top:8px">
-      <div>Tuition Pending<br><b class="danger">${money(cur)}</b></div>
-      <div>Extra Pending<br><b class="danger">${money(extra)}</b></div>
-      <div>Total Pending<br><b class="danger">${money(cur+extra)}</b></div>
-    </div>`;
+    if(type==='transfer'){
+      const trs=transferRows(id,'Tuition').filter(t=>String(t.toMonth)===String(target)&&transferOutstanding(t)>0);
+      $('feeTransferBox').style.display='block';
+      $('feeTransferBox').innerHTML=`<label>Transferred Pending</label><select id="feeTransferId" onchange="refreshFeePayInfo()">${trs.map(t=>`<option value="${escH(t.transferId)}">From ${escH(t.fromMonth)} → ${escH(t.toMonth)} • Pending ₹${transferOutstanding(t)}</option>`).join('')||'<option value="">No transferred pending</option>'}</select>`;
+      const tr=trs.find(t=>String(t.transferId)===String($('feeTransferId')?.value))||trs[0];
+      const p=tr?transferOutstanding(tr):0;
+      $('feePayInfo').innerHTML=`<b>Transferred Pending to ${target}</b><div class="pending-breakdown" style="margin-top:8px"><div>Transfer Pending<br><b class="danger">${money(p)}</b></div><div>Payment Date<br><b>${esc($('feeDate')?.value||today())}</b></div></div>`;
+      if($('feeAmount')&&(!Number($('feeAmount').value)||Number($('feeAmount').value)>p))$('feeAmount').value=p||'';
+    }else{
+      $('feeTransferBox').style.display='none';
+      const cur=Math.max(0,Number(calcPending(id,target)||0));
+      const extra=typeof calcExtraPending==='function'?calcExtraPending(id,target):0;
+      $('feePayInfo').innerHTML=`<b>${target} Pending</b><div class="pending-breakdown" style="margin-top:8px"><div>Tuition Pending<br><b class="danger">${money(cur)}</b></div><div>Extra Pending<br><b class="danger">${money(extra)}</b></div><div>Total Pending<br><b class="danger">${money(cur+extra)}</b></div></div>`;
+    }
   };
+
   window.saveFee=function(){
     if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
-    const id=$('feeStudent')?.value,a=Number($('feeAmount')?.value)||0,discount=Number($('feeDiscount')?.value)||0,d=$('feeDate')?.value||today();
-    const m=d.slice(0,7),pending=Number(calcPending(id,m)||0),pay=a+discount;
+    const id=$('feeStudent')?.value,a=Number($('feeAmount')?.value)||0,discount=Number($('feeDiscount')?.value)||0,d=$('feeDate')?.value||today(),target=$('feeMonth')?.value||d.slice(0,7),payType=$('feePayType')?.value||'current';
     if(!id||a<0||discount<0||(a<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
-    if(!studentActiveForMonth(db.students.find(s=>String(s.id)===String(id)),m))return alert('இந்த student-க்கு இந்த month billing இல்லை.');
-    if(pay>pending)return alert(`${m} Tuition Pending ₹${pending}. அதைவிட அதிகமாக payment செய்ய முடியாது.`);
     if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
     const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher'),actorId=role==='admin'?'admin':(currentTeacher?.id||'');
-    const row={studentId:id,amount:a,discount,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
-    db.fees.push(row);
-    if(typeof addAudit==='function')addAudit('Fees','Payment',id,`${db.students.find(s=>String(s.id)===String(id))?.name||id} • ₹${a} • ${d}`);
+    if(payType==='transfer'){
+      const tr=transferRows(id,'Tuition').find(t=>String(t.transferId)===String($('feeTransferId')?.value));
+      if(!tr)return alert('Transferred pending select செய்யவும்.');
+      const max=transferOutstanding(tr);
+      if(a+discount>max)return alert(`Transferred Pending ₹${max}. அதைவிட அதிகமாக payment செய்ய முடியாது.`);
+      db.fees.push({studentId:id,amount:a,discount,date:d,type:'TransferPayment',transferId:tr.transferId,sourceMonth:tr.fromMonth,targetMonth:tr.toMonth,collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
+      addAudit('Fees','Transfer Payment',id,`₹${a} • ${tr.fromMonth} → ${tr.toMonth} • Paid ${d}`);
+    }else{
+      const m=d.slice(0,7),pending=Number(calcPending(id,m)||0);
+      if(!studentActiveForMonth(db.students.find(s=>String(s.id)===String(id)),m))return alert('இந்த student-க்கு இந்த month billing இல்லை.');
+      if(a+discount>pending)return alert(`${m} Tuition Pending ₹${pending}. அதைவிட அதிகமாக payment செய்ய முடியாது.`);
+      db.fees.push({studentId:id,amount:a,discount,date:d,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
+      addAudit('Fees','Payment',id,`Payment ₹${a} • ${d}`);
+    }
+    closeModal();save();feesPage();
+  };
+
+  /* Manual transfer from a previous month to the currently selected fee month. */
+  window.transferPendingForm=function(id=''){
+    const target=$('feeMonth')?.value||monthNow();
+    const s=db.students.find(x=>String(x.id)===String(id));
+    if(!s)return;
+    const months=[]; let start=joinMonth(s)||target, x=monthAdd(target,-1),guard=0;
+    while(x>=start&&guard++<120){if(calcPending(id,x)>0)months.push(x);x=monthAdd(x,-1)}
+    if(!months.length)return alert('Previous month Tuition Pending இல்லை.');
+    openModal('Transfer Pending to '+target,`<p><b>${escH(s.name)}</b></p>
+      <label>Previous Month Pending</label><select id="transferFromMonth">${months.map(m=>`<option value="${m}">${m} — Pending ₹${money(calcPending(id,m))}</option>`).join('')}</select>
+      <label>Transfer Amount</label><input id="transferAmount" type="number" min="1" oninput="refreshTransferInfo()">
+      <div id="transferInfo" class="notice"></div>
+      <div class="notice mini">Transfer செய்த உடனே <b>Original Month Finance</b>-ல் இந்த amount சேரும். ${target} Finance-ல் transfer payment சேராது. Student-ன் ${target} pending-ல் இந்த amount மட்டும் add ஆகும். Payment செய்யும் போது actual payment date Fee History-ல் வரும்.</div>
+      <button class="btn amber" style="width:100%" onclick="savePendingTransfer('${escH(id)}','${escH(target)}')">↗️ Transfer Pending</button>`);
+    $('transferFromMonth').addEventListener('change',refreshTransferInfo); refreshTransferInfo();
+  };
+  window.refreshTransferInfo=function(){
+    const id=$('feeStudent')?.value||null;
+    const from=$('transferFromMonth')?.value,target=$('feeMonth')?.value||monthNow();
+    if(!$('transferInfo')||!from)return;
+    const s=id&&db.students.find(x=>String(x.id)===String(id));
+    const amount=s?calcPending(s.id,from):0;
+    $('transferInfo').innerHTML=`Source ${from} Pending: <b>${money(amount)}</b><br>Destination ${target} Pending after transfer: <b>${money(amount)}</b> + existing ${money(calcPending(s?.id,target)||0)}`;
+  };
+  window.savePendingTransfer=function(id,target){
+    if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
+    if(role==='teacher'&&!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
+    const from=$('transferFromMonth')?.value,amount=Number($('transferAmount')?.value)||0,s=db.students.find(x=>String(x.id)===String(id));
+    if(!s||!from||from>=target)return alert('Previous month select செய்யவும்.');
+    const pending=Number(calcPending(id,from)||0);
+    if(amount<=0||amount>pending)return alert(`Source month pending ₹${pending}க்குள் transfer amount கொடுக்கவும்.`);
+    const actor=role==='admin'?'Admin':(currentTeacher?.name||'Teacher');
+    const transferId='TR'+Date.now()+Math.random().toString(36).slice(2,7);
+    db.fees.push({studentId:id,amount,discount:0,extraAmount:0,date:new Date().toISOString().slice(0,10),type:'PendingTransfer',transferKind:'Tuition',transferId,fromMonth:from,toMonth:target,collectedBy:actor,teacherId:role==='admin'?'admin':(currentTeacher?.id||''),teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
+    addAudit('Fees','Pending Transfer',id,`${from} → ${target} • ₹${amount}`);
     closeModal();save();feesPage();
   };
 
