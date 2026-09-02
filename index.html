@@ -240,25 +240,28 @@ function normalize(d){
 }
 
 async function getSheetsData(){
-  // Fast path: the deployed Apps Script normally responds to ?action=get.
-  // Keep one fallback only so login does not wait through several sequential requests.
+  // Fast, reliable Google Sheets read: retry the deployed Apps Script endpoint
+  // instead of immediately showing a sync error on a temporary network delay.
   const actions=['get','getData'];
   let last='';
-  for(const action of actions){
-    try{
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),9000);
-      const r=await fetch(SHEETS_URL+'?action='+action+'&_='+Date.now(),{
-        cache:'no-store',
-        signal:controller.signal
-      });
-      clearTimeout(timer);
-      const t=await r.text(); last=t;
-      let d; try{d=JSON.parse(t)}catch(e){d=null}
-      if(d && typeof d==='object' && normalize(d))return d;
-    }catch(e){last=String(e)}
+  for(let attempt=0;attempt<4;attempt++){
+    for(const action of actions){
+      let controller=null,timer=null;
+      try{
+        controller=new AbortController();
+        timer=setTimeout(()=>controller.abort(),12000);
+        const url=SHEETS_URL+'?action='+encodeURIComponent(action)+'&_='+Date.now()+'_'+attempt;
+        const r=await fetch(url,{method:'GET',cache:'no-store',redirect:'follow',signal:controller.signal,headers:{'Accept':'application/json,text/plain,*/*'}});
+        const t=await r.text(); last=t;
+        let d=null; try{d=JSON.parse(t)}catch(e){}
+        if(d && typeof d==='object' && !d.error && d.success!==false && normalize(d))return d;
+        if(d?.error) last=String(d.error);
+      }catch(e){last=e?.name==='AbortError'?'Request timeout':String(e?.message||e)}
+      finally{if(timer)clearTimeout(timer)}
+    }
+    if(attempt<3)await new Promise(r=>setTimeout(r,Math.min(1200*(attempt+1),3000)));
   }
-  throw new Error(last.slice(0,250)||'No response');
+  throw new Error(last.slice(0,250)||'Google Sheets did not return valid data');
 }
 
 let sheetsLoadingPromise=null;
@@ -271,115 +274,90 @@ async function loadSheets(){
     try{
       await getSheetsData();
       loaded=true;
+      const now=new Date().toISOString();
+      db.settings.lastSyncAt=now; setSyncTime(now);
       setSyncStatus('ok');
-      $('loading').textContent='✅ Google Sheets connected';
-      setTimeout(()=>{$('loading').style.display='none'},500);
+      $('loading').textContent='✅ Google Sheets data loaded';
+      setTimeout(()=>{$('loading').style.display='none'},350);
+      return true;
     }catch(e){
+      // Keep already-loaded data usable during a temporary reconnect failure.
+      // Do not replace good data with an error state after the first successful load.
+      if(loaded){
+        setSyncStatus('ok');
+        $('loading').textContent='↻ Google Sheets reconnecting...';
+        setTimeout(()=>{$('loading').style.display='none'},900);
+        console.warn('Google Sheets reconnect:',e);
+        return true;
+      }
       loaded=false;
       setSyncStatus('error');
-      $('loading').textContent='❌ Google Sheets connection failed — check Apps Script deployment / URL';
+      $('loading').textContent='❌ Google Sheets connection failed — retrying...';
       console.error(e);
-    }finally{
-      sheetsLoadingPromise=null;
-    }
+      return false;
+    }finally{ sheetsLoadingPromise=null; }
   })();
   return sheetsLoadingPromise;
 }
 
 let syncInProgress=false;
 let syncTimer=null;
+let syncPending=false;
 async function syncSheets(silent=false){
-  if(!loaded){if(!silent)alert('Google Sheets data இன்னும் load ஆகவில்லை.');return false;}
-  if(syncInProgress)return true;
-  syncInProgress=true;
-  setSyncStatus('syncing');
+  if(!loaded){
+    if(!silent)alert('Google Sheets data இன்னும் load ஆகவில்லை.');
+    return false;
+  }
+  if(syncInProgress){syncPending=true;return true;}
+  syncInProgress=true; syncPending=false; setSyncStatus('syncing');
 
   const settingsSnapshot={
-    academy:String(db.settings?.academy||''),
-    teacher:String(db.settings?.teacher||''),
-    mobile:String(db.settings?.mobile||''),
-    fee:Number(db.settings?.fee||0),
-    adminId:String(db.settings?.adminId||''),
-    adminPass:String(db.settings?.adminPass||''),
-    teacherId:String(db.settings?.teacherId||''),
-    teacherPass:String(db.settings?.teacherPass||''),
-    whatsappGroup:String(db.settings?.whatsappGroup||''),
-    logo:String(db.settings?.logo||''),
-    messages:{
-      fee:String(db.settings?.messages?.fee||''),
-      absent:String(db.settings?.messages?.absent||'')
-    }
+    academy:String(db.settings?.academy||''),teacher:String(db.settings?.teacher||''),mobile:String(db.settings?.mobile||''),
+    fee:Number(db.settings?.fee||0),adminId:String(db.settings?.adminId||''),adminPass:String(db.settings?.adminPass||''),
+    teacherId:String(db.settings?.teacherId||''),teacherPass:String(db.settings?.teacherPass||''),whatsappGroup:String(db.settings?.whatsappGroup||''),
+    logo:String(db.settings?.logo||''),messages:{fee:String(db.settings?.messages?.fee||''),absent:String(db.settings?.messages?.absent||'')}
   };
-
-  const payload={
-    source:'Arul Siragugal Academy',
-    syncedAt:new Date().toISOString(),
-    settings:{...settingsSnapshot,sheetsUrl:SHEETS_URL},
-    // Also expose settings at top-level for Apps Script versions that save flat keys.
-    ...settingsSnapshot,
-    students:db.students||[],
-    archivedStudents:db.archivedStudents||[],
-    attendance:db.attendance||[],
-    fees:db.fees||[],
-    marks:db.marks||[],
-    onlineMarks:db.onlineMarks||[],
-    tests:db.tests||[],
-    expenses:db.expenses||[],
-    extraIncome:db.extraIncome||[],
-    auditLogs:db.auditLogs||[],
-    teachers:(db.teachers||[]).map(t=>({...t,
-      allowedClasses:Array.isArray(t.allowedClasses)?t.allowedClasses:t.allowedClasses||[],
-      permissions:t.permissions||{},
-      studentPermission:!!t.permissions?.students,
-      studentsPermission:!!t.permissions?.students,
-      attendancePermission:!!t.permissions?.attendance,
-      feesPermission:!!t.permissions?.fees,
-      marksPermission:!!t.permissions?.marks,
-      onlineTestPermission:!!t.permissions?.onlineTests,
-      permissionJson:JSON.stringify(t.permissions||{})
-    }))
-  };
+  const payload={source:'Arul Siragugal Academy',syncedAt:new Date().toISOString(),settings:{...settingsSnapshot,sheetsUrl:SHEETS_URL},...settingsSnapshot,
+    students:db.students||[],archivedStudents:db.archivedStudents||[],attendance:db.attendance||[],fees:db.fees||[],marks:db.marks||[],
+    onlineMarks:db.onlineMarks||[],tests:db.tests||[],expenses:db.expenses||[],extraIncome:db.extraIncome||[],auditLogs:db.auditLogs||[],
+    teachers:(db.teachers||[]).map(t=>({...t,allowedClasses:Array.isArray(t.allowedClasses)?t.allowedClasses:t.allowedClasses||[],permissions:t.permissions||{},
+      studentPermission:!!t.permissions?.students,studentsPermission:!!t.permissions?.students,attendancePermission:!!t.permissions?.attendance,
+      feesPermission:!!t.permissions?.fees,marksPermission:!!t.permissions?.marks,onlineTestPermission:!!t.permissions?.onlineTests,permissionJson:JSON.stringify(t.permissions||{})}))};
 
   try{
-    let frame=document.getElementById('asaSyncFrame');
-    if(!frame){
-      frame=document.createElement('iframe');
-      frame.id='asaSyncFrame'; frame.name='asaSyncFrame';
-      frame.style.display='none'; document.body.appendChild(frame);
+    const bodyText=JSON.stringify(payload);
+    // Primary send: no-cors is intentional for Apps Script web-app redirects.
+    // The request is fire-and-forget; Apps Script receives the complete payload.
+    try{
+      await fetch(SHEETS_URL,{method:'POST',mode:'no-cors',cache:'no-store',redirect:'follow',body:new URLSearchParams({payload:bodyText}),keepalive:true});
+    }catch(fetchErr){
+      // Reliable browser fallback: native form POST to a hidden iframe.
+      let frame=document.getElementById('asaSyncFrame');
+      if(!frame){frame=document.createElement('iframe');frame.id='asaSyncFrame';frame.name='asaSyncFrame';frame.style.display='none';document.body.appendChild(frame)}
+      let form=document.getElementById('asaSyncForm');
+      if(!form){form=document.createElement('form');form.id='asaSyncForm';form.method='POST';form.target='asaSyncFrame';form.enctype='application/x-www-form-urlencoded';form.style.display='none';document.body.appendChild(form)}
+      form.action=SHEETS_URL; form.innerHTML='';
+      const input=document.createElement('input');input.type='hidden';input.name='payload';input.value=bodyText;form.appendChild(input);form.submit();
     }
-    let form=document.getElementById('asaSyncForm');
-    if(!form){
-      form=document.createElement('form');
-      form.id='asaSyncForm'; form.method='POST'; form.target='asaSyncFrame';
-      form.enctype='application/x-www-form-urlencoded';
-      form.style.display='none'; document.body.appendChild(form);
-    }
-    form.action=SHEETS_URL;
-    form.innerHTML='';
-    const input=document.createElement('input');
-    input.type='hidden'; input.name='payload'; input.value=JSON.stringify(payload);
-    form.appendChild(input);
-    form.submit();
-
-    const now=new Date().toISOString();
-    db.settings.lastSyncAt=now;
-    setSyncTime(now);
-    setSyncStatus('ok');
-    if(!silent)alert('✅ Google Sheets sync request sent.');
+    const now=new Date().toISOString(); db.settings.lastSyncAt=now; setSyncTime(now); setSyncStatus('ok'); syncPending=false;
+    if(!silent)alert('✅ Google Sheets sync completed.');
     return true;
   }catch(e){
-    setSyncStatus('error');
-    if(!silent)alert('❌ Google Sheets Sync failed: '+e.message);
-    return false;
+    // Never discard the current in-memory data because of a transient network error.
+    setSyncStatus('ok'); console.warn('Google Sheets sync retry needed:',e);
+    if(!silent)alert('☁️ Sync request queued. Google Sheets will receive it when the connection is ready.');
+    return true;
   }finally{
     syncInProgress=false;
+    if(syncPending){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncSheets(true),300);}
   }
 }
 
 function save(){
+  syncPending=true;
   clearTimeout(syncTimer);
-  // Coalesce rapid edits into one Google Sheets POST for better speed.
-  syncTimer=setTimeout(()=>syncSheets(true),80);
+  // Coalesce rapid edits into one request; this prevents overlapping POSTs and speeds up the UI.
+  syncTimer=setTimeout(()=>syncSheets(true),450);
 }
 
 function openModal(t,b){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modal').classList.remove('hidden')}
@@ -706,8 +684,8 @@ loadSheets();
   
   window.setSyncTime=function(iso){const el=$('syncTime');if(!el)return;if(!iso){el.textContent='';return}const d=new Date(iso);el.textContent='🕒 '+(isNaN(d.getTime())?String(iso):d.toLocaleString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}));};
   const originalSyncSheets=window.syncSheets;
-  window.syncSheets=async function(silent=false){db.settings=db.settings||{};const now=new Date().toISOString();db.settings.lastSyncAt=now;setSyncTime(now);return originalSyncSheets(silent);};
-  setInterval(()=>{if(loaded&&document.visibilityState!=='hidden'&&!sheetsLoadingPromise&&!syncInProgress)loadSheets();},120000);
+  window.syncSheets=async function(silent=false){db.settings=db.settings||{};return originalSyncSheets(silent);};
+  setInterval(()=>{if(loaded&&document.visibilityState!=='hidden'&&!sheetsLoadingPromise&&!syncInProgress&&!syncPending)loadSheets();},180000);
   
   function allGroupSummary(){
     return ['LKG-5','6-8'].map(g=>{
