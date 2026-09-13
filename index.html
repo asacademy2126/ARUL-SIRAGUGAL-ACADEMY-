@@ -628,7 +628,7 @@ function renderStudentMonth(){let s=currentStudent,m=$('smMonth').value,a=db.att
 function studentPDFForCurrent(){let s=currentStudent;openFeature('reports');setTimeout(()=>{if($('rpStudent'))$('rpStudent').value=s.id;if($('rpMonth'))$('rpMonth').value=$('smMonth')?.value||monthNow();studentPDF()},0)}
 function studentProfileView(){let s=currentStudent;openModal('My Profile',`<p>Name: <b>${esc(s.name)}</b></p><p>ID: <b>${esc(s.id)}</b></p><p>Class: <b>${esc(s.class)}</b></p><p>Mobile: <b>${esc(s.mobile||'-')}</b></p><p>Parent: <b>${esc(s.parent||'-')}</b></p><p>Address: <b>${esc(s.address||'-')}</b></p>`)}
 
-setRole('teacher');
+setRole('admin');
 loadSheets();
 
 (function(){
@@ -1124,6 +1124,251 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
 
 })();
 
+</script>
+
+<script>
+/* =========================================================
+   FINAL STABILITY / LOGIN / MONTH / CLASS FIXES
+   ========================================================= */
+(function(){
+  const CLASS_OPTIONS=['LKG','UKG','1','2','3','4','5','6','7','8'];
+  const oldLoadSheets=window.loadSheets;
+
+  /* ---------- Login waits for Sheets, with safe default ---------- */
+  window.loginAdmin=async function(){
+    const id=String($('adminId')?.value||'').trim();
+    const pass=String($('adminPass')?.value||'').trim();
+    if(!id||!pass){
+      $('loginMsg').textContent='Admin ID மற்றும் Password உள்ளிடவும்.';
+      return;
+    }
+    $('loginMsg').style.color='#075985';
+    $('loginMsg').textContent='⏳ Google Sheets data loading...';
+    if(!loaded){
+      try{ await oldLoadSheets(); }catch(e){ console.error(e); }
+    }
+    const sid=String(db.settings?.adminId||'').trim();
+    const sp=String(db.settings?.adminPass||'').trim();
+    if((sid && id===sid && pass===sp) ||
+       (!sid && id==='asacademy' && pass==='admin123')){
+      $('loginMsg').textContent='';
+      enter('admin');
+      return;
+    }
+    if(id==='asacademy' && pass==='admin123' && !loaded){
+      $('loginMsg').style.color='#b45309';
+      $('loginMsg').textContent='⚠️ Sheets unavailable. Offline Admin login.';
+      enter('admin');
+      return;
+    }
+    $('loginMsg').style.color='red';
+    $('loginMsg').textContent='Admin ID / Password Google Sheets-ல் உள்ள value-க்கு match ஆகவில்லை.';
+  };
+
+  window.loginStudent=async function(){
+    const sid=String($('studentId')?.value||'').trim();
+    const pw=String($('studentPass')?.value||'');
+    if(!sid||!pw){$('loginMsg').textContent='Student ID மற்றும் Password உள்ளிடவும்.';return;}
+    if(!loaded){
+      $('loginMsg').style.color='#075985';
+      $('loginMsg').textContent='⏳ Google Sheets data loading...';
+      try{await oldLoadSheets();}catch(e){console.error(e);}
+    }
+    const s=(db.students||[]).find(x=>String(x.id)===sid&&String(x.password||'')===pw)||
+            (db.archivedStudents||[]).find(x=>String(x.id)===sid&&String(x.password||'')===pw);
+    if(s){currentStudent=s;enter('student');return;}
+    $('loginMsg').style.color='red';
+    $('loginMsg').textContent='❌ Student ID / Password தவறாக உள்ளது.';
+  };
+
+  window.loginTeacher=async function(){
+    const id=String($('teacherId')?.value||'').trim();
+    const pass=String($('teacherPass')?.value||'').trim();
+    if(!id||!pass){$('loginMsg').textContent='Teacher ID மற்றும் Password உள்ளிடவும்.';return;}
+    if(!loaded){
+      $('loginMsg').style.color='#075985';
+      $('loginMsg').textContent='⏳ Google Sheets data loading...';
+      try{await oldLoadSheets();}catch(e){console.error(e);}
+    }
+    const t=(db.teachers||[]).find(x=>String(x.id||'').trim()===id&&String(x.password||'').trim()===pass);
+    if(t){currentTeacher={...t};enter('teacher');return;}
+    if(id===String(db.settings?.teacherId||'').trim()&&pass===String(db.settings?.teacherPass||'').trim()){
+      let ac=db.settings?.teacherAllowedClasses||['ALL'];
+      if(typeof ac==='string')ac=ac.split(',').map(x=>x.trim()).filter(Boolean);
+      currentTeacher={id,name:db.settings?.teacher||'Teacher',password:pass,allowedClasses:Array.isArray(ac)&&ac.length?ac:['ALL'],permissions:{students:true,attendance:true,fees:true,marks:true,onlineTests:true}};
+      enter('teacher');return;
+    }
+    $('loginMsg').style.color='red';
+    $('loginMsg').textContent='❌ Teacher ID / Password தவறாக உள்ளது.';
+  };
+
+  /* ---------- Student form: controlled class list ---------- */
+  window.studentForm=function(id=''){
+    const s=(db.students||[]).find(x=>String(x.id)===String(id))||{
+      id:'',name:'',class:'',mobile:'',parent:'',address:'',monthlyFee:Number(db.settings?.fee||0),password:'1234',joinMonth:monthNow()
+    };
+    const cls=CLASS_OPTIONS.map(c=>`<option value="${escH(c)}" ${String(s.class||'')===c?'selected':''}>${escH(c)}</option>`).join('');
+    openModal(id?'Edit Student':'Add Student',`
+      <div class="two">
+        <div><label>Student ID</label><input id="fId" value="${escH(s.id)}" ${id?'readonly':''}></div>
+        <div><label>Password</label><input id="fPass" value="${escH(s.password||'1234')}"></div>
+      </div>
+      <label>Name</label><input id="fName" value="${escH(s.name)}">
+      <div class="two">
+        <div><label>Class</label><select id="fClass"><option value="">Select Class</option>${cls}</select></div>
+        <div><label>Mobile</label><input id="fMobile" inputmode="tel" value="${escH(s.mobile)}"></div>
+        <div><label>Parent</label><input id="fParent" value="${escH(s.parent||'')}"></div>
+        <div><label>Monthly Fee</label><input id="fFee" type="number" min="0" value="${Number(s.monthlyFee||0)}"></div>
+      </div>
+      <label>Admission / Billing Start Month</label>
+      <input id="fJoinMonth" type="month" value="${escH(joinMonth(s)||monthNow())}">
+      <small class="muted">இந்த month-க்கு முன் எந்த Tuition Pending-மும் உருவாகாது.</small>
+      <label>Address</label><input id="fAddress" value="${escH(s.address||'')}">
+      <br><button class="btn" style="width:100%" onclick="saveStudent('${escH(id)}')">💾 Save Student</button>
+    `);
+  };
+
+  window.saveStudent=function(old){
+    const id=String($('fId')?.value||'').trim();
+    const name=String($('fName')?.value||'').trim();
+    const cls=String($('fClass')?.value||'').trim();
+    if(!id||!name||!cls)return alert('Student ID, Name, Class தேவை');
+    if(!CLASS_OPTIONS.includes(cls))return alert('Valid Class select செய்யவும்.');
+    if(!old && (db.students||[]).some(s=>String(s.id)===id))return alert('Student ID already exists');
+    const actor=role==='admin'?(db.settings?.adminName||'Admin'):(currentTeacher?.name||'Teacher');
+    const o={id,name,class:cls,mobile:String($('fMobile')?.value||'').trim(),parent:String($('fParent')?.value||'').trim(),address:String($('fAddress')?.value||'').trim(),monthlyFee:Number($('fFee')?.value||0),password:String($('fPass')?.value||'1234'),joinMonth:String($('fJoinMonth')?.value||monthNow()),admissionMonth:String($('fJoinMonth')?.value||monthNow()),updatedAt:new Date().toISOString(),lastUpdatedBy:actor};
+    if(old){const i=db.students.findIndex(s=>String(s.id)===String(old));if(i>=0)db.students[i]={...db.students[i],...o};}
+    else db.students.push(o);
+    db.students.sort((a,b)=>String(a.class||'').localeCompare(String(b.class||''),undefined,{numeric:true})||String(a.name||'').localeCompare(String(b.name||'')));
+    if(typeof addAudit==='function')addAudit('Students',old?'Update':'Add',id,`${name} • Class ${cls}`);
+    closeModal();studentsPage();save();
+  };
+
+  /* ---------- Class card: show ONLY selected class ---------- */
+  window.openClassCard=function(cls){
+    currentClassFilter=String(cls||'');
+    const rows=(db.students||[]).filter(s=>String(s.class||'').trim()===currentClassFilter && (role!=='teacher'||teacherCanClass(s.class)))
+      .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+    openModal(`🏫 Class ${esc(currentClassFilter)} — Full Data`,`
+      <div class="notice"><b>Total Students: ${rows.length}</b></div>
+      <div class="table-wrap"><table class="table"><tr><th>#</th><th>Student</th><th>ID</th><th>Mobile</th><th>Tuition</th><th>Pending</th></tr>
+      ${rows.map((s,i)=>`<tr><td>${i+1}</td><td><b>${esc(s.name)}</b></td><td>${esc(s.id)}</td><td>${s.mobile?`<a class="btn light" href="tel:${esc(s.mobile)}">📞</a> <a class="btn light" href="sms:${esc(s.mobile)}">SMS</a> <a class="btn light" target="_blank" href="https://wa.me/${waPhone(s.mobile)}">WhatsApp</a>`:'-'}</td><td>${money(s.monthlyFee)}</td><td class="danger"><b>${money(calcTotalPending(s.id,window.currentFeeMonth||monthNow()))}</b></td></tr>`).join('')||'<tr><td colspan="6">இந்த Class-ல் Students இல்லை.</td></tr>'}
+      </table></div>`);
+  };
+
+  /* ---------- Fees: month stays selected ---------- */
+  const oldFeesPage=window.feesPage;
+  window.feesPage=function(){
+    window.currentFeeMonth=window.currentFeeMonth||monthNow();
+    oldFeesPage();
+    const el=$('feeMonth');
+    if(el){el.value=window.currentFeeMonth;el.onchange=function(){window.currentFeeMonth=this.value;renderFees();};}
+  };
+
+  const oldRenderFees=window.renderFees;
+  window.renderFees=function(){
+    const el=$('feeMonth');
+    if(el&&el.value)window.currentFeeMonth=el.value;
+    return oldRenderFees();
+  };
+
+  /* ---------- Tuition payment: Fee Month is the accounting month ---------- */
+  window.saveFee=function(){
+    if(role==='teacher'&&currentTeacher?.permissions?.fees===false)return alert('Fees permission இல்லை');
+    const id=$('feeStudent')?.value;
+    const amount=Number($('feeAmount')?.value||0);
+    const discount=Number($('feeDiscount')?.value||0);
+    const feeMonth=String($('feePayMonth')?.value||$('feeMonth')?.value||monthNow());
+    const paymentDate=String($('feeDate')?.value||today());
+    if(!id||amount<0||discount<0||(amount<=0&&discount<=0))return alert('Paid / Discount amount சரியாக கொடுக்கவும்');
+    if(!teacherCanStudent(id))return alert('இந்த student class-க்கு Teacher permission இல்லை.');
+    if(joinMonth(db.students.find(s=>String(s.id)===String(id))) && feeMonth<joinMonth(db.students.find(s=>String(s.id)===String(id))))return alert('Student admission month-க்கு முன் fee பதிவு செய்ய முடியாது.');
+    const pendingBefore=Math.max(0,Number(calcPending(id,feeMonth)||0));
+    if(amount+discount>pendingBefore)return alert(`Selected ${feeMonth} pending ${money(pendingBefore)} மட்டுமே உள்ளது.`);
+    const actor=role==='admin'?(db.settings?.adminName||'Admin'):(currentTeacher?.name||'Teacher');
+    const actorId=role==='admin'?'admin':(currentTeacher?.id||'');
+    db.fees.push({studentId:id,amount,discount,extraAmount:0,date:paymentDate,feeMonth,type:'Payment',collectedBy:actor,teacherId:actorId,teacherName:actor,updatedAt:new Date().toISOString(),lastUpdatedBy:actor});
+    addAudit('Fees','Save',id,`Payment ₹${amount} • Fee Month ${feeMonth} • Paid ${paymentDate}`);
+    closeModal();window.currentFeeMonth=feeMonth;feesPage();save();
+  };
+
+  /* ---------- Correct month-wise fee history ---------- */
+  window.feeRowsForMonth=function(id,m){
+    return (db.fees||[]).map((x,i)=>({...x,_i:i})).filter(x=>String(x.studentId)===String(id)&&(
+      x.type==='Payment' ? String(x.feeMonth||x.date||'').slice(0,7)===String(m) : String(x.date||'').slice(0,7)===String(m)
+    )).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  };
+
+  /* ---------- Online Tests: exact class only ---------- */
+  const oldRenderTestsPage=window.renderTestsPage;
+  window.renderTestsPage=function(){
+    const result=oldRenderTestsPage();
+    const cls=$('testClass')?.value||'';
+    if(cls&&$('testsTableBox')){
+      // Existing renderer already filters by class; this keeps the UI explicit.
+      const title=$('testSummary')?.querySelector('.test-summary-card:nth-child(3) b');
+      if(title)title.textContent=cls;
+    }
+    return result;
+  };
+
+  /* ---------- Student portal: tests only student's class ---------- */
+  const oldRenderStudentMonth=window.renderStudentMonth;
+  window.renderStudentMonth=function(){
+    if(currentStudent){
+      const originalTests=db.tests;
+      db.tests=originalTests.filter(t=>String(t.class||'').trim()===String(currentStudent.class||'').trim());
+      try{return oldRenderStudentMonth();}
+      finally{db.tests=originalTests;}
+    }
+    return oldRenderStudentMonth();
+  };
+
+  /* ---------- Selected-month Student PDF: Fee Month aware ---------- */
+  window.reportMonthBlock=function(s,m){
+    const att=(db.attendance||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m));
+    const fees=(db.fees||[]).filter(x=>String(x.studentId)===String(s.id)&&(
+      x.type==='Payment' ? String(x.feeMonth||x.date||'').slice(0,7)===m : String(x.date||'').startsWith(m)
+    ));
+    const marks=(db.marks||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m));
+    const om=(db.onlineMarks||[]).filter(x=>String(x.studentId)===String(s.id)&&String(x.date||'').startsWith(m));
+    const tests=(db.tests||[]).filter(x=>String(x.class||'').trim()===String(s.class||'').trim()&&String(x.date||'').startsWith(m));
+    const paid=calcPaid(s.id,m),discount=calcDiscount(s.id,m),pending=calcPending(s.id,m),extra=calcExtra(s.id,m),extraPaid=calcExtraPaid(s.id,m),extraPending=calcExtraPending(s.id,m);
+    return `<div style="page-break-before:always"><h2>${esc(m)} — ${esc(s.name)}</h2><p><b>Class:</b> ${esc(s.class||'-')} &nbsp; <b>Monthly Tuition:</b> ${money(s.monthlyFee)}</p><h3>📅 Attendance</h3><table><tr><th>Date</th><th>Status</th></tr>${att.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.status||'')}</td></tr>`).join('')||'<tr><td colspan="2">No attendance record</td></tr>'}</table><h3>💰 Fees</h3><table><tr><th>Fee Month</th><th>Payment Date</th><th>Type</th><th>Tuition Paid</th><th>Discount</th><th>Extra</th></tr>${fees.map(x=>`<tr><td>${esc(x.feeMonth||m)}</td><td>${esc(x.date||'')}</td><td>${esc(x.type||'')}</td><td>${x.type==='Payment'?money(x.amount):''}</td><td>${x.type==='Payment'?money(x.discount):''}</td><td>${x.type==='Extra'?money(x.extraAmount):x.type==='ExtraPayment'?money(x.amount):''}</td></tr>`).join('')||'<tr><td colspan="6">No fee record</td></tr>'}</table><p><b>Month Summary:</b> Tuition Paid ${money(paid)} | Tuition Pending ${money(pending)} | Extra Paid ${money(extraPaid)} | Extra Pending ${money(extraPending)} | Extra Total ${money(extra)}</p><h3>📝 Marks</h3><table><tr><th>Date</th><th>Exam</th><th>Subject</th><th>Mark</th><th>Total</th></tr>${marks.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.exam||'')}</td><td>${esc(x.subject||'')}</td><td>${esc(x.mark??'')}</td><td>${esc(x.total??'')}</td></tr>`).join('')||'<tr><td colspan="5">No marks</td></tr>'}</table><h3>🧪 Online Test Marks</h3><table><tr><th>Date</th><th>Test</th><th>Mark</th><th>Total</th></tr>${om.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.testName||x.exam||'')}</td><td>${esc(x.mark??'')}</td><td>${esc(x.total??'')}</td></tr>`).join('')||'<tr><td colspan="4">No online test marks</td></tr>'}</table>${tests.length?`<h3>Online Tests</h3><table><tr><th>Date</th><th>Test</th><th>Subject</th><th>Total</th></tr>${tests.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.name||'')}</td><td>${esc(x.subject||'')}</td><td>${esc(x.total||0)}</td></tr>`).join('')}</table>`:''}</div>`;
+  };
+
+  /* ---------- Excel: Tuition payment is grouped by Fee Month ---------- */
+  window.exportReportExcel=function(){
+    const y=$('excelYear')?.value||'ALL';
+    const mm=$('excelMonth')?.value||'ALL';
+    const rows=[['Year','Month','Date','Fee Month','Type','Student ID','Student Name','Class','Description / Status','Amount','Discount','Mark','Total']];
+    const escX=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const add=(x,type,s,desc='',amount='',discount='',mark='',total='',accountMonth)=>{
+      const date=String(x.date||x.dateTime||'').slice(0,10);
+      const fm=String(accountMonth||x.feeMonth||date).slice(0,7);
+      if(!/^\d{4}-\d{2}$/.test(fm))return;
+      if(y!=='ALL'&&fm.slice(0,4)!==y)return;
+      if(mm!=='ALL'&&fm.slice(5,7)!==mm)return;
+      rows.push([fm.slice(0,4),fm.slice(5,7),date,x.type||type,x.feeMonth||'',s?.id||x.studentId||'',s?.name||'',s?.class||'',desc,amount,discount,mark,total]);
+    };
+    const findS=id=>(db.students||[]).find(s=>String(s.id)===String(id))||(db.archivedStudents||[]).find(s=>String(s.id)===String(id));
+    (db.attendance||[]).forEach(x=>add(x,'Attendance',findS(x.studentId),x.status));
+    (db.fees||[]).forEach(x=>add(x,'Fee',findS(x.studentId),x.extraType||x.type,Number(x.amount||0),Number(x.discount||0),'','',x.type==='Payment'?(x.feeMonth||x.date):x.date));
+    (db.marks||[]).forEach(x=>add(x,'Mark',findS(x.studentId),`${x.exam||''} / ${x.subject||''}`,'','',x.mark,x.total));
+    (db.onlineMarks||[]).forEach(x=>add(x,'Online Mark',findS(x.studentId),x.testName||x.exam||'','', '',x.mark,x.total));
+    (db.tests||[]).forEach(x=>add(x,'Online Test',null,`${x.name||''} / ${x.class||'All'} / ${x.subject||''}`));
+    (db.expenses||[]).forEach(x=>add(x,'Expense',null,x.category||x.note||'',Number(x.amount||0)));
+    (db.extraIncome||[]).forEach(x=>add(x,'Extra Income',null,x.source||x.note||'',Number(x.amount||0)));
+    rows.sort((a,b)=>String(a[0]+a[1]+a[2]+a[6]).localeCompare(String(b[0]+b[1]+b[2]+b[6]),undefined,{numeric:true}));
+    const html='<html><head><meta charset="UTF-8"><style>td,th{border:1px solid #999;padding:5px}table{border-collapse:collapse;width:100%}</style></head><body><h2>Arul Siragugal Academy — All Data</h2><p>Filter: Year = '+escX(y)+' | Month = '+escX(mm)+'</p><table><tr>'+rows[0].map(escX).map(x=>`<th>${x}</th>`).join('')+'</tr>'+rows.slice(1).map(r=>'<tr>'+r.map(x=>`<td>${escX(x)}</td>`).join('')+'</tr>').join('')+'</table></body></html>';
+    const blob=new Blob([html],{type:'application/vnd.ms-excel'}),a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=`Arul_Siragugal_All_Data_${y}_${mm}_${today()}.xls`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  };
+
+  /* ---------- Initial defaults ---------- */
+  if($('adminId') && !$('adminId').value)$('adminId').value='asacademy';
+
+})();
 </script>
 </body>
 </html>
