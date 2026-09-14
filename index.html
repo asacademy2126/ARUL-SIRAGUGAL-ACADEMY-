@@ -245,21 +245,38 @@ function normalize(d){
   return true;
 }
 
-async function getSheetsData(){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);try{const r=await fetch(SHEETS_URL+'?action=get&_='+Date.now(),{cache:'no-store',signal:controller.signal});const t=await r.text();let d;try{d=JSON.parse(t)}catch(e){throw new Error('Invalid Google Sheets response')}if(!d||d.success===false||!normalize(d))throw new Error(d?.error||'No valid data');return d}finally{clearTimeout(timer)}}
+// Loads a URL via a <script> tag instead of fetch(). Script tags are never subject to
+// CORS, which sidesteps Apps Script's unreliable cross-origin fetch() behavior entirely.
+// The Apps Script side must support ?callback=name (see Code.gs doGet).
+function loadJSONP(url,timeoutMs){
+  return new Promise((resolve,reject)=>{
+    const cbName='__asaCb'+Date.now()+Math.random().toString(36).slice(2);
+    const script=document.createElement('script');
+    let done=false;
+    const timer=setTimeout(()=>{if(done)return;done=true;cleanup();reject(new Error('Timed out waiting for Sheets'))},timeoutMs||25000);
+    function cleanup(){clearTimeout(timer);delete window[cbName];script.remove()}
+    window[cbName]=(data)=>{if(done)return;done=true;cleanup();resolve(data)};
+    script.onerror=()=>{if(done)return;done=true;cleanup();reject(new Error('Could not reach Google Sheets'))};
+    script.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cbName;
+    document.body.appendChild(script);
+  });
+}
+async function getSheetsData(){
+  const d=await loadJSONP(SHEETS_URL+'?action=get&_='+Date.now(),25000);
+  if(!d||d.success===false||!normalize(d))throw new Error(d?.error||'No valid data');
+  return d;
+}
 // Fetches the current Sheets data WITHOUT touching db (normalize() mutates db as a side
 // effect, so it can't be reused here — this is only for pre-write conflict merging).
 async function fetchRemoteRaw(){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),7000);
   try{
-    const r=await fetch(SHEETS_URL+'?action=get&_='+Date.now(),{cache:'no-store',signal:controller.signal});
-    let d=JSON.parse(await r.text());
+    let d=await loadJSONP(SHEETS_URL+'?action=get&_='+Date.now(),7000);
     if(!d||typeof d!=='object'||d.success===false||d.error)return null;
     if(d.db&&typeof d.db==='object')d=d.db;
     else if(d.data&&typeof d.data==='object'&&!Array.isArray(d.data))d=d.data;
     else if(d.result&&typeof d.result==='object'&&!Array.isArray(d.result))d=d.result;
     return d;
-  }catch(e){return null}finally{clearTimeout(timer)}
+  }catch(e){return null}
 }
 function mergeByKey(localArr,remoteArr,keyFn){
   localArr=Array.isArray(localArr)?localArr:[];
@@ -345,7 +362,11 @@ async function doSyncOnce(silent){
     messages:{
       fee:String(db.settings?.messages?.fee||''),
       absent:String(db.settings?.messages?.absent||'')
-    }
+    },
+    // Unique marker for this write attempt — after posting, we poll Sheets (via JSONP,
+    // same as reads) until we see this exact id come back, which is our real confirmation
+    // that the write landed. We can't read the POST response directly (see submitViaForm).
+    syncId:String(Date.now())+'-'+Math.random().toString(36).slice(2)
   };
 
   const payload={
@@ -377,26 +398,21 @@ async function doSyncOnce(silent){
     }))
   };
 
-  // Real fetch (not the old hidden-iframe form submit) so we get an actual success/failure
-  // signal back instead of assuming the write landed. Same field name/encoding as before
-  // (application/x-www-form-urlencoded, field "payload") so the Apps Script side needs no changes.
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),20000);
   try{
-    const r=await fetch(SHEETS_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:'payload='+encodeURIComponent(JSON.stringify(payload)),
-      signal:controller.signal
-    });
-    const t=await r.text();
-    let d=null; try{d=JSON.parse(t)}catch(e){/* some deployments reply with plain text on success */}
-    if(d && d.success===false) throw new Error(d.error||'Sheets rejected the write');
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    // A real <form> POST (not fetch()) — CORS never applies to form submissions, only to
+    // reading a cross-origin response with JS, which is exactly what we're avoiding here.
+    await submitViaForm(payload);
+
+    // We can't read the form's response (cross-origin, loaded in a hidden iframe), so
+    // confirm the write actually landed by polling Sheets via JSONP until our syncId
+    // shows up in the settings we get back.
+    const confirmed=await waitForSyncConfirmation(settingsSnapshot.syncId,15000);
+    if(!confirmed) throw new Error('Write sent, but could not confirm it landed in Sheets (timed out verifying)');
 
     syncFailCount=0;
     const now=new Date().toISOString();
     db.settings.lastSyncAt=now;
+    db.settings.syncId=settingsSnapshot.syncId;
     setSyncTime(now);
     pendingWrite=false;
     setSyncStatus('ok');
@@ -410,9 +426,51 @@ async function doSyncOnce(silent){
     clearTimeout(syncRetryTimer);
     syncRetryTimer=setTimeout(()=>syncSheets(true),delay);
     return false;
-  }finally{
-    clearTimeout(timer);
   }
+}
+
+// Submits the payload as a real HTML form POST via a hidden iframe. Not subject to CORS
+// (form submissions aren't fetch/XHR), but we correspondingly can't read the response —
+// waitForSyncConfirmation() is what tells us whether it actually succeeded.
+function submitViaForm(payload){
+  return new Promise((resolve)=>{
+    let frame=document.getElementById('asaSyncFrame');
+    if(!frame){
+      frame=document.createElement('iframe');
+      frame.id='asaSyncFrame'; frame.name='asaSyncFrame';
+      frame.style.display='none'; document.body.appendChild(frame);
+    }
+    let form=document.getElementById('asaSyncForm');
+    if(!form){
+      form=document.createElement('form');
+      form.id='asaSyncForm'; form.method='POST'; form.target='asaSyncFrame';
+      form.enctype='application/x-www-form-urlencoded';
+      form.style.display='none'; document.body.appendChild(form);
+    }
+    form.action=SHEETS_URL;
+    form.innerHTML='';
+    const input=document.createElement('input');
+    input.type='hidden'; input.name='payload'; input.value=JSON.stringify(payload);
+    form.appendChild(input);
+    let settled=false;
+    const done=()=>{if(settled)return;settled=true;resolve()};
+    frame.onload=done;
+    form.submit();
+    setTimeout(done,3000); // fallback in case the iframe's load event doesn't fire cross-origin
+  });
+}
+async function waitForSyncConfirmation(syncId,budgetMs){
+  const start=Date.now();
+  let delay=900;
+  while(Date.now()-start<budgetMs){
+    await new Promise(r=>setTimeout(r,delay));
+    try{
+      const remote=await loadJSONP(SHEETS_URL+'?action=get&_='+Date.now(),6000);
+      if(remote && remote.settings && String(remote.settings.syncId)===syncId) return true;
+    }catch(e){ /* keep polling until budget runs out */ }
+    delay=Math.min(delay*1.4,2500);
+  }
+  return false;
 }
 
 function save(){
