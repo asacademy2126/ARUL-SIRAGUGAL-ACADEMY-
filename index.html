@@ -298,7 +298,7 @@ async function loadSheets(){
       await getSheetsData();loaded=true;setSyncStatus('ok');$('loading').textContent='✅ Google Sheets connected';
       setTimeout(()=>{$('loading').style.display='none'},250);
     }catch(e){
-      setSyncStatus('error');$('loading').textContent='⚠️ Sheets unavailable — retrying automatically';console.error(e);
+      setSyncStatus('error');$('loading').textContent='⚠️ '+(e&&e.message?e.message:'Sheets unavailable')+' — retrying automatically';console.error(e);
     }
   })();
   try{await sheetsLoadingPromise}finally{sheetsLoadingPromise=null}
