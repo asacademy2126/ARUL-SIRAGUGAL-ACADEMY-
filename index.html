@@ -167,7 +167,9 @@ function classBand(c){let x=String(c||'').trim().toLowerCase();if(/^lkg|^ukg/.te
 function groupLabel(g){return g==='6-8'?'6 – 8':'LKG – 5'}
 function setSyncStatus(t){$('syncStatus').textContent=t==='syncing'?'⏳ Syncing…':t==='dirty'?'✏️ Unsaved changes':t==='ok'?'✅ Synced':'⚠️ Sync error — retrying'}
 function setRole(r){role=r;['admin','teacher','student'].forEach(x=>$(x==='admin'?'rAdmin':x==='teacher'?'rTeacher':'rStudent').classList.toggle('active',x===r));$('adminLogin').classList.toggle('hidden',r!=='admin');$('teacherLogin').classList.toggle('hidden',r!=='teacher');$('studentLogin').classList.toggle('hidden',r!=='student');$('loginMsg').textContent=''}
-function applySettings(){document.title=db.settings.academy+' - Management';$('academyTitle').textContent=db.settings.academy;$('brandLogo').src=$('loginLogo').src=db.settings.logo||'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="20" fill="#075985"/><text x="50" y="63" text-anchor="middle" fill="white" font-size="34">AS</text></svg>')}
+function defaultLogo(){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"100\"><rect width=\"100\" height=\"100\" rx=\"22\" fill=\"#075985\"/><text x=\"50\" y=\"62\" text-anchor=\"middle\" fill=\"white\" font-family=\"Arial\" font-size=\"34\" font-weight=\"700\">AS</text></svg>')}
+function safeLogo(v){const x=String(v||'').trim();return /^(data:image\/(png|jpeg|jpg|gif|webp);base64,|https?:\/\/)/i.test(x)?x:defaultLogo()}
+function applySettings(){document.title=(db.settings.academy||'Arul Siragugal Academy')+' - Management';$('academyTitle').textContent=db.settings.academy||'Arul Siragugal Academy';const logo=safeLogo(db.settings.logo);$('brandLogo').src=logo;$('loginLogo').src=logo}
 
 function normalize(d){
   if(!d||typeof d!=='object')return false;
@@ -245,45 +247,23 @@ function normalize(d){
   return true;
 }
 
-async function getSheetsData(){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);try{const r=await fetch(SHEETS_URL+'?action=get&_='+Date.now(),{cache:'no-store',signal:controller.signal});const t=await r.text();let d;try{d=JSON.parse(t)}catch(e){throw new Error('Invalid Google Sheets response')}if(!d||d.success===false||!normalize(d))throw new Error(d?.error||'No valid data');return d}finally{clearTimeout(timer)}}
-// Fetches the current Sheets data WITHOUT touching db (normalize() mutates db as a side
-// effect, so it can't be reused here — this is only for pre-write conflict merging).
-async function fetchRemoteRaw(){
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),7000);
-  try{
-    const r=await fetch(SHEETS_URL+'?action=get&_='+Date.now(),{cache:'no-store',signal:controller.signal});
-    let d=JSON.parse(await r.text());
-    if(!d||typeof d!=='object'||d.success===false||d.error)return null;
-    if(d.db&&typeof d.db==='object')d=d.db;
-    else if(d.data&&typeof d.data==='object'&&!Array.isArray(d.data))d=d.data;
-    else if(d.result&&typeof d.result==='object'&&!Array.isArray(d.result))d=d.result;
-    return d;
-  }catch(e){return null}finally{clearTimeout(timer)}
+function jsonpGet(action,timeoutMs=10000){
+  return new Promise((resolve,reject)=>{
+    const cb='__asa_jsonp_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const script=document.createElement('script');
+    let done=false;
+    const timer=setTimeout(()=>finish(new Error('Google Sheets response timeout')),timeoutMs);
+    function cleanup(){clearTimeout(timer);try{delete window[cb]}catch(e){window[cb]=undefined}script.remove()}
+    function finish(err,data){if(done)return;done=true;cleanup();err?reject(err):resolve(data)}
+    window[cb]=(data)=>finish(null,data);
+    script.onerror=()=>finish(new Error('Google Sheets connection failed'));
+    script.src=SHEETS_URL+'?action='+encodeURIComponent(action)+'&callback='+encodeURIComponent(cb)+'&_='+Date.now();
+    document.head.appendChild(script);
+  });
 }
-function mergeByKey(localArr,remoteArr,keyFn){
-  localArr=Array.isArray(localArr)?localArr:[];
-  remoteArr=Array.isArray(remoteArr)?remoteArr:[];
-  const localKeys=new Set(localArr.map(keyFn));
-  return localArr.concat(remoteArr.filter(x=>{const k=keyFn(x);return k&&!localKeys.has(k)}));
-}
-// Before overwriting Sheets with our local snapshot, pull in any records added on another
-// device/tab since our last load so this write doesn't erase them. Local wins on conflicts
-// for the same id (we have no server-side last-modified to arbitrate by); this only recovers
-// records that are missing locally, it doesn't merge field-by-field edits to the same record.
-function mergeRemoteAdditions(remote){
-  if(!remote)return;
-  db.students=mergeByKey(db.students,remote.students,x=>String(x?.id||''));
-  db.archivedStudents=mergeByKey(db.archivedStudents,remote.archivedStudents,x=>String(x?.id||''));
-  db.teachers=mergeByKey(db.teachers,remote.teachers,x=>String(x?.id||x?.teacherId||''));
-  db.marks=mergeByKey(db.marks,remote.marks,x=>String(x?._id||''));
-  db.onlineMarks=mergeByKey(db.onlineMarks,remote.onlineMarks,x=>String(x?._id||''));
-  db.tests=mergeByKey(db.tests,remote.tests,x=>String(x?._id||''));
-  db.expenses=mergeByKey(db.expenses,remote.expenses,x=>String(x?._id||''));
-  db.extraIncome=mergeByKey(db.extraIncome,remote.extraIncome||remote.income,x=>String(x?._id||''));
-  db.attendance=mergeByKey(db.attendance,remote.attendance,x=>String(x?.studentId||'')+'|'+String(x?.date||''));
-  db.fees=mergeByKey(db.fees,remote.fees,x=>[x?.studentId,x?.date,x?.type,x?.amount,x?.extraAmount].map(v=>String(v??'')).join('|'));
-}
+async function getSheetsData(){const d=await jsonpGet('get',10000);if(!d||d.success===false||!normalize(d))throw new Error(d?.error||'No valid Google Sheets data');return d}
+async function fetchRemoteRaw(){try{const d=await jsonpGet('get',10000);if(!d||typeof d!=='object'||d.success===false||d.error)return null;if(d.db&&typeof d.db==='object')return d.db;if(d.data&&typeof d.data==='object'&&!Array.isArray(d.data))return d.data;if(d.result&&typeof d.result==='object'&&!Array.isArray(d.result))return d.result;return d}catch(e){console.warn('Remote read failed:',e);return null}}
+function postPayloadNoCors(payload){return new Promise((resolve,reject)=>{const iframe=document.createElement('iframe');iframe.name='asa_sync_'+Date.now()+'_'+Math.random().toString(36).slice(2);iframe.style.display='none';document.body.appendChild(iframe);const form=document.createElement('form');form.method='POST';form.action=SHEETS_URL;form.target=iframe.name;form.style.display='none';const input=document.createElement('input');input.type='hidden';input.name='payload';input.value=JSON.stringify(payload);form.appendChild(input);document.body.appendChild(form);let finished=false;const cleanup=()=>{form.remove();setTimeout(()=>iframe.remove(),500)};const timer=setTimeout(()=>{if(finished)return;finished=true;cleanup();resolve({accepted:true})},12000);iframe.onload=()=>{if(finished)return;finished=true;clearTimeout(timer);cleanup();resolve({accepted:true})};iframe.onerror=()=>{if(finished)return;finished=true;clearTimeout(timer);cleanup();reject(new Error('Google Sheets write failed'))};form.submit()})}
 let sheetsLoadingPromise=null;
 async function loadSheets(){
   if(sheetsLoadingPromise)return sheetsLoadingPromise;
@@ -377,23 +357,10 @@ async function doSyncOnce(silent){
     }))
   };
 
-  // Real fetch (not the old hidden-iframe form submit) so we get an actual success/failure
-  // signal back instead of assuming the write landed. Same field name/encoding as before
-  // (application/x-www-form-urlencoded, field "payload") so the Apps Script side needs no changes.
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),20000);
   try{
-    const r=await fetch(SHEETS_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:'payload='+encodeURIComponent(JSON.stringify(payload)),
-      signal:controller.signal
-    });
-    const t=await r.text();
-    let d=null; try{d=JSON.parse(t)}catch(e){/* some deployments reply with plain text on success */}
-    if(d && d.success===false) throw new Error(d.error||'Sheets rejected the write');
-    if(!r.ok) throw new Error('HTTP '+r.status);
-
+    await postPayloadNoCors(payload);
+    const verify=await fetchRemoteRaw();
+    if(!verify)throw new Error('Write verification failed');
     syncFailCount=0;
     const now=new Date().toISOString();
     db.settings.lastSyncAt=now;
@@ -410,8 +377,6 @@ async function doSyncOnce(silent){
     clearTimeout(syncRetryTimer);
     syncRetryTimer=setTimeout(()=>syncSheets(true),delay);
     return false;
-  }finally{
-    clearTimeout(timer);
   }
 }
 
@@ -761,7 +726,7 @@ loadSheets();
   // (Removed: a wrapper here used to stamp lastSyncAt/setSyncTime BEFORE the write was
   // confirmed, which showed "Synced" even on failure. syncSheets() now sets that itself,
   // only after a confirmed successful write.)
-  setInterval(()=>{if(loaded&&document.visibilityState!=='hidden'&&!sheetsLoadingPromise&&!syncInProgress&&!pendingWrite&&!document.querySelector('.modal:not(.hidden)'))loadSheets();},15000);
+  setInterval(()=>{if(loaded&&document.visibilityState!=='hidden'&&!sheetsLoadingPromise&&!syncInProgress&&!pendingWrite&&!document.querySelector('.modal:not(.hidden)'))loadSheets();},10000);
   
   function allGroupSummary(){
     return ['LKG-5','6-8'].map(g=>{
