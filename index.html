@@ -1205,6 +1205,9 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
   function joinMonth(s){
     return String(s?.joinMonth||s?.admissionMonth||s?.joinedMonth||s?.joiningMonth||'').slice(0,7);
   }
+  // calcPending/calcExtraPending/studentForm are defined earlier in the file, outside this
+  // block, and call joinMonth() too — expose it globally so they can actually reach it.
+  window.joinMonth=joinMonth;
   function studentActiveForMonth(s,m){
     const j=joinMonth(s);
     return !j || String(m)>=j;
