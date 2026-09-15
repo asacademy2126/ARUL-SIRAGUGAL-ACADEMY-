@@ -267,16 +267,14 @@ async function getSheetsData(){
   return d;
 }
 // The logo is fetched separately from the main data (see Code.gs comment) since it's
-// large and rarely changes. Called once at boot if we don't already have one cached
-// locally; the result is cached to localStorage so we never fetch it again unless the
-// admin actually changes it.
+// large and rarely changes. Fetched directly from Google Sheets at app start; no browser cache is used.
 async function fetchLogoOnce(){
   try{
     const d=await loadJSONP(SHEETS_URL+'?action=getLogo&_='+Date.now(),20000);
     if(d && d.success!==false && d.logo){
       db.settings.logo=d.logo;
       applySettings();
-      saveLocalCache();
+      
     }
   }catch(e){ console.warn('Logo fetch skipped:',e); }
 }
@@ -300,29 +298,14 @@ function saveLogoToSheets(logo){
   form.submit();
   setTimeout(()=>form.remove(),3000);
 }
-// ---- Local cache (device-only, for a fast app open — Sheets stays the source of truth) ----
-// Every edit is cached immediately (marked unsynced), not just after a confirmed sync, so
-// a crash/closed-tab in the gap before Sheets confirms doesn't lose the edit even locally —
-// on reopen it's restored AND automatically retried (see loadLocalCache below).
-const LOCAL_CACHE_KEY='asaLocalCache_v1';
-function saveLocalCache(synced=true){
-  try{ localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({db,synced})); }
-  catch(e){ console.warn('Could not save local cache:',e); }
-}
-function loadLocalCache(){
-  try{
-    const raw=localStorage.getItem(LOCAL_CACHE_KEY);
-    if(!raw)return false;
-    const cached=JSON.parse(raw);
-    if(!cached||typeof cached!=='object')return false;
-    // Accept both the current {db,synced} shape and a bare-db cache from an older build.
-    const cachedDb=(cached.db&&typeof cached.db==='object')?cached.db:cached;
-    Object.assign(db,cachedDb);
-    applySettings();
-    if(cached.synced===false){ pendingWrite=true; setSyncStatus('dirty'); }
-    return true;
-  }catch(e){ console.warn('Could not read local cache:',e); return false; }
-}
+// ---- No browser storage ----
+// Google Sheets is the only persistent data source. Nothing from the app database is
+// written to localStorage/sessionStorage. The in-memory db exists only while the page
+// is open; every app start loads the current data directly from Google Sheets.
+const LOCAL_CACHE_KEY=null;
+function saveLocalCache(){ return true; }
+function loadLocalCache(){ return false; }
+
 // Fetches the current Sheets data WITHOUT touching db (normalize() mutates db as a side
 // effect, so it can't be reused here — this is only for pre-write conflict merging).
 async function fetchRemoteRaw(){
@@ -362,21 +345,26 @@ let sheetsLoadingPromise=null;
 async function loadSheets(){
   if(sheetsLoadingPromise)return sheetsLoadingPromise;
   sheetsLoadingPromise=(async()=>{
-    if(pendingWrite){
-      // Never pull sheet data over unsynced local edits — write them first.
-      const flushed=await syncSheets(true);
-      if(!flushed)return; // stay on local data; setSyncStatus('error') already set by syncSheets
-    }
-    setSyncStatus('syncing');$('loading').style.display='block';$('loading').textContent='⏳ Google Sheets loading...';
+    setSyncStatus('syncing');
+    $('loading').style.display='block';
+    $('loading').textContent='⏳ Google Sheets loading...';
     try{
-      await getSheetsData();loaded=true;setSyncStatus('ok');$('loading').textContent='✅ Google Sheets connected';
-      saveLocalCache();
+      await getSheetsData();
+      loaded=true;
+      pendingWrite=false;
+      setSyncStatus('ok');
+      $('loading').textContent='✅ Google Sheets connected';
       setTimeout(()=>{$('loading').style.display='none'},250);
     }catch(e){
-      setSyncStatus('error');$('loading').textContent='⚠️ '+(e&&e.message?e.message:'Sheets unavailable')+' — retrying automatically';console.error(e);
+      loaded=false;
+      setSyncStatus('error');
+      $('loading').textContent='⚠️ '+(e&&e.message?e.message:'Sheets unavailable')+' — retrying automatically';
+      console.error(e);
+      clearTimeout(syncRetryTimer);
+      syncRetryTimer=setTimeout(()=>loadSheets(),5000);
     }
   })();
-  try{await sheetsLoadingPromise}finally{sheetsLoadingPromise=null}
+  try{await sheetsLoadingPromise}finally{ sheetsLoadingPromise=null; }
 }
 
 let syncInProgress=false;
@@ -475,7 +463,7 @@ async function doSyncOnce(silent){
     setSyncTime(now);
     pendingWrite=false;
     setSyncStatus('ok');
-    saveLocalCache();
+    
     if(!silent)alert('✅ Google Sheets sync செய்யப்பட்டது.');
     return true;
   }catch(e){
@@ -537,12 +525,10 @@ async function waitForSyncConfirmation(syncId,budgetMs){
 
 function save(){
   pendingWrite=true;
-  setSyncStatus('dirty');
-  saveLocalCache(false); // persist the edit itself immediately, before Sheets confirms —
-                          // protects against a closed/crashed tab in that gap (see comment above)
+  setSyncStatus('syncing');
   clearTimeout(syncTimer);
-  // Coalesce rapid edits into one Google Sheets POST for better speed.
-  syncTimer=setTimeout(()=>syncSheets(true),300);
+  // Direct Google Sheets sync. No browser cache is used.
+  syncTimer=setTimeout(()=>syncSheets(true),50);
 }
 
 // Warn before closing/reloading if there are edits not yet confirmed synced.
@@ -838,13 +824,10 @@ function studentPDFForCurrent(){let s=currentStudent;openFeature('reports');setT
 function studentProfileView(){let s=currentStudent;openModal('My Profile',`<p>Name: <b>${esc(s.name)}</b></p><p>ID: <b>${esc(s.id)}</b></p><p>Class: <b>${esc(s.class)}</b></p><p>Mobile: <b>${esc(s.mobile||'-')}</b></p><p>Parent: <b>${esc(s.parent||'-')}</b></p><p>Address: <b>${esc(s.address||'-')}</b></p>`)}
 
 setRole('teacher');
-// Restore last-loaded data from this device instantly (so login isn't blocked on a slow
-// network round-trip), then refresh from Sheets in the background as usual. Only fetch the
-// logo separately on a genuinely first-ever visit (no cache) — a cache hit already carries
-// whatever logo was last synced.
-if(loadLocalCache()){ loaded=true; if(!pendingWrite) setSyncStatus('ok'); }
-else{ fetchLogoOnce(); }
+// Google Sheets is the only persistent source. On every app start, load fresh data directly
+// from Sheets; no localStorage/sessionStorage cache is used.
 loadSheets();
+fetchLogoOnce();
 
 (function(){
   db.extraIncome=db.extraIncome||[];
@@ -1154,7 +1137,7 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
   window.deleteExtraIncome=function(id){if(!confirm('Extra income delete செய்யவா?'))return;db.extraIncome=db.extraIncome.filter(x=>String(x._id)!==String(id));save();financePage();};
   
   window.settingsPage=function(){
-    if(role!=='admin')return alert('Admin only');let m=db.settings.messages||{};$('content').innerHTML=`<div class="card"><h3>⚙️ Admin Settings</h3><div class="two"><div><label>Academy Name</label><input id="sa" value="${esc(db.settings.academy)}"></div><div><label>Admin Name</label><input id="san" value="${esc(db.settings.adminName||'Admin')}"></div><div><label>Academy Logo URL</label><input id="slogo" value="${esc(db.settings.logo||'')}" placeholder="https://.../logo.png"><input id="slogoFile" type="file" accept="image/*" style="margin-top:7px"><small class="muted">URL அல்லது image upload. Save செய்ததும் login + dashboard logo update ஆகும்.</small></div><div><label>Teacher Name</label><input id="st" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="sm" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="sf" type="number" value="${db.settings.fee}"></div><div><label>Admin ID</label><input id="sid" value="${esc(db.settings.adminId)}"></div><div><label>Admin Password</label><input id="sp" type="password" value="${esc(db.settings.adminPass)}"></div><div><label>Teacher ID</label><input id="tid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="tp" value="${esc(db.settings.teacherPass)}"></div><div><label>WhatsApp Group Link</label><input id="wg" value="${esc(db.settings.whatsappGroup||'')}" placeholder="https://chat.whatsapp.com/..."> </div></div><label>Fee Reminder Message</label><textarea id="fm">${esc(m.fee||'')}</textarea><small class="muted">Placeholders: {student} {tuitionPending} {extraPending} {totalPending} {amount} {academy} {date}</small><label>Absent Reminder Message</label><textarea id="am">${esc(m.absent||'')}</textarea><br><button class="btn" onclick="saveSettings()">💾 Save & Sync</button><button class="btn light" onclick="loadSheets()">↻ Reload Sheets</button></div><div class="card"><b>Database:</b> Google Sheets is the source of truth. A copy of the last-loaded data is cached on this device for faster app opening — it refreshes from Sheets automatically and is never the primary copy.</div>`;
+    if(role!=='admin')return alert('Admin only');let m=db.settings.messages||{};$('content').innerHTML=`<div class="card"><h3>⚙️ Admin Settings</h3><div class="two"><div><label>Academy Name</label><input id="sa" value="${esc(db.settings.academy)}"></div><div><label>Admin Name</label><input id="san" value="${esc(db.settings.adminName||'Admin')}"></div><div><label>Academy Logo URL</label><input id="slogo" value="${esc(db.settings.logo||'')}" placeholder="https://.../logo.png"><input id="slogoFile" type="file" accept="image/*" style="margin-top:7px"><small class="muted">URL அல்லது image upload. Save செய்ததும் login + dashboard logo update ஆகும்.</small></div><div><label>Teacher Name</label><input id="st" value="${esc(db.settings.teacher)}"></div><div><label>Mobile</label><input id="sm" value="${esc(db.settings.mobile)}"></div><div><label>Default Monthly Fee</label><input id="sf" type="number" value="${db.settings.fee}"></div><div><label>Admin ID</label><input id="sid" value="${esc(db.settings.adminId)}"></div><div><label>Admin Password</label><input id="sp" type="password" value="${esc(db.settings.adminPass)}"></div><div><label>Teacher ID</label><input id="tid" value="${esc(db.settings.teacherId)}"></div><div><label>Teacher Password</label><input id="tp" value="${esc(db.settings.teacherPass)}"></div><div><label>WhatsApp Group Link</label><input id="wg" value="${esc(db.settings.whatsappGroup||'')}" placeholder="https://chat.whatsapp.com/..."> </div></div><label>Fee Reminder Message</label><textarea id="fm">${esc(m.fee||'')}</textarea><small class="muted">Placeholders: {student} {tuitionPending} {extraPending} {totalPending} {amount} {academy} {date}</small><label>Absent Reminder Message</label><textarea id="am">${esc(m.absent||'')}</textarea><br><button class="btn" onclick="saveSettings()">💾 Save & Sync</button><button class="btn light" onclick="loadSheets()">↻ Reload Sheets</button></div><div class="card"><b>Database:</b> Google Sheets is the only persistent database. Browser localStorage/sessionStorage is not used. Every app opening loads the latest data directly from Google Sheets.</div>`;
   };
 
   window.saveSettings=async function(){
@@ -1185,12 +1168,10 @@ if($('tfAll').checked)allowed=['ALL'];const o={id,name,password:pass,allowedClas
     messages:{fee:feeMsg,absent:absentMsg}
   };
   applySettings();
-  saveLocalCache(false); // persist immediately, before Sheets confirms — same protection as save()
   if(logoChanged) saveLogoToSheets(logo); // separate small write, doesn't ride along on every sync
   const ok=await syncSheets(true);
-  saveLocalCache(ok); // only mark "synced" in the cache if it actually succeeded
   setSyncTime(db.settings.lastSyncAt);
-  alert(ok?'✅ Settings saved. Google Sheets sync செய்யப்பட்டது.':'⚠️ Settings saved locally, but Sheets sync failed — it will retry automatically.');
+  alert(ok?'✅ Settings saved to Google Sheets.':'⚠️ Google Sheets sync failed — automatic retry will continue.');
 };
 
   setSyncTime(db.settings?.lastSyncAt);
