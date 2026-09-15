@@ -201,18 +201,7 @@ function normaliseData(s){
   const str=(v,fallback)=>v===undefined||v===null?(fallback!==undefined?fallback:''):String(v);
   const num=v=>Number(v)||0;
   const arr=(...keys)=>{for(const k of keys){if(Array.isArray(s?.[k]))return s[k]}return []};
-  let settingsRaw={};
-  if(Array.isArray(s?.Settings)){
-    settingsRaw={...(s.Settings[0]||{})};
-    // Also support Settings sheets stored as rows such as {key:'adminId',value:'admin'}.
-    for(const row of s.Settings){
-      const k=row?.key??row?.Key??row?.name??row?.Name??row?.setting??row?.Setting;
-      const v=row?.value??row?.Value??row?.val??row?.Val;
-      if(k!==undefined && v!==undefined) settingsRaw[String(k)]=v;
-    }
-  }else{
-    settingsRaw={...(s?.settings||{})};
-  }
+  const settingsRaw=Array.isArray(s?.Settings)?(s.Settings[0]||{}):(s?.settings||{});
   const settings={...defaultDb.settings,...settingsRaw};
   if(typeof settings.messages==='string'){try{settings.messages=JSON.parse(settings.messages)}catch(e){}}
   settings.academy=str(settings.academy,defaultDb.settings.academy); settings.teacher=str(settings.teacher,'Teacher');
@@ -232,69 +221,95 @@ function normaliseData(s){
   };
 }
 
+async function supabaseRest(path, options={}){
+  const headers={
+    'apikey':SUPABASE_PUBLISHABLE_KEY,
+    'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY,
+    'Content-Type':'application/json',
+    'Accept':'application/json',
+    ...(options.headers||{})
+  };
+  const res=await fetch(SUPABASE_URL+'/rest/v1/'+path,{...options,headers});
+  const text=await res.text();
+  let body=null; try{body=text?JSON.parse(text):null}catch(e){body=text}
+  if(!res.ok) throw new Error((body&&body.message)|| (body&&body.error_description)|| (body&&body.hint)|| ('Supabase HTTP '+res.status));
+  return body;
+}
+
 async function loadFromSupabase(){
-  let row=null;
-  let lastError=null;
+  setSyncStatus('syncing');
+  let remoteRow=null, firstError=null;
   try{
-    if(typeof supabase==='undefined' || !supabaseClient) throw new Error('Supabase JS library load ஆகவில்லை.');
-    const res=await supabaseClient.from('app_state').select('id,data,updated_at').eq('id',1).single();
-    if(res.error) throw res.error;
-    row=res.data;
+    const result=await supabaseClient.from('app_state').select('id,data,updated_at').eq('id',1).maybeSingle();
+    if(result.error) throw result.error;
+    remoteRow=result.data;
   }catch(e){
-    lastError=e;
-    // Direct REST fallback: works even if the CDN client library has a problem.
+    firstError=e;
     try{
-      const r=await fetch(SUPABASE_URL+'/rest/v1/app_state?id=eq.1&select=id,data,updated_at',{
-        headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY}
-      });
-      const j=await r.json();
-      if(!r.ok) throw new Error(j?.message||j?.hint||('HTTP '+r.status));
-      if(!Array.isArray(j)||!j.length) throw new Error('app_state id=1 row கிடைக்கவில்லை.');
-      row=j[0];
-    }catch(e2){
-      e2.message='Supabase read failed. Client: '+(lastError?.message||lastError)+' | REST: '+(e2?.message||e2);
-      throw e2;
+      const rows=await supabaseRest('app_state?id=eq.1&select=id,data,updated_at');
+      remoteRow=Array.isArray(rows)?rows[0]:rows;
+    }catch(restErr){
+      throw new Error('Supabase read failed: '+(restErr?.message||firstError?.message||restErr));
     }
   }
-  db=normaliseData(row?.data||{});
+  if(!remoteRow) throw new Error('app_state id=1 row கிடைக்கவில்லை.');
+  if(!remoteRow.data || typeof remoteRow.data!=='object') throw new Error('app_state.data empty/invalid.');
+  db=normaliseData(remoteRow.data);
   supabaseReady=true;
+  window.__supabaseUpdatedAt=remoteRow.updated_at||'';
   setSyncStatus('success');
-  console.log('Supabase loaded:',{students:db.students.length,attendance:db.attendance.length,fees:db.fees.length,marks:db.marks.length});
   return db;
 }
 
 function buildSupabaseData(){
   return {
-    source:'Arul Siragugal Academy', syncedAt:new Date().toISOString(),
-    settings:db.settings, students:db.students||[], attendance:db.attendance||[], fees:db.fees||[], marks:db.marks||[],
-    onlineMarks:db.onlineMarks||[], homework:db.homework||[], notices:db.notices||[], exams:db.exams||[], tests:db.tests||[],
-    expenses:db.expenses||[], teachers:db.teachers||[], receipts:db.receipts||[]
+    source:'Arul Siragugal Academy',
+    syncedAt:new Date().toISOString(),
+    settings:db.settings||{},
+    students:Array.isArray(db.students)?db.students:[],
+    attendance:Array.isArray(db.attendance)?db.attendance:[],
+    fees:Array.isArray(db.fees)?db.fees:[],
+    marks:Array.isArray(db.marks)?db.marks:[],
+    onlineMarks:Array.isArray(db.onlineMarks)?db.onlineMarks:[],
+    homework:Array.isArray(db.homework)?db.homework:[],
+    notices:Array.isArray(db.notices)?db.notices:[],
+    exams:Array.isArray(db.exams)?db.exams:[],
+    tests:Array.isArray(db.tests)?db.tests:[],
+    expenses:Array.isArray(db.expenses)?db.expenses:[],
+    teachers:Array.isArray(db.teachers)?db.teachers:[],
+    receipts:Array.isArray(db.receipts)?db.receipts:[]
   };
 }
 
 async function saveToSupabase(){
-  if(!supabaseReady){saveQueued=true;return}
-  saveQueued=false;
-  if(saveInProgress){saveQueued=true;return}
-  saveInProgress=true; setSyncStatus('syncing');
+  if(!supabaseReady){saveQueued=true;return false;}
+  if(saveInProgress){saveQueued=true;return true;}
+  saveQueued=false; saveInProgress=true; setSyncStatus('syncing');
   try{
     const payload={id:1,data:buildSupabaseData(),updated_at:new Date().toISOString()};
-    let error=null;
+    let ok=false, jsError=null;
     try{
-      const r=await supabaseClient.from('app_state').upsert(payload,{onConflict:'id'});
-      error=r.error||null;
-    }catch(e){ error=e; }
-    if(error){
-      const r=await fetch(SUPABASE_URL+'/rest/v1/app_state?on_conflict=id',{
+      const result=await supabaseClient.from('app_state').upsert(payload,{onConflict:'id'});
+      if(result.error) throw result.error;
+      ok=true;
+    }catch(e){
+      jsError=e;
+      await supabaseRest('app_state?on_conflict=id',{
         method:'POST',
-        headers:{'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+        headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
         body:JSON.stringify(payload)
       });
-      if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j?.message||j?.hint||('HTTP '+r.status));}
+      ok=true;
     }
+    if(!ok) throw jsError||new Error('Save failed');
+    window.__supabaseUpdatedAt=payload.updated_at;
     setSyncStatus('success');
-  }catch(err){console.error('Supabase save error',err);setSyncStatus('error');}
-  finally{
+    return true;
+  }catch(err){
+    console.error('Supabase save error',err);
+    setSyncStatus('error');
+    return false;
+  }finally{
     saveInProgress=false;
     if(saveQueued) saveToSupabase();
   }
@@ -303,15 +318,7 @@ async function saveToSupabase(){
 function save(){
   if(suppressAutoSync)return;
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>saveToSupabase(),150);
-}
-
-function setSyncStatus(state){
-  const el=document.getElementById('syncStatus');if(!el)return;
-  if(state==='syncing')el.innerHTML='⏳ Supabase Saving…';
-  else if(state==='success')el.innerHTML='✅ Supabase Synced '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  else if(state==='error')el.innerHTML='⚠️ Supabase Error <button class="btn secondary" style="padding:2px 6px;font-size:11px" onclick="saveToSupabase()">Retry</button>';
-  else el.innerHTML='';
+  saveTimer=setTimeout(()=>saveToSupabase(),250);
 }
 
 function setRole(r){
@@ -1489,29 +1496,49 @@ function downloadText(text,filename){const blob=new Blob(["\ufeff"+text],{type:'
 
 /* Supabase persistence: app_state.id=1 is the single source of truth. */
 async function syncSheets(silent){
-  if(silent){saveToSupabase();return;}
-  await saveToSupabase();
-  alert('✅ Supabase-ல் data save ஆகிவிட்டது.');
+  const ok=await saveToSupabase();
+  if(!silent) alert(ok?'✅ Supabase-ல் data save/sync ஆகிவிட்டது.':'❌ Supabase sync failed.');
+  return ok;
 }
 async function importFromSheets(){
-  alert('ℹ️ Google Sheets connection இந்த version-ல் தேவையில்லை. Supabase தான் main database.');
+  const ok=await refreshFromSupabase(true);
+  if(ok) alert('✅ Supabase data refresh ஆகிவிட்டது.');
+}
+async function refreshFromSupabase(showAlert=false){
+  try{
+    const oldUpdated=window.__supabaseUpdatedAt||'';
+    await loadFromSupabase();
+    if(role==='admin'||role==='teacher'||role==='student'){
+      if(role==='admin'||role==='teacher') showHubMenu();
+      else if(currentStudent) showHubMenu();
+    }
+    if(showAlert) alert('✅ Supabase data loaded successfully.');
+    return true;
+  }catch(e){
+    console.error('Supabase refresh error',e);
+    setSyncStatus('error');
+    if(showAlert) alert('❌ Supabase load error: '+(e.message||e));
+    return false;
+  }
 }
 async function autoImportOnLoad(){
   const loadingEl=document.getElementById('loginLoading');
   const btns=['teacherLoginBtn','studentLoginBtn','adminLoginBtn'].map(id=>document.getElementById(id)).filter(Boolean);
-  if(loadingEl)loadingEl.style.display='block';
+  if(loadingEl){loadingEl.style.display='block';loadingEl.textContent='⏳ Supabase database loading...';}
   btns.forEach(b=>b.disabled=true);
   setSyncStatus('syncing');
   try{
     await loadFromSupabase();
     applySettings();
-    if(!document.getElementById('app').classList.contains('hidden'))showHubMenu();
+    if(loadingEl) loadingEl.textContent='✅ Supabase connected';
+    if(saveQueued) await saveToSupabase();
   }catch(e){
-    console.error('Supabase load error',e);
+    console.error('Supabase initial load error',e);
     setSyncStatus('error');
-    alert('❌ Supabase data load ஆகவில்லை.\n\n'+(e.message||e)+'\n\nSQL Editor-ல் id=1 row மற்றும் RLS policy check செய்யவும்.');
+    if(loadingEl) loadingEl.textContent='❌ Supabase connection failed';
+    setTimeout(()=>alert('❌ Supabase data load ஆகவில்லை.\n\n'+(e.message||e)+'\n\nRLS policy மற்றும் app_state id=1 check செய்யுங்கள்.'),100);
   }finally{
-    if(loadingEl)loadingEl.style.display='none';
+    setTimeout(()=>{if(loadingEl)loadingEl.style.display='none';},900);
     btns.forEach(b=>b.disabled=false);
   }
 }
@@ -1522,6 +1549,18 @@ async function initApp(){
   applySettings();
 }
 initApp();
+// Check the cloud copy periodically so changes made from another device can appear in this page.
+setInterval(async()=>{
+  if(document.hidden || saveInProgress || !supabaseReady) return;
+  try{
+    const rows=await supabaseRest('app_state?id=eq.1&select=id,data,updated_at');
+    const row=Array.isArray(rows)?rows[0]:rows;
+    if(row && row.updated_at && row.updated_at!==window.__supabaseUpdatedAt){
+      await loadFromSupabase();
+      if(role==='admin'||role==='teacher'||role==='student') showHubMenu();
+    }
+  }catch(e){ console.warn('Supabase background sync:',e.message||e); }
+},15000);
 </script>
 
 <style>
@@ -1634,5 +1673,6 @@ initApp();
   enterApp=function(r){originalEnter(r);if(r==='admin'){setTimeout(()=>{const header=document.querySelector('.topbar > div:last-child');if(header&&!header.querySelector('[data-smart-pdf]')){const b=document.createElement('button');b.className='btn pdf-btn';b.dataset.smartPdf='1';b.textContent='🖨️ PDF';b.onclick=exportCurrentPagePDF;header.insertBefore(b,header.firstChild)}},0)}};
 })();
 </script>
+<button id="supabaseRefreshBtn" class="btn secondary" style="position:fixed;right:14px;bottom:14px;z-index:9999;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,.15)" onclick="refreshFromSupabase(true)">🔄 Refresh Supabase</button>
 </body>
 </html>
